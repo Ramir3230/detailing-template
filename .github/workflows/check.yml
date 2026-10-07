@@ -35,7 +35,7 @@ jobs:
 
       - run: npm ci
 
-      # typegen, tsc и eslint. typegen идёт первым: next-env.d.ts и .next/ не в git,
+      # typegen, tsc, eslint и тесты. typegen идёт первым: next-env.d.ts и .next/ не в git,
       # а без них tsc не знает типов маршрутов.
       - run: npm run check
 
