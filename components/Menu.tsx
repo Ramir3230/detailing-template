@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
 import { CloseIcon, MenuIcon } from "@/components/icons";
 
 type Props = {
@@ -29,6 +29,16 @@ export function Menu({ openLabel, closeLabel, logo, children }: Props) {
   function close() {
     dialog.current?.close();
   }
+
+  // Меню только до 1024 px: планшет повернули с открытым меню — закрываем.
+  useEffect(() => {
+    const desktop = window.matchMedia("(width >= 64rem)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) dialog.current?.close();
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   // Переход по ссылке внутри меню — к блоку той же страницы или на другую: меню закрываем.
   function closeOnLink(event: MouseEvent<HTMLDialogElement>) {
