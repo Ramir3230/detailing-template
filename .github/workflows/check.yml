@@ -1,0 +1,43 @@
+name: check
+
+# PR в проекте нет: работа идёт в ветках feat/chore/fix, а мерж в main делается
+# локально merge-коммитом. Поэтому единственный осмысленный триггер — push в любую ветку.
+# main включён намеренно: его Vercel выкладывает в прод, и красное там нужно видеть
+# даже постфактум.
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+# Пуши в рабочую ветку идут пачками, недоигранный прогон предыдущего не нужен.
+# На main не отменяем: там важен результат каждого мержа.
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      # Node 24 — та же мажорная версия, что локально.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # typegen, tsc и eslint. typegen идёт первым: next-env.d.ts и .next/ не в git,
+      # а без них tsc не знает типов маршрутов.
+      - run: npm run check
+
+      # Отдельным шагом, а не внутри check: медленный и ловит то, чего не видит tsc.
+      - run: npm run build

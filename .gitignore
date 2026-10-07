@@ -23,6 +23,11 @@
 # misc
 .DS_Store
 *.pem
+# корнем сессии должна быть папка проекта, а не родительская
+*.code-workspace
+
+# claude code: агенты проекта в репозитории, локальные права — нет
+.claude/settings.local.json
 
 # debug
 npm-debug.log*
@@ -32,6 +37,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# исключение: пример без значений нужен в репозитории
+!.env.example
 
 # vercel
 .vercel
