@@ -4,7 +4,7 @@ import { LangSwitch } from "@/components/LangSwitch";
 import { Logo } from "@/components/Logo";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
-import { formatTimeRange, glue } from "@/lib/format";
+import { formatDayRange, formatTimeRange, glue } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
 import { localePath, t, type Lang } from "@/lib/i18n";
 import { groupPath, studioPages } from "@/lib/nav";
@@ -62,11 +62,7 @@ export async function Footer({ lang, dict }: Props) {
             <dl className="text-15 leading-hours">
               {groupHours(studio.hours).map(({ from, to, hours }) => (
                 <div key={from} className={`flex gap-2 ${hours ? "" : "text-muted"}`}>
-                  <dt>
-                    {from === to
-                      ? dict.days.short[from]
-                      : `${dict.days.short[from]}–${dict.days.short[to].toLocaleLowerCase(lang)}`}
-                  </dt>
+                  <dt>{formatDayRange(from, to, dict.days.short, lang)}</dt>
                   <dd>{hours ? formatTimeRange(hours) : dict.hours.closed}</dd>
                 </div>
               ))}

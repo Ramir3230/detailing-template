@@ -10,14 +10,14 @@ type Week = readonly [string, string, string, string, string, string, string];
 /**
  * Все строки интерфейса. Тип требует каждый ключ в каждом языке: перевод, которого
  * нет, ломает typecheck, а не всплывает пустым местом на странице.
- * Подстановки — `{time}`, `{day}`, `{phone}`.
+ * Подстановки — `{time}`, `{day}`.
  */
 export type Dictionary = {
-  header: { home: string; openMenu: string; closeMenu: string; mainNav: string };
+  header: { openMenu: string; closeMenu: string; mainNav: string };
   /** Только готовые страницы: пункт появляется вместе со страницей. */
   nav: { services: string; contact: string };
   menu: { services: string; studio: string };
-  call: { label: string; withNumber: string };
+  call: { label: string };
   messengers: Record<Messenger["kind"], string>;
   status: {
     open: string;

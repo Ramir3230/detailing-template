@@ -28,7 +28,7 @@ export function Header({ lang, dict }: Props) {
     <header className="glass sticky top-0 z-20 border-b border-line lg:static">
       {/* Справа поле 12 px, а не 24: у круглой кнопки меню своё поле внутри */}
       <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-18 lg:px-8">
-        <Link href={localePath(lang, "/")} className="text-17 lg:text-20">
+        <Link href={localePath(lang, "/")} className="flex min-h-11 items-center text-17 lg:text-20">
           <Logo />
         </Link>
 
@@ -100,7 +100,7 @@ export function Header({ lang, dict }: Props) {
                         href={messengerHref(messenger)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border border-line-strong text-13 font-medium transition-colors hover:border-accent-border"
+                        className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-line-strong text-13 font-medium transition-colors hover:border-accent-border"
                       >
                         <MessengerIcon size={16} />
                         {dict.messengers[messenger.kind]}

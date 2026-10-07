@@ -52,10 +52,10 @@ export function Menu({ openLabel, closeLabel, logo, children }: Props) {
         aria-label={openLabel}
         onClick={closeOnLink}
         onClose={() => opener.current?.focus()}
-        className="m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto border-0 bg-bg p-0 text-fg backdrop:bg-bg"
+        className="m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 bg-bg p-0 text-fg backdrop:bg-bg"
       >
         <div className="glow-top flex min-h-full flex-col">
-          <div className="flex h-19 shrink-0 items-center justify-between pr-4 pl-6">
+          <div className="flex h-16 shrink-0 items-center justify-between pr-3 pl-6">
             {logo}
             <button
               ref={closer}

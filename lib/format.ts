@@ -3,7 +3,7 @@ import type { Dictionary, PluralForms } from "@/dictionaries/types";
 import type { Lang } from "@/lib/i18n";
 
 /** Неразрывный пробел: между числом и «zł», после «od», после однобуквенных слов. */
-export const NBSP = " ";
+export const NBSP = "\u00A0";
 
 const locales: Record<Lang, string> = { pl: "pl-PL", ru: "ru-RU" };
 
@@ -101,6 +101,16 @@ export function formatTimeRange(hours: { open: string; close: string }): string 
   return `${hours.open}–${hours.close}`;
 }
 
+/** Дни строки часов (0 — понедельник): «Pn–pt», «Sob». Второй день — строчными. */
+export function formatDayRange(
+  from: number,
+  to: number,
+  days: Dictionary["days"]["short"],
+  lang: Lang,
+): string {
+  return from === to ? days[from] : `${days[from]}–${days[to].toLocaleLowerCase(lang)}`;
+}
+
 /** 5 → «5,0». */
 export function formatRating(value: number): string {
   return ratingFormat.format(value);
@@ -118,7 +128,7 @@ const shortWords: Record<Lang, RegExp> = {
   ru: /(?<=^|[\s(„"«])([авиксоуя]) +/giu,
 };
 
-/** «Mycie i szyby» → «Mycie i szyby». */
+/** «Mycie i szyby» → «Mycie i\u00A0szyby». */
 export function glue(text: string, lang: Lang): string {
   return text.replace(shortWords[lang], `$1${NBSP}`);
 }

@@ -40,9 +40,6 @@
   --tracking-logo: 0.12em;
   --tracking-label: 0.14em;
 
-  /* Чем крупнее элемент, тем крупнее радиус */
-  --radius-tile: 16px;
-
   --container-page: 1200px;
 }
 
