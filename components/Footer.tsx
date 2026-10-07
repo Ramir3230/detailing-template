@@ -18,7 +18,7 @@ async function currentYear() {
   return new Date().getFullYear();
 }
 
-const linkClass = "flex min-h-11 items-center text-15 transition-colors hover:text-fg";
+const linkClass = "flex min-h-11 items-center text-15";
 
 export async function Footer({ lang, dict }: Props) {
   const year = await currentYear();

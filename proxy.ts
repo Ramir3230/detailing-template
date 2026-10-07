@@ -25,7 +25,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  /* Всё, кроме служебных путей Next и Vercel, иконки вкладки (app/icon.tsx отдаётся
-     по /icon без расширения) и файлов с расширением: robots.txt, фото. */
-  matcher: ["/((?!_next/|_vercel/|icon$|.*\\..*).*)"],
+  /* Всё, кроме служебных путей Next и Vercel, маршрутов в корне app/ вне [lang]
+     (/icon без расширения, будущие api/ и apple-icon) и файлов с расширением:
+     robots.txt, фото. Новый маршрут в корне app/ — добавить сюда, иначе он
+     перепишется в /pl/… и отдаст 404. */
+  matcher: ["/((?!_next/|_vercel/|api/|icon$|apple-icon$|.*\\..*).*)"],
 };

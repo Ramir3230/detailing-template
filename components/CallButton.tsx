@@ -13,7 +13,10 @@ export function CallButton({ dict, className = "" }: { dict: Dictionary; classNa
     >
       <PhoneIcon size={18} />
       {dict.call.label}
-      <span className="text-fg-dim">· {formatPhone(studio.phone)}</span>
+      <span className="text-fg-dim">
+        <span aria-hidden="true">· </span>
+        {formatPhone(studio.phone)}
+      </span>
     </a>
   );
 }

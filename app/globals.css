@@ -3,8 +3,8 @@
 /*
  * База шаблона (DESIGN.md). Четыре цвета темы приходят из данных студии переменными
  * --bg, --fg, --muted, --accent на <html>; всё остальное выводится из них здесь.
- * Палитра, радиусы и шкала Tailwind по умолчанию отключены: в компоненте
- * компилируется только то, что есть в DESIGN.md.
+ * Палитра, радиусы, шкала, тени, анимации, кривые и ширины Tailwind по умолчанию
+ * отключены: в компоненте компилируется только то, что есть в DESIGN.md.
  */
 @theme {
   --color-*: initial;
@@ -12,6 +12,13 @@
   --text-*: initial;
   --leading-*: initial;
   --tracking-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --animate-*: initial;
+  --ease-*: initial;
+  --container-*: initial;
 
   /* Шрифты: переменные от next/font в app/[lang]/layout.tsx */
   --font-sans: var(--font-manrope), system-ui, sans-serif;

@@ -16,7 +16,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         {t(studio.hero.title, lang)}
       </h1>
       <p className="mt-3 text-muted">{t(studio.hero.subtitle, lang)}</p>
-      <CallButton dict={dict} className="mt-8 max-w-sm" />
+      <CallButton dict={dict} className="mt-8 lg:inline-flex lg:w-auto lg:px-7" />
     </main>
   );
 }
