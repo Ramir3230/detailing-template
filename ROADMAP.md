@@ -15,7 +15,8 @@
 - [x] `npm run check`: typegen, tsc, eslint
 - [x] CI `.github/workflows/check.yml`: check и build на каждый пуш
 - [x] `noindex` в `app/layout.tsx` до появления флага в данных
-- [~] Приватный репозиторий на GitHub, проект на Vercel с деплоем по пушу в `main`
+- [x] Приватный репозиторий на GitHub, проект на Vercel с деплоем по пушу в `main` и
+      превью по веткам
 
 ## 1. Бриф и дизайн
 
