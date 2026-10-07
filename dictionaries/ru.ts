@@ -2,14 +2,13 @@ import type { Dictionary } from "@/dictionaries/types";
 
 export const ru: Dictionary = {
   header: {
-    home: "Главная",
     openMenu: "Меню",
     closeMenu: "Закрыть меню",
     mainNav: "Основное",
   },
   nav: { services: "Услуги", contact: "Контакты" },
   menu: { services: "Услуги", studio: "Студия" },
-  call: { label: "Позвонить", withNumber: "Позвонить: {phone}" },
+  call: { label: "Позвонить" },
   messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram" },
   status: {
     open: "Открыто",

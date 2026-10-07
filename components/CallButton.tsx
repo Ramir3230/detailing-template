@@ -9,7 +9,7 @@ export function CallButton({ dict, className = "" }: { dict: Dictionary; classNa
   return (
     <a
       href={telHref(studio.phone)}
-      className={`glow-call flex h-14 w-full items-center justify-center gap-2.5 rounded-full border border-accent-border bg-accent-fill font-medium whitespace-nowrap transition-colors hover:bg-accent-hover ${className}`}
+      className={`glow-call flex h-14 w-full items-center justify-center gap-2 rounded-full border border-accent-border bg-accent-fill font-medium whitespace-nowrap transition-colors hover:bg-accent-hover ${className}`}
     >
       <PhoneIcon size={18} />
       {dict.call.label}

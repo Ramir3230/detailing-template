@@ -9,8 +9,10 @@ import { getDictionary } from "@/dictionaries";
 import { isLang, langs, t, type Lang } from "@/lib/i18n";
 import "../globals.css";
 
+/* subsets — что предзагружать. Кириллица подключена в любом случае и по unicode-range
+   приходит сама на русских страницах: польским грузить её заранее незачем. */
 const manrope = Manrope({
-  subsets: ["latin", "latin-ext", "cyrillic"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-manrope",
   display: "swap",
 });
@@ -18,7 +20,7 @@ const manrope = Manrope({
 /* У next/font нет метрик Science Gothic для подгонки запасного шрифта: сборка
    предупреждает «Failed to find font override values» — это ожидаемо. */
 const scienceGothic = Science_Gothic({
-  subsets: ["latin", "latin-ext", "cyrillic"],
+  subsets: ["latin", "latin-ext"],
   axes: ["wdth"],
   variable: "--font-science-gothic",
   display: "swap",
