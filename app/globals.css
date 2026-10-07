@@ -1,26 +1,159 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * База шаблона (DESIGN.md). Четыре цвета темы приходят из данных студии переменными
+ * --bg, --fg, --muted, --accent на <html>; всё остальное выводится из них здесь.
+ * Палитра, радиусы и шкала Tailwind по умолчанию отключены: в компоненте
+ * компилируется только то, что есть в DESIGN.md.
+ */
+@theme {
+  --color-*: initial;
+  --radius-*: initial;
+  --text-*: initial;
+  --leading-*: initial;
+  --tracking-*: initial;
+
+  /* Шрифты: переменные от next/font в app/[lang]/layout.tsx */
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-display: var(--font-science-gothic), var(--font-manrope), sans-serif;
+
+  /* Шкала, px */
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-17: 17px;
+  --text-18: 18px;
+  --text-20: 20px;
+  --text-24: 24px;
+  --text-hero: clamp(32px, 3.6vw, 52px);
+
+  --leading-logo: 1.1;
+  --leading-heading: 1.3;
+  --leading-hero: 1.35;
+  --leading-body: 1.5;
+  --leading-hours: 1.9;
+
+  /* Прописные заголовки, логотип, метки */
+  --tracking-display: 0.06em;
+  --tracking-logo: 0.12em;
+  --tracking-label: 0.14em;
+
+  /* Чем крупнее элемент, тем крупнее радиус */
+  --radius-tile: 16px;
+
+  --container-page: 1200px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+
+  /* Производные (DESIGN.md, «Палитра») */
+  --color-line: color-mix(in srgb, var(--fg) 10%, transparent);
+  --color-line-strong: color-mix(in srgb, var(--fg) 15%, transparent);
+  --color-surface: color-mix(in srgb, var(--fg) 3%, transparent);
+  --color-fg-dim: color-mix(in srgb, var(--fg) 70%, transparent);
+  --color-accent-fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  --color-accent-hover: color-mix(in srgb, var(--accent) 20%, transparent);
+  --color-accent-border: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-16);
+    line-height: var(--leading-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Открытое меню на весь экран: фон под ним не прокручивается */
+  html:has(dialog[open]) {
+    overflow: hidden;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Поля страницы: телефон — 24 px, десктоп — контейнер 1200 px с полями 32 px */
+@utility wrap {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: 24px;
+
+  @media (width >= 64rem) {
+    padding-inline: 32px;
+  }
+}
+
+/* Заголовки, логотип, классы: Science Gothic шириной 150%, прописные.
+   Трекинг — отдельным классом: у заголовка .06em, у логотипа .12em. */
+@utility display {
+  font-family: var(--font-display);
+  font-stretch: 150%;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* Метка группы, подпись блока */
+@utility caps-label {
+  font-size: var(--text-12);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Неон текста: логотип, кавычка отзыва */
+@utility neon-text {
+  color: var(--color-fg);
+  text-shadow:
+    0 0 12px var(--color-accent),
+    0 0 22px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Свечение кнопки звонка */
+@utility glow-call {
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 4px color-mix(in srgb, var(--accent) 60%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Стекло: шапка поверх контента */
+@utility glass {
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Точка статуса «Otwarte» */
+@utility status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+/* Мягкий свет акцента сверху меню */
+@utility glow-top {
+  background:
+    radial-gradient(80% 30% at 50% 0%, var(--color-accent-fill), transparent),
+    var(--color-bg);
 }
