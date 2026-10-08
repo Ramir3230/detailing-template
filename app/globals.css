@@ -321,22 +321,38 @@
 }
 
 /* Неон пола: горячее пятно под бампером (акцент с белым 45/55) и широкий разлив к
-   зрителю. Верх слоя маскирован мягко — свет не залезает на машину */
+   зрителю. Верх слоя маскирован мягко — свет не залезает на машину. Оба эллипса гаснут
+   внутри слоя: шире слоя разлив обрывался бы вертикальной линией по его краям. Слой —
+   124% ширины машины, радиусы в его процентах: 33% и 48% — это 41% и 59% ширины
+   машины. Ширина слоя и радиусы меняются только вместе, поэтому оба здесь */
 @utility glow-floor {
+  inset-inline: -12%;
   background:
     radial-gradient(
-      38% 14% at 50% 10%,
+      33% 14% at 50% 10%,
       color-mix(in srgb, color-mix(in srgb, var(--accent) 45%, #fff) 75%, transparent),
       color-mix(in srgb, var(--accent) 35%, transparent) 55%,
       transparent
     ),
     radial-gradient(
-      55% 55% at 50% 12%,
+      48% 55% at 50% 12%,
       color-mix(in srgb, var(--accent) 45%, transparent),
       color-mix(in srgb, var(--accent) 12%, transparent) 55%,
       transparent
     );
   mask-image: linear-gradient(to bottom, transparent, #000 18%);
+}
+
+/* Hero режет только по бокам: свет пола и свет за машиной уходят в следующий блок, а не
+   обрываются его краем. Без overflow: clip (Safari до 16) режет со всех сторон, как
+   раньше: открытые бока дали бы странице прокрутку вбок */
+@utility clip-x {
+  overflow: hidden;
+
+  @supports (overflow-x: clip) {
+    overflow: visible;
+    overflow-x: clip;
+  }
 }
 
 /* Ореол фары: белое ядро в холодный голубой. Свет ксенона одинаковый у любой студии —
