@@ -16,11 +16,12 @@ export function Prices({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   ) as Record<CarClass, string>;
 
   return (
-    // tabIndex и outline-none: на секцию ставит фокус «Sprawdź cenę» (ScrollLink), без обводки
+    // tabIndex и outline-none: на секцию ставит фокус «Sprawdź cenę» (ScrollLink), без обводки.
+    // relative: свет hero, уходящий вниз, ложится под текст прайса, а не поверх
     <section
       id={sectionIds.services}
       tabIndex={-1}
-      className="scroll-mt-16 py-14 outline-none lg:scroll-mt-0 lg:py-24"
+      className="relative scroll-mt-16 py-14 outline-none lg:scroll-mt-0 lg:py-24"
     >
       <PriceList
         heading={
