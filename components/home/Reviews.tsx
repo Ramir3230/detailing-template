@@ -3,7 +3,7 @@ import { ReviewStories } from "@/components/home/ReviewStories";
 import { SectionTitle } from "@/components/home/SectionTitle";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
-import { formatCount, formatRating, glue } from "@/lib/format";
+import { formatRating, formatReviewsInGoogle, glue } from "@/lib/format";
 import { fill, t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 import { storyDuration } from "@/lib/stories";
@@ -18,10 +18,7 @@ export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   if (!studio.reviews.length) return null;
   const words = dict.reviews;
   const { rating } = studio;
-  const ratingText = glue(
-    fill(words.inGoogle, { count: formatCount(rating.count, words.count, lang) }),
-    lang,
-  );
+  const ratingText = formatReviewsInGoogle(rating.count, words, lang);
 
   const stories = studio.reviews.map((review) => {
     const text = glue(t(review.text, lang), lang);

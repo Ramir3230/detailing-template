@@ -27,8 +27,12 @@ export function useInView(id: string, { initial, rootMargin = "0px", restartOn }
       { threshold: [0], rootMargin },
     );
     observer.observe(element);
-    return () => observer.disconnect();
-  }, [id, rootMargin, restartOn]);
+    return () => {
+      observer.disconnect();
+      // Ушли со страницы — её ответ больше не годится, и при возврате на тот же адрес
+      setSeen({ on: undefined, visible: initial });
+    };
+  }, [id, initial, rootMargin, restartOn]);
 
   return seen.on === restartOn ? seen.visible : initial;
 }
