@@ -23,7 +23,7 @@ export function HoursList({ rows, todayLabel }: { rows: HoursRowView[]; todayLab
             <dt className={`flex flex-wrap items-center gap-x-2 gap-y-1 ${today ? "" : "text-muted"}`}>
               {row.days}
               {today && (
-                <span className="rounded-full border border-accent-mark px-2 py-0.5 text-12 text-accent">
+                <span className="rounded-full border border-accent-mark px-2 text-13 text-accent">
                   {todayLabel}
                 </span>
               )}

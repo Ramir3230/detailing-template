@@ -20,6 +20,12 @@ describe("active studio data", () => {
     }
   });
 
+  it("has https links for the route and the Google reviews", () => {
+    for (const url of [studio.address.routeUrl, studio.rating.url]) {
+      if (url) expect(new URL(url).protocol).toBe("https:");
+    }
+  });
+
   it("has a readable theme: hex colors, text and accent at 4.5:1 to the background", () => {
     const { bg, fg, muted, accent } = studio.theme;
     for (const color of [bg, fg, muted, accent]) expect(color).toMatch(/^#[0-9a-f]{6}$/i);

@@ -45,7 +45,7 @@ export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             <span className="display text-40 leading-none tracking-display normal-case lg:text-64">
               {formatRating(rating.value)}
             </span>
-            <div className="flex flex-col items-start gap-1 lg:gap-1.5">
+            <div className="flex flex-col items-start gap-1 lg:gap-2">
               <div
                 role="img"
                 aria-label={fill(words.stars, { value: formatRating(rating.value) })}

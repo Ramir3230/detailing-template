@@ -46,15 +46,20 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
         </div>
         <p
           aria-live="polite"
-          className="mt-2 min-h-[3em] text-center text-14 text-muted lg:mt-3 lg:text-left"
+          className="mt-2 min-h-[2.9em] text-center text-14 leading-note text-muted lg:mt-3 lg:text-left"
         >
           {descriptions[selected]}
         </p>
       </div>
 
-      <div className="mt-5 flex flex-col gap-7 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px] lg:gap-9">
+      <div className="mt-5 flex flex-col gap-7 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px] lg:gap-10">
         {groups.map((group) => (
-          <div key={group.slug} id={group.slug} className="scroll-mt-36 lg:scroll-mt-6">
+          <div
+            key={group.slug}
+            id={group.slug}
+            // под шапку и липкий переключатель, при XL — ещё под плашку
+            className={`${selected === "XL" ? "scroll-mt-50" : "scroll-mt-36"} lg:scroll-mt-6`}
+          >
             <h3 className="caps-label pb-2">{group.name}</h3>
             <ul>
               {group.rows.map((row) => (
