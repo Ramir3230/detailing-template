@@ -12,9 +12,11 @@ import { sectionIds } from "@/lib/nav";
 
 type Props = { lang: Lang; dict: Dictionary };
 
-/* Текст проявляется снизу сразу при загрузке, не дожидаясь машины; кнопка — позже */
-const rise = "animate-[hero-rise_0.4s_var(--ease-warm)_both]";
-const riseLater = "animate-[hero-rise_0.4s_var(--ease-warm)_0.15s_both]";
+/* Текст проявляется снизу сразу при загрузке, не дожидаясь машины; кнопка — позже.
+   Отыгравшая сцена (data-ignited) не проявляет его заново при возврате на страницу */
+const rise = "animate-[hero-rise_0.4s_var(--ease-warm)_both] in-data-ignited:animate-none";
+const riseLater =
+  "animate-[hero-rise_0.4s_var(--ease-warm)_0.15s_both] in-data-ignited:animate-none";
 
 /*
  * Hero главной (DESIGN.md, «Hero и шапка»).
@@ -105,7 +107,7 @@ export function Hero({ lang, dict }: Props) {
             />
             <HeroCar
               car={studio.hero.car}
-              className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:max-w-[780px]"
+              className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:max-w-hero-car"
             />
           </div>
         </div>

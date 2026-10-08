@@ -3,9 +3,10 @@
 /* Телефон ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается */
 @custom-variant short (@media (height < 600px) and (width < 64rem));
 
-/* Страница с hero, то есть главная: на ней сцена зажигания. :where — без веса:
-   состояние data-shown у шапки должно перебивать спрятанное */
-@custom-variant with-hero (:where(body:has([data-ignition])) &);
+/* Страница с hero, то есть главная: на ней сцена зажигания. Скрытая ушедшая страница
+   (data-hidden, см. HeroStage) не в счёт. :where — без веса: состояние data-shown у
+   шапки должно перебивать спрятанное */
+@custom-variant with-hero (:where(body:has([data-ignition]:not([data-hidden]))) &);
 
 /*
  * База шаблона (DESIGN.md). Четыре цвета темы приходят из данных студии переменными
@@ -80,6 +81,8 @@
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   --container-page: 1200px;
+  /* Машина hero на десктопе не шире */
+  --container-hero-car: 780px;
   /* Шапка десктопа: hero вместе с ней даёт экран */
   --spacing-header: 72px;
 }
@@ -362,7 +365,8 @@
 
 /*
  * Зажигание hero (DESIGN.md, «Движение»). HeroStage ставит data-lit на секцию, когда фото
- * машины загружено и раскодировано, — тайминги отсчитываются от этого момента.
+ * машины и слой фар загружены и раскодированы, — тайминги отсчитываются от этого момента.
+ * Ключевые кадры — только до data-ignited: повторный показ страницы их не перезапускает.
  * Финальный кадр — состояние по умолчанию, погашенное есть только там, где зажигание
  * будет. При reduced motion, без JS и в браузере, не знающем запрос scripting, машина
  * горит сразу, а разметка сервера и клиента одна и та же.
@@ -381,7 +385,7 @@
     opacity: 0;
   }
 
-  [data-lit] .ignite-rings {
+  [data-lit]:not([data-ignited]) .ignite-rings {
     animation: xenon 0.35s linear 0.4s both;
   }
 
@@ -393,12 +397,12 @@
     transition: filter 1.8s var(--ease-warm) 0.7s;
   }
 
-  [data-lit] .ignite-floor {
+  [data-lit]:not([data-ignited]) .ignite-floor {
     animation: neon-strike 0.6s linear 1.3s both;
   }
 
   /* Логотип загорается последним, вместе с концом проявления кузова */
-  [data-lit] .ignite-logo {
+  [data-lit]:not([data-ignited]) .ignite-logo {
     animation: neon-strike 0.6s linear 1.9s both;
   }
 }
