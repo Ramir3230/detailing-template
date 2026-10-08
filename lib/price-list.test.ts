@@ -38,6 +38,13 @@ describe("priceList", () => {
     expect(priceList(groups, "ru", pl.price)[0].name).toBe("Мойка и\u00A0стёкла");
   });
 
+  it("prepares counter strips only for prices by class", () => {
+    const [group] = priceList(groups, "pl", pl.price);
+    expect(group.rows[0].rolling?.positions).toEqual({ S: [2, 0, 0], M: [2, 2, 0], L: [2, 5, 0] });
+    expect(group.rows[0].rolling?.suffix).toBe("\u00A0zł");
+    expect(group.rows[1].rolling).toBeUndefined();
+  });
+
   it("keeps brand and note only where they exist", () => {
     const [group] = priceList(groups, "pl", pl.price);
     expect(group.rows[0]).not.toHaveProperty("brand", expect.anything());
