@@ -32,7 +32,8 @@ export function Hero({ lang, dict }: Props) {
 
   return (
     <HeroStage id={sectionIds.hero} className="relative overflow-hidden">
-      <div className="flex min-h-svh flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
+      {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh */}
+      <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
         {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания.
             Оба слоя — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает */}
         <div className="text-center lg:hidden">

@@ -27,7 +27,8 @@ type StageProps = { id: string; className: string; children: ReactNode };
  * - data-ignited — сцена отыграла. Next держит ушедшую страницу в DOM скрытой
  *   (cacheComponents) и при возврате показывает снова, а показ перезапускает CSS-анимации:
  *   после data-ignited их на сцене нет, остаётся финальный кадр;
- * - data-hidden — страница скрыта: для CSS шапки hero на ней больше нет.
+ * - data-hidden — страница скрыта: для CSS шапки hero на ней больше нет;
+ * - --hero-h — высота экрана на момент открытия (см. ниже).
  */
 export function HeroStage({ id, className, children }: StageProps) {
   const section = useRef<HTMLElement>(null);
@@ -41,6 +42,31 @@ export function HeroStage({ id, className, children }: StageProps) {
     const element = section.current;
     element?.removeAttribute("data-hidden");
     return () => element?.setAttribute("data-hidden", "");
+  }, []);
+
+  /*
+   * Hero на телефоне — высотой в экран (100svh). Safari, прячя свои панели при прокрутке,
+   * svh не меняет, а сторонние браузеры iPhone (Arc) и браузеры внутри приложений
+   * растягивают само окно страницы: hero рос, и машина уезжала от логотипа. Поэтому
+   * высота берётся один раз при открытии и меняется только с шириной — при повороте.
+   */
+  useLayoutEffect(() => {
+    const element = section.current;
+    if (!element) return;
+    let width = 0;
+    const freeze = () => {
+      if (innerWidth === width) return;
+      width = innerWidth;
+      element.style.removeProperty("--hero-h");
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:absolute;visibility:hidden;height:100svh";
+      element.append(probe);
+      element.style.setProperty("--hero-h", `${probe.getBoundingClientRect().height}px`);
+      probe.remove();
+    };
+    freeze();
+    addEventListener("resize", freeze);
+    return () => removeEventListener("resize", freeze);
   }, []);
 
   // Сцена отыграла, когда закончились все её анимации и переходы
