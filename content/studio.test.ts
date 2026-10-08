@@ -20,6 +20,28 @@ describe("active studio data", () => {
     }
   });
 
+  it("has whole prices: the price counter shows digits only", () => {
+    for (const group of studio.services) {
+      for (const { price } of group.services) {
+        const amounts =
+          price.kind === "byClass" ? [price.S, price.M, price.L] : "amount" in price ? [price.amount] : [];
+        for (const amount of amounts) expect(Number.isInteger(amount) && amount > 0).toBe(true);
+      }
+    }
+  });
+
+  it("has https links for the route and the Google reviews", () => {
+    for (const url of [studio.address.routeUrl, studio.rating.url]) {
+      if (url) expect(new URL(url).protocol).toBe("https:");
+    }
+  });
+
+  it("leaves no demo leftovers once the site is open for search", () => {
+    if (!studio.indexed) return;
+    expect(studio.rating.url).toBeTruthy();
+    expect(studio.reviews.every((review) => review.source === "google")).toBe(true);
+  });
+
   it("has a readable theme: hex colors, text and accent at 4.5:1 to the background", () => {
     const { bg, fg, muted, accent } = studio.theme;
     for (const color of [bg, fg, muted, accent]) expect(color).toMatch(/^#[0-9a-f]{6}$/i);

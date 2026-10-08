@@ -3,11 +3,12 @@ import { CallButton } from "@/components/CallButton";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Logo } from "@/components/Logo";
 import { Menu } from "@/components/Menu";
+import { Messengers } from "@/components/Messengers";
 import { OpenStatus } from "@/components/OpenStatus";
-import { PhoneIcon, messengerIcons } from "@/components/icons";
+import { PhoneIcon } from "@/components/icons";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
-import { messengerHref, telHref } from "@/lib/contact";
+import { telHref } from "@/lib/contact";
 import { formatFrom, formatPhone, glue, lowestAmount } from "@/lib/format";
 import { localePath, t, type Lang } from "@/lib/i18n";
 import { groupPath, servicesPath, studioPages } from "@/lib/nav";
@@ -90,26 +91,7 @@ export function Header({ lang, dict }: Props) {
           <div className="flex flex-col gap-3 px-6 pt-6 pb-6">
             <p className="text-center text-14 text-muted">{status}</p>
             <CallButton dict={dict} />
-            {studio.messengers.length > 0 && (
-              <ul className="grid auto-cols-fr grid-flow-col gap-2">
-                {studio.messengers.map((messenger) => {
-                  const MessengerIcon = messengerIcons[messenger.kind];
-                  return (
-                    <li key={messenger.kind}>
-                      <a
-                        href={messengerHref(messenger)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-line-strong text-13 font-medium transition-colors hover:border-accent-border"
-                      >
-                        <MessengerIcon size={16} />
-                        {dict.messengers[messenger.kind]}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <Messengers dict={dict} variant="menu" />
             {studio.languages.length > 1 && (
               <div className="mt-1 flex justify-center text-13 text-muted">
                 <LangSwitch lang={lang} words={dict.language} />

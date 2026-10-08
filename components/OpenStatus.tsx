@@ -1,23 +1,11 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import type { WeekHours } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { glue } from "@/lib/format";
-import { openStatus, warsawTime, type OpenStatus as Status } from "@/lib/hours";
+import { openStatus, type OpenStatus as Status } from "@/lib/hours";
 import { fill, type Lang } from "@/lib/i18n";
-
-/*
- * Статус зависит от момента, а страница собирается заранее. Поэтому на сервере и при
- * гидрации его нет вовсе (снимок сервера — null), а время читается только в браузере:
- * так разметка сервера и клиента не расходится. Дальше статус сверяется раз в 30 с.
- */
-function subscribe(onChange: () => void) {
-  const timer = setInterval(onChange, 30_000);
-  return () => clearInterval(timer);
-}
-const currentMinute = () => Math.floor(Date.now() / 60_000);
-const noTimeOnServer = () => null;
+import { useWarsawTime } from "@/lib/use-warsaw-time";
 
 type Props = {
   hours: WeekHours;
@@ -28,10 +16,10 @@ type Props = {
 };
 
 export function OpenStatus({ hours, lang, words, daysOn, className }: Props) {
-  const minute = useSyncExternalStore(subscribe, currentMinute, noTimeOnServer);
-  if (minute === null) return null;
+  const now = useWarsawTime();
+  if (!now) return null;
 
-  const status = openStatus(hours, warsawTime(new Date(minute * 60_000)));
+  const status = openStatus(hours, now);
   const detail = describe(status, words, daysOn);
 
   return (

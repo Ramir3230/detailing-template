@@ -32,20 +32,41 @@
   --text-16: 16px;
   --text-17: 17px;
   --text-18: 18px;
+  --text-19: 19px;
   --text-20: 20px;
+  --text-22: 22px;
   --text-24: 24px;
+  --text-28: 28px;
+  --text-40: 40px;
+  --text-64: 64px;
+  --text-72: 72px;
   --text-hero: clamp(32px, 3.6vw, 52px);
 
   --leading-logo: 1.1;
   --leading-heading: 1.3;
   --leading-hero: 1.35;
+  --leading-item: 1.4;
+  --leading-note: 1.45;
   --leading-body: 1.5;
+  --leading-long: 1.6;
   --leading-hours: 1.9;
 
   /* Прописные заголовки, логотип, метки */
   --tracking-display: 0.06em;
   --tracking-logo: 0.12em;
   --tracking-label: 0.14em;
+
+  /* Чем крупнее элемент, тем крупнее радиус: вложенные формы не спорят */
+  --radius-switch-item: 10px;
+  --radius-badge: 12px;
+  --radius-switch: 14px;
+  --radius-tile: 16px;
+  --radius-card: 20px;
+  --radius-card-lg: 24px;
+
+  /* «Прогрев»: всё, что разгорается, а не включается. Уход — ускорением, он быстрее */
+  --ease-warm: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   --container-page: 1200px;
 }
@@ -62,7 +83,10 @@
   --color-surface: color-mix(in srgb, var(--fg) 3%, transparent);
   --color-fg-dim: color-mix(in srgb, var(--fg) 70%, transparent);
   --color-accent-fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  --color-accent-selected: color-mix(in srgb, var(--accent) 15%, transparent);
   --color-accent-hover: color-mix(in srgb, var(--accent) 20%, transparent);
+  --color-accent-badge: color-mix(in srgb, var(--accent) 45%, transparent);
+  --color-accent-mark: color-mix(in srgb, var(--accent) 50%, transparent);
   --color-accent-border: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
@@ -89,6 +113,77 @@
   /* Открытое меню на весь экран: фон под ним не прокручивается */
   html:has(dialog[open]) {
     overflow: hidden;
+  }
+
+  /* Reduced motion: сразу финальный кадр. Начальные состояния те же, что с анимацией,
+     обнуляются только длительности — разметка сервера и клиента не расходится. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Браузер без Popover API (Safari до 17) показал бы плашку в потоке страницы */
+@supports not selector(:popover-open) {
+  [popover] {
+    display: none;
+  }
+}
+
+/* Удар неона: так загораются газоразрядные трубки (DESIGN.md, «Движение») */
+@keyframes neon-strike {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.7;
+  }
+  30% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Новый текст проявляется со сдвигом снизу: описание класса после смены передачи */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Кавычка отзыва вспыхивает короче неона: три шага вместо пяти */
+@keyframes quote-strike {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  55% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -122,9 +217,8 @@
   color: var(--color-muted);
 }
 
-/* Неон текста: логотип, кавычка отзыва */
+/* Неон текста: логотип, кавычка отзыва. Цвет не задаёт — его даёт место. */
 @utility neon-text {
-  color: var(--color-fg);
   text-shadow:
     0 0 12px var(--color-accent),
     0 0 22px color-mix(in srgb, var(--accent) 55%, transparent);
@@ -160,4 +254,16 @@
   background:
     radial-gradient(80% 30% at 50% 0%, var(--color-accent-fill), transparent),
     var(--color-bg);
+}
+
+/* Стекло плавающей кнопки: прозрачнее шапки, под ней виден контент */
+@utility glass-float {
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Ореол цитаты отзыва */
+@utility glow-halo {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 20%, transparent), transparent);
 }
