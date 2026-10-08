@@ -66,6 +66,12 @@ describe("active studio data", () => {
       const size = webpSize(readFileSync(join(process.cwd(), "public", src)));
       expect(size).toEqual({ width: car.width, height: car.height });
     }
+    if (car.depth) {
+      // Три панели одна под другой, каждая — в пропорциях машины
+      expect(car.depth).toMatch(/^\/[\w\-/]+\.webp$/);
+      const map = webpSize(readFileSync(join(process.cwd(), "public", car.depth)));
+      expect(map.height).toBe(3 * Math.round((map.width * car.height) / car.width));
+    }
     expect(car.headlights[0].x).toBeLessThan(car.headlights[1].x);
     for (const { x, y, w } of car.headlights) {
       for (const value of [x, y, w]) expect(value > 0 && value < 100).toBe(true);
