@@ -4,6 +4,7 @@ import { pl } from "@/dictionaries/pl";
 import { ru } from "@/dictionaries/ru";
 import {
   formatAmount,
+  formatCount,
   formatDayRange,
   formatDuration,
   formatFrom,
@@ -117,6 +118,17 @@ describe("small formats", () => {
     expect(formatDayRange(0, 4, pl.days.short, "pl")).toBe("Pn–pt");
     expect(formatDayRange(5, 5, pl.days.short, "pl")).toBe("Sob");
     expect(formatDayRange(0, 4, ru.days.short, "ru")).toBe("Пн–пт");
+    expect(formatDayRange(0, 4, pl.days.long, "pl", " – ")).toBe("Poniedziałek – piątek");
+    expect(formatDayRange(6, 6, ru.days.long, "ru", " – ")).toBe("Воскресенье");
+  });
+
+  it("puts the noun in the right form for the count", () => {
+    expect(formatCount(1, pl.reviews.count, "pl")).toBe("1\u00A0opinia");
+    expect(formatCount(24, pl.reviews.count, "pl")).toBe("24\u00A0opinie");
+    expect(formatCount(25, pl.reviews.count, "pl")).toBe("25\u00A0opinii");
+    expect(formatCount(21, ru.reviews.count, "ru")).toBe("21\u00A0отзыв");
+    expect(formatCount(24, ru.reviews.count, "ru")).toBe("24\u00A0отзыва");
+    expect(formatCount(1200, pl.reviews.count, "pl")).toBe("1200\u00A0opinii");
   });
 
   it("writes the rating with a comma", () => {

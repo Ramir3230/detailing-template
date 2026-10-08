@@ -161,5 +161,19 @@ export const afterdark: Studio = {
       },
       source: "example",
     },
+    {
+      author: "Tomasz W.",
+      text: {
+        pl: "Powłoka ceramiczna na nowym kombi. Przed pracą zmierzyli lakier i wytłumaczyli, czym różni się korekta jednoetapowa od wieloetapowej. Po deszczu woda sama spływa, a auto myję dwa razy rzadziej.",
+      },
+      source: "example",
+    },
+    {
+      author: "Kasia R.",
+      text: {
+        pl: "Po wakacjach z psem wnętrze wyglądało fatalnie. Po kompleksowym czyszczeniu nie ma ani sierści, ani zapachu. Zadzwonili, kiedy auto było gotowe, i odebrałam je po pracy, o dwudziestej pierwszej.",
+      },
+      source: "example",
+    },
   ],
 };
