@@ -35,9 +35,16 @@ const statusText: Record<VolumeStatus, string> = {
 const changeEvent = "carvolumelab";
 let cached = { search: "", settings: defaultVolume };
 
-function parse(search: string): VolumeSettings {
+/* В адресе — ключ карты из списка лаборатории, а не её путь */
+type LabSettings = Omit<VolumeSettings, "map"> & { map?: string };
+
+function parse(search: string): LabSettings {
   const query = new URLSearchParams(search);
-  const settings = { ...defaultVolume, on: query.get("on") !== "0" };
+  const settings: LabSettings = {
+    ...defaultVolume,
+    on: query.get("on") !== "0",
+    map: query.get("map") ?? undefined,
+  };
   for (const { key, min, max } of sliders) {
     const value = Number(query.get(key));
     if (query.has(key) && Number.isFinite(value)) settings[key] = Math.min(max, Math.max(min, value));
@@ -46,7 +53,7 @@ function parse(search: string): VolumeSettings {
 }
 
 /* Тот же объект, пока адрес тот же: useSyncExternalStore сравнивает по ссылке */
-function readSettings(): VolumeSettings {
+function readSettings(): LabSettings {
   if (location.search !== cached.search) {
     cached = { search: location.search, settings: parse(location.search) };
   }
@@ -62,9 +69,10 @@ function subscribe(onChange: () => void) {
   };
 }
 
-function save(settings: VolumeSettings) {
+function save(settings: LabSettings) {
   const query = new URLSearchParams();
   if (!settings.on) query.set("on", "0");
+  if (settings.map) query.set("map", settings.map);
   for (const { key } of sliders) {
     if (settings[key] !== defaultVolume[key]) query.set(key, String(settings[key]));
   }
@@ -73,16 +81,23 @@ function save(settings: VolumeSettings) {
   dispatchEvent(new Event(changeEvent));
 }
 
-const serverSettings = () => defaultVolume;
+const serverSettings = (): LabSettings => defaultVolume;
 
-export function VolumeLab({ children }: { children: ReactNode }) {
+type Props = {
+  children: ReactNode;
+  /** Карты объёма для сравнения; первая — из данных студии. */
+  maps: readonly { key: string; label: string; url: string }[];
+};
+
+export function VolumeLab({ children, maps }: Props) {
   const settings = useSyncExternalStore(subscribe, readSettings, serverSettings);
+  const map = maps.find(({ key }) => key === settings.map) ?? maps[0];
   const [status, setStatus] = useState<VolumeStatus>("loading");
   const [open, setOpen] = useState(false);
   const live = settings.on && status === "live";
 
   return (
-    <VolumeContext value={{ settings, report: setStatus }}>
+    <VolumeContext value={{ settings: { ...settings, map: map?.url }, report: setStatus }}>
       {children}
       {/* Слева внизу: справа плавающая «Zadzwoń», по центру — «Sprawdź cenę» */}
       <div className="fixed bottom-4 left-4 z-40 text-14 lg:bottom-8 lg:left-8">
@@ -97,6 +112,25 @@ export function VolumeLab({ children }: { children: ReactNode }) {
                 className="size-5 accent-accent"
               />
             </label>
+            {maps.length > 1 && (
+              <fieldset className="mt-2 flex items-center justify-between gap-3">
+                <legend className="sr-only">Карта объёма</legend>
+                <span className="text-muted">Карта</span>
+                <span className="flex gap-1">
+                  {maps.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={map?.key === key}
+                      onClick={() => save({ ...settings, map: key === maps[0].key ? undefined : key })}
+                      className="min-h-11 rounded-full border border-line-strong px-3 transition-colors aria-pressed:border-accent-border aria-pressed:bg-accent-selected"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </span>
+              </fieldset>
+            )}
             {sliders.map(({ key, label, min, max, step }) => (
               <label key={key} className="mt-2 block">
                 <span className="flex justify-between text-muted">
