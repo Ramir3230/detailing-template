@@ -162,7 +162,7 @@ export function ReviewStories({ stories, words }: Props) {
             {stories.map((story, i) => {
               const full = i < index || (!autoplay && i === index);
               return (
-                <span key={story.author} className="h-0.5 flex-1 overflow-hidden rounded-full bg-line-strong">
+                <span key={i} className="h-0.5 flex-1 overflow-hidden rounded-full bg-line-strong">
                   {/* Активную полоску двигает кадр анимации мимо React; новый ключ на смену
                       роли пересоздаёт её с нулевого состояния. */}
                   <span
@@ -197,12 +197,12 @@ export function ReviewStories({ stories, words }: Props) {
       )}
 
       {/* Все отзывы в одной ячейке сетки: карточка высотой с самый длинный на любой ширине. */}
-      <div className="mt-9 grid flex-1 lg:mt-10" aria-live={announce ? "polite" : "off"}>
+      <div className="mt-8 grid flex-1 lg:mt-10" aria-live={announce ? "polite" : "off"}>
         {stories.map((story, i) => {
           const active = i === index;
           return (
             <figure
-              key={story.author}
+              key={i}
               role="group"
               aria-label={fill(words.position, { n: String(i + 1), total: String(count) })}
               aria-hidden={!active}
@@ -213,11 +213,15 @@ export function ReviewStories({ stories, words }: Props) {
                 aria-hidden="true"
                 className="glow-halo pointer-events-none absolute -top-20 -left-20 -z-10 size-64 opacity-0 transition-opacity duration-300 ease-in group-data-shown:opacity-100 group-data-shown:delay-300 group-data-shown:duration-[1200ms] group-data-shown:ease-warm lg:-top-25 lg:-left-25 lg:size-80"
               />
+              {/* Два слоя: снятая анимация переход не запускает, поэтому гаснет внешний,
+                  а вспыхивает внутренний. */}
               <span
                 aria-hidden="true"
-                className="display neon-text h-7 text-64 leading-[0.5] text-accent opacity-0 group-data-shown:animate-[quote-strike_0.5s_linear_0.3s_both] lg:text-72"
+                className="h-7 opacity-0 transition-opacity duration-300 ease-in group-data-shown:opacity-100 group-data-shown:duration-0"
               >
-                “
+                <span className="display neon-text block text-64 leading-[0.5] text-accent group-data-shown:animate-[quote-strike_0.5s_linear_0.3s_both] lg:text-72">
+                  “
+                </span>
               </span>
               <div className="flex flex-1 items-center py-4 lg:py-5">
                 <blockquote className="translate-y-1.5 text-16 leading-long opacity-0 blur-[10px] brightness-30 transition-[opacity,translate,filter] duration-300 ease-in group-data-shown:translate-y-0 group-data-shown:opacity-100 group-data-shown:blur-[0px] group-data-shown:brightness-100 group-data-shown:delay-[450ms] group-data-shown:duration-[900ms] group-data-shown:ease-warm lg:text-19">
@@ -231,7 +235,7 @@ export function ReviewStories({ stories, words }: Props) {
                 >
                   {story.author.charAt(0)}
                 </span>
-                <span className="flex flex-col gap-0.5">
+                <span className="flex flex-col gap-1">
                   <span className="text-15 font-medium lg:text-16">{story.author}</span>
                   <span className="text-13 text-muted lg:text-14">{story.label}</span>
                 </span>

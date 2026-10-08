@@ -64,8 +64,9 @@
   --radius-card: 20px;
   --radius-card-lg: 24px;
 
-  /* «Прогрев»: всё, что разгорается, а не включается */
+  /* «Прогрев»: всё, что разгорается, а не включается. Уход — ускорением, он быстрее */
   --ease-warm: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   --container-page: 1200px;
 }
@@ -126,6 +127,13 @@
       transition-delay: 0s !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* Браузер без Popover API (Safari до 17) показал бы плашку в потоке страницы */
+@supports not selector(:popover-open) {
+  [popover] {
+    display: none;
   }
 }
 
