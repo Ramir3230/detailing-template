@@ -18,7 +18,8 @@ export type Dictionary = {
   nav: { services: string; contact: string };
   menu: { services: string; studio: string };
   call: { label: string };
-  hero: { checkPrice: string };
+  /** orCall — «lub zadzwoń:» перед номером на десктопе. */
+  hero: { checkPrice: string; orCall: string };
   messengers: Record<Messenger["kind"], string>;
   status: {
     open: string;

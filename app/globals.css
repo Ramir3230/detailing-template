@@ -347,6 +347,11 @@
   );
 }
 
+/* Свет за машиной в hero десктопа: акцент 10%, как свет меню */
+@utility glow-hero {
+  background: radial-gradient(45% 55% at 72% 62%, var(--color-accent-fill), transparent);
+}
+
 /* Размытая копия светодиодов: свет, растекающийся вокруг колец */
 @utility lights-bloom {
   filter: blur(6px) brightness(1.5);
