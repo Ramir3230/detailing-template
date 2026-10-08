@@ -22,6 +22,71 @@ function Icon({ size = 20, children }: IconProps & { children: ReactNode }) {
   );
 }
 
+/* Залитые: звезда рейтинга, пауза и пуск отзывов. */
+function SolidIcon({ size = 20, children }: IconProps & { children: ReactNode }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="currentColor"
+      className="shrink-0"
+    >
+      {children}
+    </svg>
+  );
+}
+
+export function StarIcon(props: IconProps) {
+  return (
+    <SolidIcon {...props}>
+      <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" />
+    </SolidIcon>
+  );
+}
+
+export function PauseIcon(props: IconProps) {
+  return (
+    <SolidIcon {...props}>
+      <path d="M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z" />
+    </SolidIcon>
+  );
+}
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <SolidIcon {...props}>
+      <path d="M7.5 5v14l11-7z" />
+    </SolidIcon>
+  );
+}
+
+export function ChevronIcon({ back, ...props }: IconProps & { back?: boolean }) {
+  return (
+    <Icon {...props}>
+      <path d={back ? "M15 5.5 8.5 12l6.5 6.5" : "M9 5.5 15.5 12 9 18.5"} />
+    </Icon>
+  );
+}
+
+/** Ссылка уходит на другой сайт. */
+export function ExternalIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15" />
+    </Icon>
+  );
+}
+
+export function ArrowIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Icon>
+  );
+}
+
 export function MenuIcon(props: IconProps) {
   return (
     <Icon {...props}>

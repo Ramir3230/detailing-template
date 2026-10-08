@@ -91,6 +91,11 @@ export function formatDuration(
   return `${range}${NBSP}${pluralForm(units[duration.unit], count, lang)}`;
 }
 
+/** «24 opinie», «5 opinii», «21 отзыв». */
+export function formatCount(count: number, forms: PluralForms, lang: Lang): string {
+  return `${plNumber(count)}${NBSP}${pluralForm(forms, count, lang)}`;
+}
+
 function pluralForm(forms: PluralForms, count: number, lang: Lang): string {
   const category = new Intl.PluralRules(locales[lang]).select(count);
   return category in forms ? forms[category as keyof PluralForms] : forms.other;
@@ -101,14 +106,18 @@ export function formatTimeRange(hours: { open: string; close: string }): string 
   return `${hours.open}–${hours.close}`;
 }
 
-/** Дни строки часов (0 — понедельник): «Pn–pt», «Sob». Второй день — строчными. */
+/**
+ * Дни строки часов (0 — понедельник), второй день — строчными. Короткие названия
+ * слитно: «Pn–pt»; полные через пробелы: «Poniedziałek – piątek».
+ */
 export function formatDayRange(
   from: number,
   to: number,
-  days: Dictionary["days"]["short"],
+  days: Dictionary["days"]["short" | "long"],
   lang: Lang,
+  dash: "–" | " – " = "–",
 ): string {
-  return from === to ? days[from] : `${days[from]}–${days[to].toLocaleLowerCase(lang)}`;
+  return from === to ? days[from] : `${days[from]}${dash}${days[to].toLocaleLowerCase(lang)}`;
 }
 
 /** 5 → «5,0». */
