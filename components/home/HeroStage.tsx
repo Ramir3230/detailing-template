@@ -27,7 +27,8 @@ type StageProps = { id: string; className: string; children: ReactNode };
  * - data-ignited — сцена отыграла. Next держит ушедшую страницу в DOM скрытой
  *   (cacheComponents) и при возврате показывает снова, а показ перезапускает CSS-анимации:
  *   после data-ignited их на сцене нет, остаётся финальный кадр;
- * - data-hidden — страница скрыта: для CSS шапки hero на ней больше нет.
+ * - data-hidden — страница скрыта: для CSS шапки hero на ней больше нет;
+ * - --hero-h — высота экрана на момент открытия, вместе с окном не растёт (см. ниже).
  */
 export function HeroStage({ id, className, children }: StageProps) {
   const section = useRef<HTMLElement>(null);
@@ -41,6 +42,34 @@ export function HeroStage({ id, className, children }: StageProps) {
     const element = section.current;
     element?.removeAttribute("data-hidden");
     return () => element?.setAttribute("data-hidden", "");
+  }, []);
+
+  /*
+   * Hero на телефоне — высотой в экран (100svh). Safari, пряча свои панели при прокрутке,
+   * svh не меняет, а сторонние браузеры iPhone (Arc) и браузеры внутри приложений
+   * растягивают само окно страницы: hero рос, и машина уезжала от логотипа. Поэтому
+   * высота берётся при открытии и вместе с окном не растёт; уменьшается с ним (окно
+   * сделали ниже) и пересчитывается при смене ширины — повороте. Замер живёт в ref:
+   * возврат на скрытую страницу (cacheComponents) не должен мерить растянутое окно.
+   * Ширина — раскладки, а не видимой области: масштаб щипком её не меняет.
+   */
+  const ruler = useRef<HTMLDivElement>(null);
+  const frozen = useRef({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    const element = section.current;
+    const probe = ruler.current;
+    if (!element || !probe) return;
+    const freeze = () => {
+      const width = document.documentElement.clientWidth;
+      const height = probe.getBoundingClientRect().height;
+      const last = frozen.current;
+      if (width === last.width && height >= last.height) return;
+      frozen.current = { width, height };
+      element.style.setProperty("--hero-h", `${height}px`);
+    };
+    freeze();
+    addEventListener("resize", freeze);
+    return () => removeEventListener("resize", freeze);
   }, []);
 
   // Сцена отыграла, когда закончились все её анимации и переходы
@@ -65,6 +94,12 @@ export function HeroStage({ id, className, children }: StageProps) {
       data-ignited={ignited ? "" : undefined}
       className={className}
     >
+      {/* Линейка: 100svh в пикселях для --hero-h */}
+      <div
+        ref={ruler}
+        aria-hidden="true"
+        className="pointer-events-none invisible absolute top-0 h-svh"
+      />
       <Ready value={{ car: () => setCar(true), lights: () => setLights(true) }}>{children}</Ready>
     </section>
   );
