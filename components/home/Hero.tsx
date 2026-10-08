@@ -31,7 +31,7 @@ export function Hero({ lang, dict }: Props) {
   const { rating } = studio;
 
   return (
-    <HeroStage id={sectionIds.hero} className="relative overflow-hidden">
+    <HeroStage id={sectionIds.hero} className="relative clip-x">
       {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh */}
       <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
         {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания.
