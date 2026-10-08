@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CallButton } from "@/components/CallButton";
+import { HeaderReveal } from "@/components/HeaderReveal";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Logo } from "@/components/Logo";
 import { Menu } from "@/components/Menu";
@@ -17,8 +18,8 @@ type Props = { lang: Lang; dict: Dictionary };
 
 /*
  * Телефон и планшет: логотип и кнопка меню. Десктоп (от 1024): навигация, статус и
- * номер. На внутренних страницах шапка видна сразу; на главной телефона в блоке 3 она
- * будет ждать, пока уйдёт hero.
+ * номер. На внутренних страницах шапка видна сразу; на главной до 1024 px ждёт, пока
+ * уйдёт hero (HeaderReveal).
  */
 export function Header({ lang, dict }: Props) {
   const status = (
@@ -26,9 +27,9 @@ export function Header({ lang, dict }: Props) {
   );
 
   return (
-    <header className="glass sticky top-0 z-20 border-b border-line lg:static">
+    <HeaderReveal>
       {/* Справа поле 12 px, а не 24: у круглой кнопки меню своё поле внутри */}
-      <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-18 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-header lg:px-8">
         <Link href={localePath(lang, "/")} className="flex min-h-11 items-center text-17 lg:text-20">
           <Logo />
         </Link>
@@ -100,6 +101,6 @@ export function Header({ lang, dict }: Props) {
           </div>
         </Menu>
       </div>
-    </header>
+    </HeaderReveal>
   );
 }

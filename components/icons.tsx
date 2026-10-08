@@ -87,6 +87,15 @@ export function ArrowIcon(props: IconProps) {
   );
 }
 
+/** «Sprawdź cenę»: вниз, к прайсу на этой же странице. */
+export function ArrowDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </Icon>
+  );
+}
+
 export function MenuIcon(props: IconProps) {
   return (
     <Icon {...props}>

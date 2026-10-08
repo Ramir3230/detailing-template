@@ -1,6 +1,6 @@
 import type { CarClass, Duration, Price, Service } from "@/content/types";
 import type { Dictionary, PluralForms } from "@/dictionaries/types";
-import type { Lang } from "@/lib/i18n";
+import { fill, type Lang } from "@/lib/i18n";
 
 /** Неразрывный пробел: между числом и «zł», после «od», после однобуквенных слов. */
 export const NBSP = "\u00A0";
@@ -94,6 +94,11 @@ export function formatDuration(
 /** «24 opinie», «5 opinii», «21 отзыв». */
 export function formatCount(count: number, forms: PluralForms, lang: Lang): string {
   return `${plNumber(count)}${NBSP}${pluralForm(forms, count, lang)}`;
+}
+
+/** «24 opinie w Google»: строка рейтинга в отзывах и в hero. */
+export function formatReviewsInGoogle(count: number, words: Dictionary["reviews"], lang: Lang): string {
+  return glue(fill(words.inGoogle, { count: formatCount(count, words.count, lang) }), lang);
 }
 
 function pluralForm(forms: PluralForms, count: number, lang: Lang): string {

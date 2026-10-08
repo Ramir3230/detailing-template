@@ -24,3 +24,16 @@ npm run dev     # http://localhost:3000
 npm run check   # типы, линт и тесты — то же самое крутится в CI
 npm run build
 ```
+
+## Машина hero
+
+Вырезка машины и слой фар готовятся один раз на кадр, в `public/hero/<кадр>/`. Нужен Python
+3.10+ с пакетами из `scripts/hero-car/requirements.txt`; модель BiRefNet (~1 ГБ)
+скачивается при первом запуске.
+
+```bash
+pip install -r scripts/hero-car/requirements.txt
+python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исходник>" --preview <папка>
+```
+
+Скрипт печатает поле `hero.car` для файла данных студии: размеры и центры фар.
