@@ -14,6 +14,8 @@ export type VolumeSettings = {
   depth: number;
   /** Сила отсвета неона пола на кузове. */
   light: number;
+  /** Другая карта объёма вместо карты из данных — сравнение в лаборатории. */
+  map?: string;
 };
 
 export const defaultVolume: VolumeSettings = { on: true, angle: 5, depth: 0.3, light: 0.6 };
@@ -111,6 +113,7 @@ type Props = {
  */
 export function CarVolume({ map, aspect, headlights, body, rings, onLive }: Props) {
   const { settings, report } = use(VolumeContext);
+  const source = settings.map ?? map;
   const canvas = useRef<HTMLCanvasElement>(null);
   const latest = useRef(settings);
   const wake = useRef(() => {});
@@ -168,7 +171,7 @@ export function CarVolume({ map, aspect, headlights, body, rings, onLive }: Prop
       cleanups.push(() => watch.disconnect());
     });
     const depthMap = new Image();
-    depthMap.src = map;
+    depthMap.src = source;
 
     const run = (scene: Volume) => {
       const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -345,7 +348,7 @@ export function CarVolume({ map, aspect, headlights, body, rings, onLive }: Prop
       stop();
       onLive(false);
     };
-  }, [map, aspect, headlights, body, rings, onLive, report]);
+  }, [source, aspect, headlights, body, rings, onLive, report]);
 
   // Холст — машина с полем PAD её ширины со всех сторон: при повороте кромка не режется
   const padX = PAD * 100;

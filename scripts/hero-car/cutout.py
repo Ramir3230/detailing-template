@@ -7,7 +7,7 @@
 поле `hero.car` для файла данных студии: пути, размеры и центры фар.
 
     python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исходник>"
-        [--out public/hero/m3] [--preview DIR]
+        [--out public/hero/m3] [--preview DIR] [--depth-model v2|da3] [--da3-python PATH]
 
 Поля JSON (координаты — пиксели исходника):
     sourceSize   ожидаемый размер исходника: координаты ниже сняты с него;
@@ -27,14 +27,20 @@
 
 Глубину даёт Depth Anything V2 Small (ONNX, ~100 МБ, скачивается один раз в
 ~/.cache/depth-anything): лицензия Apache 2.0. Base и Large точнее, но под CC BY-NC —
-для сайтов клиентов не годятся. Модель видит кадр целиком, с полом и стеной: так она
-вернее понимает, где перед машины. Карта режется по тем же границам, что и машина.
+для сайтов клиентов не годятся. Или, с --depth-model da3, Depth Anything 3 Mono Large
+(Apache 2.0): крупнее и даёт глубину, а не обратную ей величину, — пропорции кузова
+вернее. Она живёт в своём окружении на видеокарте, см. depth_da3.py. Модель видит
+кадр целиком, с полом и стеной: так она вернее понимает, где перед машины. Карта
+режется по тем же границам, что и машина.
 """
 
 import argparse
 import hashlib
 import json
+import os
+import subprocess
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -45,7 +51,8 @@ from pymatting import estimate_foreground_ml
 from rembg import new_session, remove
 from scipy import ndimage
 
-ROOT = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
 PUBLIC = ROOT / "public"
 ALPHA_MIN = 16  # прозрачность ниже этой — фон, когда ищем границы машины
 LUMA = np.array([0.2126, 0.7152, 0.0722])
@@ -78,6 +85,10 @@ DEPTH_SLOPE = 8.0
 # страница поворачивает машину. Дальше карта ровная — так файл легче
 DEPTH_EDGE = 8
 DEPTH_FAR_BLUR = 12
+# Python окружения Depth Anything 3: из переменной DA3_PYTHON или из места по умолчанию
+DA3_PYTHON = Path(
+    os.environ.get("DA3_PYTHON") or Path.home() / ".cache" / "da3" / "venv" / "Scripts" / "python.exe"
+)
 
 
 def car_alpha(crop: Image.Image, levels: tuple[int, int]) -> np.ndarray:
@@ -150,8 +161,8 @@ def extract_lights(car: Image.Image, zones, levels) -> tuple[Image.Image, list[d
     return Image.fromarray(out.round().astype(np.uint8), "RGBA"), centres
 
 
-def estimate_depth(crop: Image.Image) -> np.ndarray:
-    """Относительная глубина в размере crop: больше — ближе к зрителю."""
+def depth_v2(crop: Image.Image) -> np.ndarray:
+    """Относительная близость в размере crop от Depth Anything V2: больше — ближе."""
     if not DEPTH_MODEL.exists():
         # В stderr: stdout — поле для файла данных студии
         print(f"скачиваю модель глубины в {DEPTH_MODEL}…", file=sys.stderr)
@@ -168,6 +179,24 @@ def estimate_depth(crop: Image.Image) -> np.ndarray:
     pixels = ((rgb - IMAGENET_MEAN) / IMAGENET_STD).transpose(2, 0, 1)[None].astype(np.float32)
     depth = session.run(None, {session.get_inputs()[0].name: pixels})[0][0]
     return np.asarray(Image.fromarray(depth.astype(np.float32), "F").resize(crop.size, Image.BICUBIC))
+
+
+def depth_da3(crop: Image.Image, python: Path) -> np.ndarray:
+    """То же от Depth Anything 3 — отдельным процессом в её окружении. Она даёт
+    расстояние, поэтому знак меняется: больше — ближе, как у V2. Линейно по расстоянию,
+    без обратной величины: так и задумано."""
+    if not python.exists():
+        raise SystemExit(f"нет окружения Depth Anything 3: {python} (см. depth_da3.py)")
+    with tempfile.TemporaryDirectory() as folder:
+        image, result = Path(folder) / "crop.png", Path(folder) / "depth.npy"
+        crop.save(image)
+        # Журнал модели — в stderr: stdout — поле для файла данных студии
+        subprocess.run(
+            [str(python), str(HERE / "depth_da3.py"), str(image), str(result)],
+            check=True,
+            stdout=sys.stderr,
+        )
+        return -np.load(result)
 
 
 def depth_map(depth: np.ndarray, alpha: np.ndarray) -> Image.Image:
@@ -217,6 +246,8 @@ def main() -> None:
     parser.add_argument("--source", type=Path, required=True, help="исходник машины")
     parser.add_argument("--out", type=Path, help="папка внутри public/; по умолчанию public/hero/<имя JSON>")
     parser.add_argument("--preview", type=Path, help="папка для превью на тёмном фоне")
+    parser.add_argument("--depth-model", choices=["v2", "da3"], default="v2", help="модель глубины")
+    parser.add_argument("--da3-python", type=Path, default=DA3_PYTHON, help="python окружения DA3")
     args = parser.parse_args()
 
     out = (args.out or PUBLIC / "hero" / args.frame.stem).resolve()
@@ -234,7 +265,8 @@ def main() -> None:
     car, (bx, by) = cut_car(crop, car_alpha(crop, tuple(frame["maskLevels"])))
     if car.width < frame["outWidth"]:
         raise SystemExit(f"машина в исходнике {car.width} px, уже outWidth {frame['outWidth']}: исходник мал")
-    depth = estimate_depth(crop)[by : by + car.height, bx : bx + car.width]
+    near = depth_da3(crop, args.da3_python) if args.depth_model == "da3" else depth_v2(crop)
+    depth = near[by : by + car.height, bx : bx + car.width]
     full_width = car.width
     car = resize(car, frame["outWidth"])
 
