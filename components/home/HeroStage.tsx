@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
   createContext,
@@ -10,8 +11,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CarVolume } from "@/components/home/CarVolume";
 import type { HeroCar as HeroCarData } from "@/content/types";
+
+/* Код WebGL — отдельным куском и только там, где объём включён: главной он не нужен */
+const CarVolume = dynamic(() => import("@/components/home/CarVolume").then((m) => m.CarVolume), {
+  ssr: false,
+});
 
 /*
  * Фото загружено и раскодировано: машина и слой фар — каждый своим сигналом. Не
@@ -122,16 +127,14 @@ type CarProps = {
  * Машина: вырезка, под ней неон пола, поверх — светодиоды фар двумя слоями (резкий и
  * размытый ореолом) и ореол каждой фары. Слои фар того же размера, что машина, поэтому
  * совпадают при любой ширине. Картинки декоративные: смысл несёт заголовок.
- * С объёмом фото, кольца и ореол рисует холст CarVolume; пока он не готов или если
- * объёма не будет, остаются эти картинки (data-volume — холст их подменил).
+ * С объёмом фото и весь свет фар рисует холст CarVolume; пока он не готов или если
+ * объёма не будет, остаются эти слои (data-volume — холст их подменил).
  */
 export function HeroCar({ car, volume = false, className = "" }: CarProps) {
   const ready = use(Ready);
   const { src, lights, depth, width, height, headlights } = car;
   const body = useRef<HTMLImageElement>(null);
   const rings = useRef<HTMLImageElement>(null);
-  const bloom = useRef<HTMLImageElement>(null);
-  const floor = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState(false);
 
   return (
@@ -141,7 +144,6 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
       style={{ aspectRatio: `${width} / ${height}` }}
     >
       <div
-        ref={floor}
         aria-hidden="true"
         className="glow-floor ignite-floor pointer-events-none absolute inset-x-[-4%] top-[96%] h-[38%]"
       />
@@ -158,7 +160,6 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
         className="fade-bottom ignite-body relative block size-full in-data-volume:invisible"
       />
       <Image
-        ref={bloom}
         src={lights}
         width={width}
         height={height}
@@ -183,10 +184,9 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
         <CarVolume
           map={depth}
           aspect={width / height}
+          headlights={headlights}
           body={body}
           rings={rings}
-          bloom={bloom}
-          floor={floor}
           onLive={setLive}
         />
       )}
@@ -196,7 +196,7 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
           key={`${x}-${y}`}
           aria-hidden="true"
           style={{ left: `${x}%`, top: `${y}%`, width: `${w * 2}%` }}
-          className={`${layer} glow-headlight ignite-headlight aspect-[2/1] -translate-x-1/2 -translate-y-1/2`}
+          className={`${layer} glow-headlight ignite-headlight aspect-[2/1] -translate-x-1/2 -translate-y-1/2 in-data-volume:invisible`}
         />
       ))}
     </div>
