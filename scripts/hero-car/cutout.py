@@ -7,7 +7,7 @@
 поле `hero.car` для файла данных студии: пути, размеры и центры фар.
 
     python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исходник>"
-        [--out public/hero/m3] [--preview DIR] [--depth-model v2|da3] [--da3-python PATH]
+        [--out public/hero/m3] [--preview DIR] [--depth-model da3|v2] [--da3-python PATH]
 
 Поля JSON (координаты — пиксели исходника):
     sourceSize   ожидаемый размер исходника: координаты ниже сняты с него;
@@ -25,13 +25,14 @@
 Маску даёт BiRefNet (rembg, модель birefnet-general, ~1 ГБ, скачивается один раз).
 На один кадр хватает процессора — около минуты.
 
-Глубину даёт Depth Anything V2 Small (ONNX, ~100 МБ, скачивается один раз в
-~/.cache/depth-anything): лицензия Apache 2.0. Base и Large точнее, но под CC BY-NC —
-для сайтов клиентов не годятся. Или, с --depth-model da3, Depth Anything 3 Mono Large
-(Apache 2.0): крупнее и даёт глубину, а не обратную ей величину, — пропорции кузова
-вернее. Она живёт в своём окружении на видеокарте, см. depth_da3.py. Модель видит
-кадр целиком, с полом и стеной: так она вернее понимает, где перед машины. Карта
-режется по тем же границам, что и машина.
+Глубину даёт Depth Anything 3 Mono Large (Apache 2.0): даёт глубину, а не обратную ей
+величину, — стекло наклонено к зрителю, губа бампера ближе всего, как у настоящей
+машины (выбор владельца 09.10.2026). Она живёт в своём окружении на видеокарте, см.
+depth_da3.py. Без него — --depth-model v2: Depth Anything V2 Small (ONNX, ~100 МБ,
+скачивается сама в ~/.cache/depth-anything, Apache 2.0) на процессоре; крыша у неё
+уходит не в ту сторону. Base и Large обеих версий — CC BY-NC, для сайтов клиентов не
+годятся. Модель видит кадр целиком, с полом и стеной: так она вернее понимает, где
+перед машины. Карта режется по тем же границам, что и машина.
 """
 
 import argparse
@@ -246,7 +247,7 @@ def main() -> None:
     parser.add_argument("--source", type=Path, required=True, help="исходник машины")
     parser.add_argument("--out", type=Path, help="папка внутри public/; по умолчанию public/hero/<имя JSON>")
     parser.add_argument("--preview", type=Path, help="папка для превью на тёмном фоне")
-    parser.add_argument("--depth-model", choices=["v2", "da3"], default="v2", help="модель глубины")
+    parser.add_argument("--depth-model", choices=["da3", "v2"], default="da3", help="модель глубины")
     parser.add_argument("--da3-python", type=Path, default=DA3_PYTHON, help="python окружения DA3")
     args = parser.parse_args()
 

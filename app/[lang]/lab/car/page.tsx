@@ -25,18 +25,10 @@ export default async function CarLab({ params }: PageProps<"/[lang]/lab/car">) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const dict = getDictionary(lang);
-  // Карта из данных и её версия от Depth Anything 3 рядом — на время сравнения
-  const { depth } = studio.hero.car;
-  const maps = depth
-    ? [
-        { key: "v2", label: "V2", url: depth },
-        { key: "da3", label: "DA3", url: depth.replace(/\.webp$/, "-da3.webp") },
-      ]
-    : [];
 
   return (
     <main className="flex-1">
-      <VolumeLab maps={maps}>
+      <VolumeLab>
         <Hero lang={lang} dict={dict} volume />
         <Prices lang={lang} dict={dict} />
         <Reviews lang={lang} dict={dict} />

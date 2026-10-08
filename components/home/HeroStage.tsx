@@ -11,6 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { VolumeState } from "@/components/home/CarVolume";
 import type { HeroCar as HeroCarData } from "@/content/types";
 
 /* Код WebGL — отдельным куском и только там, где объём включён: главной он не нужен */
@@ -127,26 +128,43 @@ type CarProps = {
  * Машина: вырезка, под ней неон пола, поверх — светодиоды фар двумя слоями (резкий и
  * размытый ореолом) и ореол каждой фары. Слои фар того же размера, что машина, поэтому
  * совпадают при любой ширине. Картинки декоративные: смысл несёт заголовок.
- * С объёмом фото и весь свет фар рисует холст CarVolume; пока он не готов или если
- * объёма не будет, остаются эти слои (data-volume — холст их подменил).
+ * С объёмом холст CarVolume лежит под фото: рисует неон на полу вместо CSS-слоя
+ * (data-neon) и, когда сцена отыграла, машину со всем светом фар вместо фото
+ * (data-volume). Пока он не готов или если холста не будет, остаются эти слои.
  */
 export function HeroCar({ car, volume = false, className = "" }: CarProps) {
   const ready = use(Ready);
-  const { src, lights, depth, width, height, headlights } = car;
+  const { src, lights, depth, width, height, headlights, underglow } = car;
   const body = useRef<HTMLImageElement>(null);
   const rings = useRef<HTMLImageElement>(null);
-  const [live, setLive] = useState(false);
+  const floor = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState<VolumeState>({ car: false, neon: false });
 
   return (
     <div
-      data-volume={live ? "" : undefined}
+      data-volume={shown.car ? "" : undefined}
+      data-neon={shown.neon ? "" : undefined}
       className={`relative ${className}`}
       style={{ aspectRatio: `${width} / ${height}` }}
     >
+      {/* Неон на CSS прячется, а не убирается: по его вспышке зажигается неон холста */}
       <div
+        ref={floor}
         aria-hidden="true"
-        className="glow-floor ignite-floor pointer-events-none absolute top-[96%] h-[38%]"
+        className="glow-floor ignite-floor pointer-events-none absolute top-[96%] h-[38%] in-data-neon:invisible"
       />
+      {volume && depth && (
+        <CarVolume
+          map={depth}
+          aspect={width / height}
+          headlights={headlights}
+          underglow={underglow}
+          body={body}
+          rings={rings}
+          floor={floor}
+          onState={setShown}
+        />
+      )}
       <Image
         ref={body}
         src={src}
@@ -157,7 +175,7 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
         preload
         onLoad={ready.car}
         onError={ready.car}
-        className="fade-bottom ignite-body relative block size-full in-data-volume:invisible"
+        className="fade-bottom ignite-body relative block size-full in-data-neon:fade-bottom-short in-data-volume:invisible"
       />
       <Image
         src={lights}
@@ -180,16 +198,6 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
         onError={ready.lights}
         className={`${layer} ignite-rings inset-0 size-full in-data-volume:invisible`}
       />
-      {volume && depth && (
-        <CarVolume
-          map={depth}
-          aspect={width / height}
-          headlights={headlights}
-          body={body}
-          rings={rings}
-          onLive={setLive}
-        />
-      )}
       {/* Ореол вдвое шире светодиодов фары: ложится на фару и край крыла */}
       {headlights.map(({ x, y, w }) => (
         <div
