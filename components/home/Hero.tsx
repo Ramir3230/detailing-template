@@ -1,63 +1,116 @@
-import { ArrowDownIcon } from "@/components/icons";
+import { mainButton } from "@/components/CallButton";
+import { ArrowDownIcon, StarIcon } from "@/components/icons";
 import { Logo } from "@/components/Logo";
+import { OpenStatus } from "@/components/OpenStatus";
 import { HeroCar, HeroStage } from "@/components/home/HeroStage";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
-import { t, type Lang } from "@/lib/i18n";
+import { telHref } from "@/lib/contact";
+import { formatCount, formatPhone, formatRating, glue } from "@/lib/format";
+import { fill, t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 
 type Props = { lang: Lang; dict: Dictionary };
 
-/* Текст проявляется снизу сразу при загрузке, не дожидаясь машины */
+/* Текст проявляется снизу сразу при загрузке, не дожидаясь машины; кнопка — позже */
 const rise = "animate-[hero-rise_0.4s_var(--ease-warm)_both]";
+const riseLater = "animate-[hero-rise_0.4s_var(--ease-warm)_0.15s_both]";
 
 /*
- * Hero главной (DESIGN.md, «Hero и шапка»). Телефон: на высоту экрана, без навигации —
- * логотип, заголовок, машина, «Sprawdź cenę»; свободная высота делится поровну над и
- * под средней группой. Ниже 600 px высотой всё сжимается, чтобы hero влез целиком.
+ * Hero главной (DESIGN.md, «Hero и шапка»).
+ * Телефон: на высоту экрана, без навигации — логотип, заголовок, машина, «Sprawdź cenę»;
+ * свободная высота делится поровну над и под средней группой. Ниже 600 px высотой всё
+ * сжимается, чтобы hero влез целиком.
+ * Десктоп: логотип несёт шапка; текст слева, машина справа на всё оставшееся место.
+ * Hero с шапкой — ровно экран: шапка 72 px и линия под ней.
  */
 export function Hero({ lang, dict }: Props) {
+  const { rating } = studio;
+  const ratingText = glue(
+    fill(dict.reviews.inGoogle, { count: formatCount(rating.count, dict.reviews.count, lang) }),
+    lang,
+  );
+
   return (
-    <HeroStage
-      id={sectionIds.hero}
-      className="relative flex min-h-svh flex-col justify-between overflow-hidden px-6 pt-10 pb-6 short:pt-6 short:pb-4"
-    >
-      {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания */}
-      <div className="text-center">
-        <div className="grid text-30 short:text-24">
-          <Logo unlit className="col-start-1 row-start-1" />
-          <span aria-hidden="true" className="ignite-logo col-start-1 row-start-1">
-            <Logo />
-          </span>
+    <HeroStage id={sectionIds.hero} className="relative overflow-hidden lg:glow-hero">
+      <div className="flex min-h-svh flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-73px)] lg:flex-row lg:flex-wrap lg:content-center lg:items-center lg:gap-x-8 lg:gap-y-12 lg:py-12">
+        {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания */}
+        <div className="text-center lg:hidden">
+          <div className="grid text-30 short:text-24">
+            <Logo unlit className="col-start-1 row-start-1" />
+            <span aria-hidden="true" className="ignite-logo col-start-1 row-start-1">
+              <Logo />
+            </span>
+          </div>
+          {studio.logoCaption && (
+            // Слева поле на ширину разрядки: она висит и справа от последней буквы
+            <p className="mt-1 pl-(--tracking-wordmark) text-11 tracking-wordmark text-muted uppercase">
+              {studio.logoCaption}
+            </p>
+          )}
         </div>
-        {studio.logoCaption && (
-          // Слева поле на ширину разрядки: она висит и справа от последней буквы
-          <p className="mt-1 pl-(--tracking-wordmark) text-11 tracking-wordmark text-muted uppercase">
-            {studio.logoCaption}
-          </p>
-        )}
-      </div>
 
-      <div className="mt-5">
-        <div className={`text-center ${rise}`}>
-          <h1 className="display text-24 leading-hero tracking-display whitespace-pre-line short:text-22">
-            {t(studio.hero.title, lang)}
-          </h1>
-          <p className="mt-3 text-muted">{t(studio.hero.subtitle, lang)}</p>
-        </div>
-        {/* Во всю ширину секции: 92% и 80% — от экрана, а не от колонки с полями */}
-        <div className="-mx-6 mt-8">
-          <HeroCar car={studio.hero.car} className="mx-auto w-[92%] short:w-[80%]" />
-        </div>
-      </div>
+        {/* Средняя группа телефона; на десктопе её дети — две колонки */}
+        <div className="mt-5 lg:contents">
+          <div className="text-center lg:max-w-[480px] lg:flex-[1_1_380px] lg:text-left">
+            <div className={rise}>
+              <h1 className="display text-24 leading-hero tracking-display whitespace-pre-line short:text-22 lg:text-hero lg:leading-heading">
+                {t(studio.hero.title, lang)}
+              </h1>
+              <p className="mt-3 text-muted lg:hidden">{glue(t(studio.hero.subtitle, lang), lang)}</p>
+              <p className="mt-5 hidden text-18 text-muted lg:block">
+                {glue(t(studio.hero.lead, lang), lang)}
+              </p>
+            </div>
 
-      <a
-        href={`#${sectionIds.services}`}
-        className="relative z-10 mx-auto mt-5 inline-flex animate-[hero-rise_0.4s_var(--ease-warm)_0.15s_both] items-center gap-2 py-3 font-medium after:absolute after:inset-x-0 after:bottom-2 after:h-px after:bg-accent"
-      >
-        {dict.hero.checkPrice}
-        <ArrowDownIcon size={16} />
-      </a>
+            <div className={`hidden lg:block ${riseLater}`}>
+              <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
+                <a href={`#${sectionIds.services}`} className={`${mainButton} inline-flex px-7`}>
+                  {dict.hero.checkPrice}
+                  <ArrowDownIcon size={16} />
+                </a>
+                <a href={telHref(studio.phone)} className="py-3 text-15 text-muted transition-colors hover:text-fg">
+                  {dict.hero.orCall}{" "}
+                  <span className="font-medium whitespace-nowrap text-fg">{formatPhone(studio.phone)}</span>
+                </a>
+              </div>
+              <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-3 text-14 text-muted">
+                {studio.reviews.length > 0 && (
+                  <a
+                    href={`#${sectionIds.reviews}`}
+                    className="-my-3 inline-flex items-center gap-1 py-3 transition-colors hover:text-fg"
+                  >
+                    <span className="text-accent">
+                      <StarIcon size={14} />
+                    </span>
+                    <span className="font-medium text-fg">{formatRating(rating.value)}</span>
+                    <span aria-hidden="true">·</span>
+                    {ratingText}
+                  </a>
+                )}
+                <OpenStatus hours={studio.hours} lang={lang} words={dict.status} daysOn={dict.days.on} />
+              </div>
+            </div>
+          </div>
+
+          {/* Телефон: во всю ширину секции — 92% и 80% от экрана, а не от колонки с полями.
+              Десктоп: машина заходит за правое поле контейнера */}
+          <div className="-mx-6 mt-8 lg:m-0 lg:-mr-12 lg:flex lg:min-w-0 lg:flex-[999_1_520px] lg:justify-end">
+            <HeroCar
+              car={studio.hero.car}
+              className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:max-w-[780px]"
+            />
+          </div>
+        </div>
+
+        <a
+          href={`#${sectionIds.services}`}
+          className={`relative z-10 mx-auto mt-5 inline-flex items-center gap-2 py-3 font-medium after:absolute after:inset-x-0 after:bottom-2 after:h-px after:bg-accent lg:hidden ${riseLater}`}
+        >
+          {dict.hero.checkPrice}
+          <ArrowDownIcon size={16} />
+        </a>
+      </div>
     </HeroStage>
   );
 }

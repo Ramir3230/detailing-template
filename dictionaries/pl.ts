@@ -9,7 +9,7 @@ export const pl: Dictionary = {
   nav: { services: "Usługi", contact: "Kontakt" },
   menu: { services: "Usługi", studio: "Studio" },
   call: { label: "Zadzwoń" },
-  hero: { checkPrice: "Sprawdź cenę" },
+  hero: { checkPrice: "Sprawdź cenę", orCall: "lub zadzwoń:" },
   messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram" },
   status: {
     open: "Otwarte",
