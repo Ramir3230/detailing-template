@@ -21,6 +21,6 @@
 ```bash
 npm install
 npm run dev     # http://localhost:3000
-npm run check   # типы и линт — то же самое крутится в CI
+npm run check   # типы, линт и тесты — то же самое крутится в CI
 npm run build
 ```
