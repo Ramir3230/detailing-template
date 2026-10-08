@@ -72,6 +72,14 @@ describe("active studio data", () => {
       const map = webpSize(readFileSync(join(process.cwd(), "public", car.depth)));
       expect(map.height).toBe(3 * Math.round((map.width * car.height) / car.width));
     }
+    if (car.underglow) {
+      const { tube, wheels } = car.underglow;
+      expect(tube[0]).toBeLessThan(tube[1]);
+      expect(wheels[0].x).toBeLessThan(wheels[1].x);
+      for (const value of [...tube, ...wheels.flatMap(({ x, w }) => [x, w])]) {
+        expect(value > 0 && value < 100).toBe(true);
+      }
+    }
     expect(car.headlights[0].x).toBeLessThan(car.headlights[1].x);
     for (const { x, y, w } of car.headlights) {
       for (const value of [x, y, w]) expect(value > 0 && value < 100).toBe(true);

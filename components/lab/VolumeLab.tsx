@@ -15,7 +15,15 @@ import {
  * Настройки живут в адресе — понравившийся вариант пересылается ссылкой.
  */
 
+const switches = [
+  { key: "on", label: "Объём: машина поворачивается" },
+  { key: "neon", label: "Неон кодом (выкл — CSS)" },
+] as const;
+
 const sliders = [
+  { key: "glow", label: "Яркость неона", min: 0, max: 3, step: 0.05 },
+  { key: "gloss", label: "Глянец пола", min: 0, max: 1, step: 0.05 },
+  { key: "mirror", label: "Отражение", min: 0, max: 1, step: 0.05 },
   { key: "angle", label: "Поворот, °", min: 0, max: 12, step: 0.5 },
   { key: "depth", label: "Глубина", min: 0, max: 0.8, step: 0.05 },
   { key: "light", label: "Неон на кузове", min: 0, max: 2, step: 0.05 },
@@ -24,27 +32,23 @@ const sliders = [
 const statusText: Record<VolumeStatus, string> = {
   loading: "Загружается…",
   live: "Работает",
-  "reduced-motion": "Статично: в системе включено уменьшение движения",
-  "save-data": "Статично: режим экономии трафика",
-  "no-webgl": "Статично: в браузере нет WebGL2 или он программный",
-  "no-image": "Статично: не загрузились картинки",
-  slow: "Статично: устройство не тянет 20 кадров/с",
-  lost: "Статично: WebGL сбросился",
+  still: "Без движения: в системе включено уменьшение движения",
+  "save-data": "Выключено: режим экономии трафика",
+  "no-webgl": "Выключено: в браузере нет WebGL2 или он программный",
+  "no-image": "Выключено: не загрузились картинки",
+  slow: "Выключено: устройство не тянет 20 кадров/с",
+  lost: "Выключено: WebGL сбросился",
 };
 
 const changeEvent = "carvolumelab";
 let cached = { search: "", settings: defaultVolume };
 
-/* В адресе — ключ карты из списка лаборатории, а не её путь */
-type LabSettings = Omit<VolumeSettings, "map"> & { map?: string };
-
-function parse(search: string): LabSettings {
+function parse(search: string): VolumeSettings {
   const query = new URLSearchParams(search);
-  const settings: LabSettings = {
-    ...defaultVolume,
-    on: query.get("on") !== "0",
-    map: query.get("map") ?? undefined,
-  };
+  const settings = { ...defaultVolume };
+  for (const { key } of switches) {
+    if (query.has(key)) settings[key] = query.get(key) !== "0";
+  }
   for (const { key, min, max } of sliders) {
     const value = Number(query.get(key));
     if (query.has(key) && Number.isFinite(value)) settings[key] = Math.min(max, Math.max(min, value));
@@ -53,7 +57,7 @@ function parse(search: string): LabSettings {
 }
 
 /* Тот же объект, пока адрес тот же: useSyncExternalStore сравнивает по ссылке */
-function readSettings(): LabSettings {
+function readSettings(): VolumeSettings {
   if (location.search !== cached.search) {
     cached = { search: location.search, settings: parse(location.search) };
   }
@@ -69,10 +73,12 @@ function subscribe(onChange: () => void) {
   };
 }
 
-function save(settings: LabSettings) {
+/* В адресе — только то, что отличается от значений по умолчанию */
+function save(settings: VolumeSettings) {
   const query = new URLSearchParams();
-  if (!settings.on) query.set("on", "0");
-  if (settings.map) query.set("map", settings.map);
+  for (const { key } of switches) {
+    if (settings[key] !== defaultVolume[key]) query.set(key, settings[key] ? "1" : "0");
+  }
   for (const { key } of sliders) {
     if (settings[key] !== defaultVolume[key]) query.set(key, String(settings[key]));
   }
@@ -81,58 +87,38 @@ function save(settings: LabSettings) {
   dispatchEvent(new Event(changeEvent));
 }
 
-const serverSettings = (): LabSettings => defaultVolume;
+const serverSettings = () => defaultVolume;
 
-type Props = {
-  children: ReactNode;
-  /** Карты объёма для сравнения; первая — из данных студии. */
-  maps: readonly { key: string; label: string; url: string }[];
-};
-
-export function VolumeLab({ children, maps }: Props) {
+export function VolumeLab({ children }: { children: ReactNode }) {
   const settings = useSyncExternalStore(subscribe, readSettings, serverSettings);
-  const map = maps.find(({ key }) => key === settings.map) ?? maps[0];
   const [status, setStatus] = useState<VolumeStatus>("loading");
   const [open, setOpen] = useState(false);
-  const live = settings.on && status === "live";
+  const live = status === "live" || status === "still";
 
   return (
-    <VolumeContext value={{ settings: { ...settings, map: map?.url }, report: setStatus }}>
+    <VolumeContext value={{ settings, report: setStatus }}>
       {children}
-      {/* Слева внизу: справа плавающая «Zadzwoń», по центру — «Sprawdź cenę» */}
+      {/* Слева внизу: справа плавающая «Zadzwoń», по центру — «Sprawdź cenę».
+          Панель прокручивается: на низком телефоне все ползунки не влезают */}
       <div className="fixed bottom-4 left-4 z-40 text-14 lg:bottom-8 lg:left-8">
         {open && (
-          <div id="volume-lab" className="glass-float mb-2 w-72 rounded-card border border-line-strong p-4">
-            <label className="flex min-h-11 items-center justify-between gap-3 font-medium">
-              Объём
-              <input
-                type="checkbox"
-                checked={settings.on}
-                onChange={(event) => save({ ...settings, on: event.target.checked })}
-                className="size-5 accent-accent"
-              />
-            </label>
-            {maps.length > 1 && (
-              <fieldset className="mt-2 flex items-center justify-between gap-3">
-                <legend className="sr-only">Карта объёма</legend>
-                <span className="text-muted">Карта</span>
-                <span className="flex gap-1">
-                  {maps.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      aria-pressed={map?.key === key}
-                      onClick={() => save({ ...settings, map: key === maps[0].key ? undefined : key })}
-                      className="min-h-11 rounded-full border border-line-strong px-3 transition-colors aria-pressed:border-accent-border aria-pressed:bg-accent-selected"
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </span>
-              </fieldset>
-            )}
+          <div
+            id="volume-lab"
+            className="glass-float mb-2 max-h-[70svh] w-72 overflow-y-auto rounded-card border border-line-strong px-4 py-2"
+          >
+            {switches.map(({ key, label }) => (
+              <label key={key} className="flex min-h-11 items-center justify-between gap-3 font-medium">
+                {label}
+                <input
+                  type="checkbox"
+                  checked={settings[key]}
+                  onChange={(event) => save({ ...settings, [key]: event.target.checked })}
+                  className="size-5 shrink-0 accent-accent"
+                />
+              </label>
+            ))}
             {sliders.map(({ key, label, min, max, step }) => (
-              <label key={key} className="mt-2 block">
+              <label key={key} className="mt-1 block">
                 <span className="flex justify-between text-muted">
                   {label}
                   <span className="text-fg tabular-nums">{settings[key]}</span>
@@ -148,13 +134,11 @@ export function VolumeLab({ children, maps }: Props) {
                 />
               </label>
             ))}
-            <p className="mt-1 text-13 text-muted">
-              {settings.on ? statusText[status] : "Выключен — обычная картинка"}
-            </p>
+            <p className="mt-1 text-13 text-muted">{statusText[status]}</p>
             <button
               type="button"
               onClick={() => save(defaultVolume)}
-              className="mt-1 min-h-11 text-13 text-muted underline transition-colors hover:text-fg"
+              className="min-h-11 text-13 text-muted underline transition-colors hover:text-fg"
             >
               Вернуть как было
             </button>
