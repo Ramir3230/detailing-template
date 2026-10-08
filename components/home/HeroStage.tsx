@@ -145,7 +145,7 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
     >
       <div
         aria-hidden="true"
-        className="glow-floor ignite-floor pointer-events-none absolute inset-x-[-4%] top-[96%] h-[38%]"
+        className="glow-floor ignite-floor pointer-events-none absolute top-[96%] h-[38%]"
       />
       <Image
         ref={body}
