@@ -21,8 +21,8 @@
 ```bash
 npm install
 npm run dev     # http://localhost:3000
-npm run check   # типы, линт и тесты — то же самое крутится в CI
-npm run build
+npm run check   # типы, линт, тесты, сборка и проверки собранных страниц — то же в CI
+npm run build   # только сборка
 ```
 
 ## Машина hero

@@ -12,8 +12,9 @@
 - [x] CLAUDE.md, BRIEF.md, DESIGN.md, ROADMAP.md, README.md
 - [x] Проектный ревьюер `.claude/agents/code-reviewer.md` с `model: inherit`. Агенты
       сканируются при старте сессии: он заработает в сессии, открытой в этой папке
-- [x] `npm run check`: typegen, tsc, eslint
-- [x] CI `.github/workflows/check.yml`: check и build на каждый пуш
+- [x] `npm run check`: typegen, tsc, eslint, тесты, сборка и проверки собранных страниц
+      (`checks/`) — одна команда локально и в CI (сборка внутри с 08.10.2026)
+- [x] CI `.github/workflows/check.yml`: `npm run check` на каждый пуш
 - [x] `noindex` в `app/layout.tsx` до появления флага в данных
 - [x] Приватный репозиторий на GitHub, проект на Vercel с деплоем по пушу в `main` и
       превью по веткам
