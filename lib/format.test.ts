@@ -10,6 +10,7 @@ import {
   formatFrom,
   formatPhone,
   formatRating,
+  formatReviewsInGoogle,
   formatTimeRange,
   glue,
   lowestAmount,
@@ -129,6 +130,11 @@ describe("small formats", () => {
     expect(formatCount(21, ru.reviews.count, "ru")).toBe("21\u00A0отзыв");
     expect(formatCount(24, ru.reviews.count, "ru")).toBe("24\u00A0отзыва");
     expect(formatCount(1200, pl.reviews.count, "pl")).toBe("1200\u00A0opinii");
+  });
+
+  it("writes the review count line with glued one-letter words", () => {
+    expect(formatReviewsInGoogle(24, pl.reviews, "pl")).toBe("24 opinie w Google");
+    expect(formatReviewsInGoogle(21, ru.reviews, "ru")).toBe("21 отзыв в Google");
   });
 
   it("writes the rating with a comma", () => {

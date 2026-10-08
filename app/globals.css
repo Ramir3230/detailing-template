@@ -80,6 +80,8 @@
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   --container-page: 1200px;
+  /* Шапка десктопа: hero вместе с ней даёт экран */
+  --spacing-header: 72px;
 }
 
 @theme inline {
@@ -347,9 +349,10 @@
   );
 }
 
-/* Свет за машиной в hero десктопа: акцент 10%, как свет меню */
+/* Свет за машиной в hero десктопа: акцент 10%, как свет меню. Слой шире машины и с ней
+   по центру — свет не съезжает с машины на широком экране */
 @utility glow-hero {
-  background: radial-gradient(45% 55% at 72% 62%, var(--color-accent-fill), transparent);
+  background: radial-gradient(closest-side, var(--color-accent-fill), transparent);
 }
 
 /* Размытая копия светодиодов: свет, растекающийся вокруг колец */

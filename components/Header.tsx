@@ -29,7 +29,7 @@ export function Header({ lang, dict }: Props) {
   return (
     <HeaderReveal>
       {/* Справа поле 12 px, а не 24: у круглой кнопки меню своё поле внутри */}
-      <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-18 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-header lg:px-8">
         <Link href={localePath(lang, "/")} className="flex min-h-11 items-center text-17 lg:text-20">
           <Logo />
         </Link>
