@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import { langs, type Lang } from "@/lib/i18n";
+import { sectionIds } from "@/lib/nav";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
@@ -22,7 +23,10 @@ const tags = (html: string, pattern: RegExp) => html.match(pattern) ?? [];
 
 describe.each(langs)("built home page /%s", (lang) => {
   it("is prerendered: `npm run build` has run", () => {
-    expect(existsSync(built(lang)), `${built(lang)} нет — сначала npm run build`).toBe(true);
+    expect(
+      existsSync(built(lang)),
+      `${built(lang)} нет — сборка не запускалась или Next изменил раскладку .next/server/app`,
+    ).toBe(true);
   });
 
   it("names its language and keeps route changes instant", () => {
@@ -33,15 +37,19 @@ describe.each(langs)("built home page /%s", (lang) => {
 
   it("is closed from search exactly when the studio data says so", () => {
     const published = (studio.languages as readonly Lang[]).includes(lang);
-    const robots = page(lang).head.match(/<meta name="robots" content="([^"]*)"/)?.[1];
-    if (studio.indexed && published) expect(robots ?? "").not.toContain("noindex");
-    else expect(robots).toContain("noindex");
+    const { head } = page(lang);
+    // Открытый сайт: noindex нигде в <head> — ни в robots, ни в googlebot, ни в другом виде
+    if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
+    else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
   });
 
   it("preloads the hero car and never loads it lazily", () => {
     const { html, head } = page(lang);
-    const preloads = tags(head, /<link rel="preload" as="image"[^>]*>/g);
-    expect(preloads.some((tag) => tag.includes(carFile))).toBe(true);
+    // Порядок атрибутов у <link> не важен: без srcset React ставит href между rel и as
+    const preload = tags(head, /<link\b[^>]*>/g).find(
+      (tag) => tag.includes('rel="preload"') && tag.includes('as="image"') && tag.includes(carFile),
+    );
+    expect(preload, "нет preload машины hero в <head>").toBeDefined();
     const car = tags(html, /<img\b[^>]*>/g).find((tag) => tag.includes(carFile));
     expect(car, "нет <img> машины hero").toBeDefined();
     expect(car).not.toContain('loading="lazy"');
@@ -49,7 +57,8 @@ describe.each(langs)("built home page /%s", (lang) => {
 
   it("serves the hero unlit: ignition starts in the browser", () => {
     const { html } = page(lang);
-    expect(html).toMatch(/<section\b[^>]*\bid="top"[^>]*\bdata-ignition=""/);
+    const hero = tags(html, /<section\b[^>]*>/g).find((tag) => tag.includes(`id="${sectionIds.hero}"`));
+    expect(hero, "нет секции hero").toContain('data-ignition=""');
     // Атрибуты, а не подстрока: имя есть и в классах (in-data-ignited:animate-none)
     expect(html).not.toMatch(/\sdata-(lit|ignited)=/);
   });
