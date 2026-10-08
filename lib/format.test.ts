@@ -133,8 +133,8 @@ describe("small formats", () => {
   });
 
   it("writes the review count line with glued one-letter words", () => {
-    expect(formatReviewsInGoogle(24, pl.reviews, "pl")).toBe("24 opinie w Google");
-    expect(formatReviewsInGoogle(21, ru.reviews, "ru")).toBe("21 отзыв в Google");
+    expect(formatReviewsInGoogle(24, pl.reviews, "pl")).toBe("24\u00A0opinie w\u00A0Google");
+    expect(formatReviewsInGoogle(21, ru.reviews, "ru")).toBe("21\u00A0отзыв в\u00A0Google");
   });
 
   it("writes the rating with a comma", () => {
