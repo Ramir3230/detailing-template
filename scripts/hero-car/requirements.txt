@@ -1,5 +1,6 @@
 rembg==2.0.69
 onnxruntime==1.23.2
 pymatting==1.1.16
+scipy==1.15.3
 pillow==12.3.0
 numpy==2.2.6

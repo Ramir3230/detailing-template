@@ -78,7 +78,7 @@ export type Point = { x: number; y: number };
  * фар того же размера. Готовит scripts/hero-car/cutout.py — он же печатает это поле.
  */
 export type HeroCar = {
-  /** Пути от public/: «/hero/car.webp». */
+  /** Пути от public/: «/hero/m3/car.webp». */
   src: string;
   lights: string;
   width: number;
