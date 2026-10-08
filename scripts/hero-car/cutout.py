@@ -20,7 +20,11 @@
                  Внутри зоны в слой идут только крупные пятна светодиодов: мелкие
                  блики корпуса и капота отбрасываются;
     lightLevels  яркость, с которой пиксель начинает и заканчивает становиться
-                 светодиодом.
+                 светодиодом;
+    underglow    неон под машиной, нарисованный кодом (необязательно), в процентах
+                 ширины результата: tube — концы трубки под передней губой, wheels —
+                 передние колёса (центр x и ширина w). Скрипт проверяет и печатает его
+                 как есть: перевырезка не теряет подсветку.
 
 Маску даёт BiRefNet (rembg, модель birefnet-general, ~1 ГБ, скачивается один раз).
 На один кадр хватает процессора — около минуты.
@@ -30,8 +34,8 @@
 машины (выбор владельца 09.10.2026). Она живёт в своём окружении на видеокарте, см.
 depth_da3.py. Без него — --depth-model v2: Depth Anything V2 Small (ONNX, ~100 МБ,
 скачивается сама в ~/.cache/depth-anything, Apache 2.0) на процессоре; крыша у неё
-уходит не в ту сторону. Base и Large обеих версий — CC BY-NC, для сайтов клиентов не
-годятся. Модель видит кадр целиком, с полом и стеной: так она вернее понимает, где
+уходит не в ту сторону. V2 Base и Large, DA3 Large и Giant — CC BY-NC, для сайтов
+клиентов не годятся. Модель видит кадр целиком, с полом и стеной: так она вернее понимает, где
 перед машины. Карта режется по тем же границам, что и машина.
 """
 
@@ -88,7 +92,8 @@ DEPTH_EDGE = 8
 DEPTH_FAR_BLUR = 12
 # Python окружения Depth Anything 3: из переменной DA3_PYTHON или из места по умолчанию
 DA3_PYTHON = Path(
-    os.environ.get("DA3_PYTHON") or Path.home() / ".cache" / "da3" / "venv" / "Scripts" / "python.exe"
+    os.environ.get("DA3_PYTHON")
+    or Path.home() / ".cache" / "da3" / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 )
 
 
@@ -236,6 +241,19 @@ def preview(car: Image.Image, lights: Image.Image, path: Path) -> None:
     Image.fromarray(screen.round().astype(np.uint8), "RGB").save(path)
 
 
+def check_underglow(underglow: dict | None) -> dict | None:
+    """Подсветка из JSON кадра: проценты внутри кадра, левое левее правого."""
+    if underglow is None:
+        return None
+    tube, wheels = underglow["tube"], underglow["wheels"]
+    values = [*tube, *(v for wheel in wheels for v in (wheel["x"], wheel["w"]))]
+    if len(tube) != 2 or len(wheels) != 2 or not all(0 < v < 100 for v in values):
+        raise SystemExit("underglow: две точки трубки и два колеса, всё в процентах кадра 0–100")
+    if tube[0] >= tube[1] or wheels[0]["x"] >= wheels[1]["x"]:
+        raise SystemExit("underglow: левый конец трубки и левое колесо — первыми")
+    return {"tube": tube, "wheels": wheels}
+
+
 def inside(box, width: int, height: int) -> bool:
     left, top, right, bottom = box
     return 0 <= left < right <= width and 0 <= top < bottom <= height
@@ -282,6 +300,7 @@ def main() -> None:
         if not inside(zone, car.width, car.height):
             raise SystemExit(f"зона фары {source_zone} вне машины")
     lights, centres = extract_lights(car, zones, frame["lightLevels"])
+    underglow = check_underglow(frame.get("underglow"))
 
     # Карта глубины — того же кадра, что машина, в меньшем размере
     size = (DEPTH_WIDTH, round(car.height * DEPTH_WIDTH / car.width))
@@ -305,6 +324,7 @@ def main() -> None:
         "width": car.width,
         "height": car.height,
         "headlights": centres,
+        **({"underglow": underglow} if underglow else {}),
     }, indent=2))
 
 

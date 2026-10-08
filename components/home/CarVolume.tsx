@@ -36,7 +36,7 @@ export const defaultVolume: VolumeSettings = {
 };
 
 /** Почему холста нет совсем; «still» — холст есть, но без движения. */
-export type VolumeOff = "save-data" | "no-webgl" | "no-image" | "slow" | "lost";
+export type VolumeOff = "save-data" | "no-webgl" | "shader" | "no-image" | "slow" | "lost";
 export type VolumeStatus = "loading" | "live" | "still" | VolumeOff;
 
 /** Что холст сейчас подменяет: машину (фото и свет фар) и неон пола на CSS. */
@@ -182,7 +182,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     report("loading");
 
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-    const still = reducedMotion.matches;
+    let still = reducedMotion.matches;
     const stage = element.closest("[data-ignition]");
     const ignited = new Promise<void>((resolve) => {
       if (!stage || stage.hasAttribute("data-ignited")) return resolve();
@@ -202,7 +202,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       const accent = components(getComputedStyle(element).color);
       volume = createVolume(gl, { aspect, accent, headlights, underglow });
     } catch {
-      return off("no-webgl");
+      return off("shader");
     }
     const scene = volume;
 
@@ -215,54 +215,81 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     let carAt = 0;
     let reported = false;
     let shown: VolumeState = { car: false, neon: false };
+    // Размер холста, который видела эта сцена: сам холст мог остаться от прошлой
+    // (StrictMode, возврат на страницу), и его размер новой сцене ничего не говорит
+    let drawn = [0, 0];
+    // Что на холсте сейчас: тот же кадр второй раз не рисуется
+    let painted = "";
+    // Программы ещё собираются — кадры повторяются, пока не соберутся
+    let waiting = true;
+    // Прошлый кадр рисовал неон на полу — самый тяжёлый проход
+    let heavy = false;
     const samples: number[] = [];
 
     const opacity = (layer: Element | null) => (layer ? Number(getComputedStyle(layer).opacity) : 1);
-    const paint = (now: number) => {
-      const { on, depth, light, neon, glow, gloss, mirror } = latest.current;
-      const car = Boolean(carAt) && on && !still;
-      const fadeIn = carAt ? Math.min(1, (now - carAt) / FADE_IN_MS) : 0;
-      const lit = neon && Boolean(underglow);
-      scene.draw({
-        rotation: rotation(yaw, pitch),
-        yaw,
-        depth,
-        car,
-        light: light * fadeIn,
-        neon: lit ? glow * opacity(floor.current) : 0,
-        fade: lit ? FADE_ON_NEON : FADE,
-        gloss,
-        reflection: mirror * fadeIn,
-      });
-      if (car !== shown.car || lit !== shown.neon) {
-        shown = { car, neon: lit };
+    /* Кадр по текущему состоянию; force — холст стёрт или сменились текстуры. Возвращает
+       проявление после подмены и силу неона; null — шейдер не собрался, холста больше нет */
+    const paint = (now: number, force = false) => {
+      const settings = latest.current;
+      const lit = settings.neon && Boolean(underglow);
+      // При reduced motion — сразу финальный кадр, без проявления
+      const fadeIn = carAt ? (still ? 1 : Math.min(1, (now - carAt) / FADE_IN_MS)) : 0;
+      const neon = lit ? settings.glow * opacity(floor.current) : 0;
+      const car = Boolean(carAt) && settings.on && !still;
+      const key = [yaw, pitch, neon, fadeIn, car, ...Object.values(settings)].join();
+      if (!force && !waiting && key === painted) return { fadeIn, neon };
+      painted = key;
+      let result;
+      try {
+        result = scene.draw({
+          rotation: rotation(yaw, pitch),
+          yaw,
+          depth: settings.depth,
+          car,
+          light: settings.light * fadeIn,
+          neon,
+          fade: lit ? FADE_ON_NEON : FADE,
+          gloss: settings.gloss,
+          reflection: settings.mirror * fadeIn,
+        });
+      } catch {
+        off("shader");
+        return null;
+      }
+      waiting = result.waiting;
+      const next = { car: result.car, neon: lit && result.floor };
+      if (next.car !== shown.car || next.neon !== shown.neon) {
+        shown = next;
         onState(shown);
       }
-      if (!reported) {
+      if (!reported && !waiting) {
         reported = true;
         report(still ? "still" : "live");
       }
-      return fadeIn;
+      return { fadeIn, neon };
     };
 
     // Холст в точных пикселях устройства, где браузер их сообщает: при округлении
     // CSS-размера экран растягивает кадр на доли пикселя, и он мягчеет. Точному
     // размеру верим, только если он сходится с CSS × плотность: эмуляция телефона в
-    // Chromium отдаёт его без плотности, и холст выходил втрое реже.
-    // Присваивание размера стирает холст — только когда он и правда изменился
+    // Chromium отдаёт его без плотности, и холст выходил втрое реже
     const size = (entry?: ResizeObserverEntry) => {
       const { width, height } = element.getBoundingClientRect();
+      // Страница спрятана (cacheComponents) — размер придёт, когда её покажут
+      if (!width || !height) return;
       const exact = entry?.devicePixelContentBoxSize?.[0];
       const trusted = exact && Math.abs(exact.inlineSize - width * devicePixelRatio) < 2;
       const scale = Math.min(1, MAX_DPR / devicePixelRatio);
       const w = Math.round((trusted ? exact.inlineSize : width * devicePixelRatio) * scale);
       const h = Math.round((trusted ? exact.blockSize : height * devicePixelRatio) * scale);
-      if (w === element.width && h === element.height) return;
-      element.width = w;
-      element.height = h;
+      if (w === drawn[0] && h === drawn[1]) return;
+      drawn = [w, h];
+      // Присваивание размера стирает холст — только когда он и правда другой
+      if (element.width !== w) element.width = w;
+      if (element.height !== h) element.height = h;
       scene.resize(w, h, width / (1 + (2 * FIELD.side) / aspect));
       // Стёртый холст перерисовать до показа экрана, иначе всё моргнёт
-      paint(performance.now());
+      paint(performance.now(), true);
     };
 
     const tick = (now: number) => {
@@ -294,7 +321,9 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       // Остановка — ровно в цели: в покое кадр совпадает с фото
       if (!moving) [yaw, pitch] = [yawTarget, pitchTarget];
 
-      if (last && moving && samples.length < SLOW_SAMPLES) {
+      // Скорость меряем на тяжёлых кадрах: машина движется или на полу горит неон, — в
+      // том числе на зажигании. Пустые кадры до вспышки занизили бы медиану
+      if (last && (moving || heavy) && samples.length < SLOW_SAMPLES) {
         samples.push(now - last);
         if (samples.length === SLOW_SAMPLES) {
           const median = [...samples].sort((a, b) => a - b)[SLOW_SAMPLES / 2];
@@ -303,11 +332,13 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       }
       last = now;
 
-      const fadeIn = paint(now);
+      const result = paint(now);
+      if (!result) return;
+      heavy = result.neon > 0;
       // Пока сцена не отыграла, неон следует за вспышкой CSS-слоя каждый кадр
       const igniting = stage ? !stage.hasAttribute("data-ignited") : false;
-      const fading = Boolean(carAt) && fadeIn < 1;
-      if (visible && (moving || igniting || fading)) frame = requestAnimationFrame(tick);
+      const fading = Boolean(carAt) && result.fadeIn < 1;
+      if (visible && (moving || igniting || fading || waiting)) frame = requestAnimationFrame(tick);
       else last = 0;
     };
 
@@ -335,7 +366,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     // Окно стало шире или телефон повернули — браузер берёт из srcset кадр крупнее
     const onPhoto = () => {
       scene.refresh();
-      paint(performance.now());
+      paint(performance.now(), true);
     };
     const onPointer = (event: PointerEvent) => {
       pointer = { x: event.clientX, y: event.clientY };
@@ -345,15 +376,37 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       pointer = null;
       awake();
     };
+    const listen = () => {
+      if (fine) {
+        addEventListener("pointermove", onPointer, { passive: true });
+        document.documentElement.addEventListener("pointerleave", onLeave);
+      } else {
+        addEventListener("scroll", awake, { passive: true });
+      }
+    };
+    const unlisten = () => {
+      removeEventListener("pointermove", onPointer);
+      document.documentElement.removeEventListener("pointerleave", onLeave);
+      removeEventListener("scroll", awake);
+    };
+    // Уменьшение движения включили при открытой странице — машина сразу встаёт в покой
+    const onMotion = () => {
+      still = reducedMotion.matches;
+      if (still) {
+        unlisten();
+        yaw = 0;
+        pitch = 0;
+      } else {
+        listen();
+      }
+      report(still ? "still" : "live");
+      awake();
+    };
     const onLost = () => off("lost");
     photo.addEventListener("load", onPhoto);
     leds.addEventListener("load", onPhoto);
-    if (!still && fine) {
-      addEventListener("pointermove", onPointer, { passive: true });
-      document.documentElement.addEventListener("pointerleave", onLeave);
-    } else if (!still) {
-      addEventListener("scroll", awake, { passive: true });
-    }
+    if (!still) listen();
+    reducedMotion.addEventListener("change", onMotion);
     element.addEventListener("webglcontextlost", onLost);
     cleanups.push(() => {
       wake.current = () => {};
@@ -361,9 +414,8 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       seen.disconnect();
       photo.removeEventListener("load", onPhoto);
       leds.removeEventListener("load", onPhoto);
-      removeEventListener("pointermove", onPointer);
-      document.documentElement.removeEventListener("pointerleave", onLeave);
-      removeEventListener("scroll", awake);
+      unlisten();
+      reducedMotion.removeEventListener("change", onMotion);
       element.removeEventListener("webglcontextlost", onLost);
     });
     awake();
