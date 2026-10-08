@@ -9,6 +9,7 @@ export const ru: Dictionary = {
   nav: { services: "Услуги", contact: "Контакты" },
   menu: { services: "Услуги", studio: "Студия" },
   call: { label: "Позвонить" },
+  hero: { checkPrice: "Узнать цену" },
   messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram" },
   status: {
     open: "Открыто",

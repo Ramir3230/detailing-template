@@ -9,6 +9,7 @@ import type { Studio } from "@/content/types";
 export const afterdark: Studio = {
   name: "Afterdark Detailing",
   logo: "Afterdark",
+  logoCaption: "Detailing",
   tagline: { pl: "Studio detailingu" },
   meta: {
     title: { pl: "Afterdark Detailing — studio detailingu, Warszawa-Wola" },

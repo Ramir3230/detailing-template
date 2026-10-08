@@ -68,6 +68,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   return (
     <html
       lang={lang}
+      data-scroll-behavior="smooth"
       className={`${manrope.variable} ${scienceGothic.variable}`}
       style={themeVars}
     >
