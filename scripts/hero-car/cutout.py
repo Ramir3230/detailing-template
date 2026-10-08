@@ -32,6 +32,7 @@
 """
 
 import argparse
+import hashlib
 import json
 import sys
 import urllib.request
@@ -54,7 +55,13 @@ LED_MIN_SHARE = 0.1
 # Мягкий край вокруг светодиода, px результата: без него кольца обрезаны по порогу
 LED_EDGE = 3
 
-DEPTH_URL = "https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/main/onnx/model.onnx"
+# Ревизия закреплена и сверяется по хэшу: обновление модели на Hugging Face иначе молча
+# поменяло бы карту при следующем прогоне
+DEPTH_URL = (
+    "https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/"
+    "4472b7362082ad9968fee890ca0f1e5aca36b93d/onnx/model.onnx"
+)
+DEPTH_SHA256 = "afb6a5c28f3b6bf1618c6e43f02073ef9dfdc70e937502d51603e57b0a1df10c"
 DEPTH_MODEL = Path.home() / ".cache" / "depth-anything" / "dav2-small.onnx"
 # Ширина входа модели, кратна 14. Обучена на 518, но на 1022 решётка и фары отделяются
 # от бампера, а форма кузова та же. Процессору — секунды
@@ -151,6 +158,9 @@ def estimate_depth(crop: Image.Image) -> np.ndarray:
         DEPTH_MODEL.parent.mkdir(parents=True, exist_ok=True)
         part = DEPTH_MODEL.with_suffix(".part")
         urllib.request.urlretrieve(DEPTH_URL, part)
+        if hashlib.sha256(part.read_bytes()).hexdigest() != DEPTH_SHA256:
+            part.unlink()
+            raise SystemExit("модель глубины скачалась не та: хэш не сходится с DEPTH_SHA256")
         part.replace(DEPTH_MODEL)
     session = ort.InferenceSession(str(DEPTH_MODEL), providers=["CPUExecutionProvider"])
     height = round(DEPTH_INPUT * crop.height / crop.width / 14) * 14
