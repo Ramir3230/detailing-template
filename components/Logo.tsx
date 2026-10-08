@@ -1,7 +1,8 @@
 import type { HTMLAttributes } from "react";
 import { studio } from "@/content/studio";
 
-type Props = HTMLAttributes<HTMLSpanElement> & { unlit?: boolean };
+/* Текст всегда — логотип из данных студии, своих детей у него нет */
+type Props = Omit<HTMLAttributes<HTMLSpanElement>, "children"> & { unlit?: boolean };
 
 /**
  * Логотип-заглушка надписью; размер задаёт место, где он стоит. unlit — погашенная
