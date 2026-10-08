@@ -92,11 +92,13 @@ export type Studio = {
   /** Международный формат без пробелов: +48123456789. */
   phone: string;
   messengers: Messenger[];
-  address: { street: string; area: string };
+  /** routeUrl — маршрут в Google Maps для кнопки «Trasa»; нет ссылки — нет кнопки. */
+  address: { street: string; area: string; routeUrl?: string };
   hours: WeekHours;
   hero: { title: Text; subtitle: Text; lead: Text };
   carClasses: Record<CarClass, Text>;
   services: ServiceGroup[];
+  /** url — страница отзывов в Google; нет ссылки — строка рейтинга открывает плашку демо. */
   rating: { value: number; count: number; url?: string };
   reviews: Review[];
 };
