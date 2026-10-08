@@ -2,6 +2,7 @@ import { mainButton } from "@/components/CallButton";
 import { ArrowDownIcon, StarIcon } from "@/components/icons";
 import { Logo } from "@/components/Logo";
 import { OpenStatus } from "@/components/OpenStatus";
+import { ScrollLink } from "@/components/ScrollLink";
 import { HeroCar, HeroStage } from "@/components/home/HeroStage";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
@@ -31,14 +32,14 @@ export function Hero({ lang, dict }: Props) {
 
   return (
     <HeroStage id={sectionIds.hero} className="relative overflow-hidden">
-      <div className="flex min-h-svh flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
-        {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания */}
+      {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh */}
+      <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
+        {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания.
+            Оба слоя — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает */}
         <div className="text-center lg:hidden">
           <div className="grid text-30 short:text-24">
             <Logo unlit className="col-start-1 row-start-1" />
-            <span aria-hidden="true" className="ignite-logo col-start-1 row-start-1">
-              <Logo />
-            </span>
+            <Logo aria-hidden="true" className="ignite-logo col-start-1 row-start-1" />
           </div>
           {studio.logoCaption && (
             // Слева поле на ширину разрядки: она висит и справа от последней буквы
@@ -63,10 +64,10 @@ export function Hero({ lang, dict }: Props) {
 
             <div className={`hidden lg:block ${riseLater}`}>
               <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
-                <a href={`#${sectionIds.services}`} className={`${mainButton} inline-flex px-7`}>
+                <ScrollLink target={sectionIds.services} className={`${mainButton} inline-flex px-7`}>
                   {dict.hero.checkPrice}
                   <ArrowDownIcon size={16} />
-                </a>
+                </ScrollLink>
                 <a href={telHref(studio.phone)} className="py-3 text-15 text-muted transition-colors hover:text-fg">
                   {dict.hero.orCall}{" "}
                   <span className="font-medium whitespace-nowrap text-fg">{formatPhone(studio.phone)}</span>
@@ -75,8 +76,8 @@ export function Hero({ lang, dict }: Props) {
               {/* Статус появляется только в браузере: место под строку держим заранее */}
               <div className="mt-10 flex min-h-6 flex-wrap items-center gap-x-7 gap-y-3 text-14 text-muted">
                 {studio.reviews.length > 0 && (
-                  <a
-                    href={`#${sectionIds.reviews}`}
+                  <ScrollLink
+                    target={sectionIds.reviews}
                     className="-my-3 inline-flex items-center gap-1 py-3 transition-colors hover:text-fg"
                   >
                     <span className="text-accent">
@@ -90,7 +91,7 @@ export function Hero({ lang, dict }: Props) {
                     </span>
                     <span aria-hidden="true">·</span>
                     {formatReviewsInGoogle(rating.count, dict.reviews, lang)}
-                  </a>
+                  </ScrollLink>
                 )}
                 <OpenStatus hours={studio.hours} lang={lang} words={dict.status} daysOn={dict.days.on} />
               </div>
@@ -112,13 +113,13 @@ export function Hero({ lang, dict }: Props) {
           </div>
         </div>
 
-        <a
-          href={`#${sectionIds.services}`}
+        <ScrollLink
+          target={sectionIds.services}
           className={`relative z-10 mx-auto mt-5 inline-flex items-center gap-2 py-3 font-medium after:absolute after:inset-x-0 after:bottom-2 after:h-px after:bg-accent lg:hidden ${riseLater}`}
         >
           {dict.hero.checkPrice}
           <ArrowDownIcon size={16} />
-        </a>
+        </ScrollLink>
       </div>
     </HeroStage>
   );
