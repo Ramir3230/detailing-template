@@ -1,20 +1,23 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { ClassSwitch, useCarClass } from "@/components/ClassSwitch";
 import { PhoneIcon } from "@/components/icons";
 import type { CarClass } from "@/content/types";
-import type { PriceParts } from "@/lib/format";
-import { splitAmount, stripPositions, stripSymbols } from "@/lib/odometer";
-import type { PriceGroup, PriceRow } from "@/lib/price-list";
+import { NBSP, type PriceParts } from "@/lib/format";
+import { stripSymbols } from "@/lib/odometer";
+import type { PriceGroup, Rolling } from "@/lib/price-list";
 
-/* Передача «встаёт» через 0,26 с после выбора — тогда меняются цены и описание. */
-const engageMs = 260;
-
-/* Переходы включаются, только когда класс выбрал человек: подстройка под
-   сохранённый класс после загрузки проходит без анимации. */
-const fadeAfterEngage =
-  "[[data-animate]_&]:transition-opacity [[data-animate]_&]:duration-200 [[data-animate]_&]:delay-[260ms] [[data-animate]_&]:ease-warm";
+/*
+ * Переходы включаются, только когда класс выбрал человек ([data-animate]): подстройка
+ * под сохранённый класс после загрузки проходит без анимации. --engage — момент, когда
+ * «передача встала» (0,26 с): тогда меняются цены и описание. Уходящий слой гаснет
+ * быстрее и с ускорением, приходящий проявляется «прогревом».
+ */
+const leaving =
+  "[[data-animate]_&]:transition-opacity [[data-animate]_&]:duration-150 [[data-animate]_&]:delay-(--engage) [[data-animate]_&]:ease-in";
+const arriving =
+  "[[data-animate]_&]:transition-opacity [[data-animate]_&]:duration-200 [[data-animate]_&]:delay-(--engage) [[data-animate]_&]:ease-warm";
 
 type Props = {
   /** Заголовок и подсказка секции — рисует сервер. */
@@ -42,7 +45,7 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
   return (
     <div
       data-animate={animate ? "" : undefined}
-      className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12"
+      className="wrap [--engage:260ms] lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12"
     >
       <div className="contents lg:sticky lg:top-6 lg:block lg:max-w-95 lg:flex-[1_1_300px]">
         {heading}
@@ -67,7 +70,7 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
         >
           <span
             key={selected}
-            className="block [[data-animate]_&]:animate-[fade-rise_0.22s_cubic-bezier(0.65,0,0.35,1)_0.26s_both]"
+            className="block [[data-animate]_&]:animate-[fade-rise_0.22s_var(--ease-warm)_var(--engage)_both]"
           >
             {descriptions[selected]}
           </span>
@@ -98,8 +101,9 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
                       <span className="text-13 leading-note text-muted lg:text-14">{row.note}</span>
                     )}
                   </div>
-                  {isByClass(row) ? (
+                  {row.rolling ? (
                     <RollingPrice
+                      rolling={row.rolling}
                       prices={row.prices}
                       selected={selected}
                       order={firstRow[groupIndex] + rowIndex}
@@ -131,71 +135,65 @@ function Price({ parts }: { parts: PriceParts }) {
   );
 }
 
-/** Цена по классу: S, M и L — числа без «od», XL — «indywidualnie». */
-function isByClass(row: PriceRow): boolean {
-  return (
-    row.prices.XL.kind === "individual" &&
-    (["S", "M", "L"] as const).every((carClass) => {
-      const parts = row.prices[carClass];
-      return parts.kind === "amount" && !parts.prefix;
-    })
-  );
-}
-
 /*
- * Цена-счётчик: цифры прокручиваются к новой цене, когда передача встала, правая —
- * первой. При XL цифры стоят на цене L и гаснут, проявляется «indywidualnie». Глазу
- * видны ленты, диктор слышит только текущую цену.
+ * Цена по классу лентами счётчика: когда передача встала, цифры прокручиваются к новой
+ * цене, правая — первой. При XL цифры стоят на цене L и гаснут, проявляется
+ * «indywidualnie». Глазу видны ленты, диктор слышит только текущую цену.
  */
 function RollingPrice({
+  rolling,
   prices,
   selected,
   order,
 }: {
+  rolling: Rolling;
   prices: Record<CarClass, PriceParts>;
   selected: CarClass;
   order: number;
 }) {
-  const numbers = (["S", "M", "L"] as const).map((carClass) => {
-    const parts = prices[carClass];
-    return splitAmount(parts.kind === "amount" ? parts.amount : "");
-  });
-  const width = Math.max(...numbers.map(({ number }) => number.length));
   const parts = prices[selected];
-  const individual = parts.kind === "individual";
-  const shown = parts.kind === "amount" ? splitAmount(parts.amount) : numbers[2];
-  const individualText = prices.XL.kind === "individual" ? prices.XL.text : "";
+  const individual = selected === "XL";
+  const positions = rolling.positions[individual ? "L" : selected];
+  // Сколько цифр правее колонки: правая лента трогается первой.
+  const fromRight = rolling.columns.map(
+    (_, i) => rolling.columns.slice(i + 1).filter((column) => column === "digit").length,
+  );
 
   return (
     <span className="grid shrink-0 justify-items-end text-16 leading-heading font-medium whitespace-nowrap tabular-nums lg:text-17">
       <span
         aria-hidden="true"
-        className={`col-start-1 row-start-1 inline-flex ${fadeAfterEngage} ${individual ? "opacity-0" : ""}`}
+        className={`col-start-1 row-start-1 inline-flex select-none ${individual ? `opacity-0 ${leaving}` : arriving}`}
       >
-        {stripPositions(shown.number, width).map((position, i) => (
-          <span key={i} className="inline-block h-[1lh] overflow-hidden">
-            <span
-              className="block [[data-animate]_&]:transition-transform [[data-animate]_&]:duration-[420ms] [[data-animate]_&]:ease-warm"
-              style={{
-                transform: `translateY(calc(${-position} * 1lh))`,
-                transitionDelay: `${engageMs + (width - 1 - i) * 35 + order * 12}ms`,
-              }}
-            >
-              {stripSymbols.map((symbol, s) => (
-                <span key={s} className="block h-[1lh] text-center">
-                  {symbol}
-                </span>
-              ))}
+        {rolling.columns.map((column, i) => {
+          if (column === "separator") return <span key={i}>{NBSP}</span>;
+          return (
+            <span key={i} className="inline-block h-[1lh] overflow-hidden">
+              <span
+                className="block [[data-animate]_&]:transition-transform [[data-animate]_&]:duration-[420ms] [[data-animate]_&]:delay-[calc(var(--engage)+var(--roll-delay))] [[data-animate]_&]:ease-warm"
+                style={
+                  {
+                    transform: `translateY(calc(${-positions[i]} * 1lh))`,
+                    "--roll-delay": `${fromRight[i] * 35 + order * 12}ms`,
+                  } as CSSProperties
+                }
+              >
+                {stripSymbols.map((symbol, s) => (
+                  <span key={s} className="block h-[1lh] text-center">
+                    {symbol}
+                  </span>
+                ))}
+              </span>
             </span>
-          </span>
-        ))}
-        {shown.suffix}
+          );
+        })}
+        {rolling.suffix}
       </span>
       <span
         aria-hidden="true"
-        className={`col-start-1 row-start-1 text-14 font-normal text-muted lg:text-15 ${fadeAfterEngage} ${individual ? "" : "opacity-0"}`}
+        className={`col-start-1 row-start-1 text-14 font-normal text-muted select-none lg:text-15 ${individual ? arriving : `opacity-0 ${leaving}`}`}
       >
-        {individualText}
+        {prices.XL.kind === "individual" ? prices.XL.text : ""}
       </span>
       <span className="sr-only">{parts.kind === "amount" ? parts.amount : parts.text}</span>
     </span>

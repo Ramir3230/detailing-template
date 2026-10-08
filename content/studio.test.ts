@@ -20,6 +20,16 @@ describe("active studio data", () => {
     }
   });
 
+  it("has whole prices: the price counter shows digits only", () => {
+    for (const group of studio.services) {
+      for (const { price } of group.services) {
+        const amounts =
+          price.kind === "byClass" ? [price.S, price.M, price.L] : "amount" in price ? [price.amount] : [];
+        for (const amount of amounts) expect(Number.isInteger(amount) && amount > 0).toBe(true);
+      }
+    }
+  });
+
   it("has https links for the route and the Google reviews", () => {
     for (const url of [studio.address.routeUrl, studio.rating.url]) {
       if (url) expect(new URL(url).protocol).toBe("https:");

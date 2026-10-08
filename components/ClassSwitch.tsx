@@ -39,17 +39,22 @@ function shiftGear(
   from: number,
   to: number,
 ) {
-  const running = thumb.getAnimations();
-  const start = running.length
-    ? `translateX(${new DOMMatrix(getComputedStyle(thumb).transform).m41}px)`
-    : thumbAt(from);
-  running.forEach((animation) => animation.cancel());
+  // Прерванная смена: рычаг продолжает из того положения, где был, со всем наклоном.
+  const interrupted = thumb.getAnimations().length > 0;
+  const current = getComputedStyle(thumb).transform;
+  const startX = interrupted ? `translateX(${new DOMMatrix(current).m41}px)` : thumbAt(from);
+  [thumb, glow, group].forEach((element) =>
+    element.getAnimations().forEach((animation) => animation.cancel()),
+  );
   const end = thumbAt(to);
   thumb.animate(
     [
-      { transform: `${start} translateY(0) scale(1)`, easing: "cubic-bezier(0.4, 0, 1, 1)" },
       {
-        transform: `${start} translateY(5px) scale(0.92)`,
+        transform: interrupted ? current : `${startX} translateY(0) scale(1)`,
+        easing: "cubic-bezier(0.4, 0, 1, 1)",
+      },
+      {
+        transform: `${startX} translateY(5px) scale(0.92)`,
         offset: 0.2,
         easing: "cubic-bezier(0.65, 0, 0.35, 1)",
       },
