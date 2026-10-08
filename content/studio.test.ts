@@ -62,9 +62,11 @@ describe("active studio data", () => {
   it("has the hero car files in the size the data claims, headlights inside the frame", () => {
     const { car } = studio.hero;
     for (const src of [car.src, car.lights]) {
+      expect(src).toMatch(/^\/[\w\-/]+\.webp$/);
       const size = webpSize(readFileSync(join(process.cwd(), "public", src)));
       expect(size).toEqual({ width: car.width, height: car.height });
     }
+    expect(car.headlights[0].x).toBeLessThan(car.headlights[1].x);
     for (const { x, y } of car.headlights) {
       for (const value of [x, y]) expect(value > 0 && value < 100).toBe(true);
     }

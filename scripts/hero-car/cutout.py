@@ -1,22 +1,25 @@
 """Машина hero: вырезка на прозрачном фоне и отдельный слой светодиодов фар.
 
 Всё, что относится к конкретному кадру, лежит в JSON рядом со скриптом, а не в коде:
-новая машина — новый JSON. Скрипт печатает поле `hero.car` для файла данных студии:
-размеры и центры фар, которые страница берёт из данных.
+новая машина — новый JSON. Файлы ложатся в `public/hero/<имя JSON>/`, поэтому вырезка
+другой машины не перезапишет ту, на которую ссылаются данные студии. Скрипт печатает
+поле `hero.car` для файла данных студии: пути, размеры и центры фар.
 
     python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исходник>"
-        [--out public/hero] [--preview DIR]
+        [--out public/hero/m3] [--preview DIR]
 
 Поля JSON (координаты — пиксели исходника):
     sourceSize   ожидаемый размер исходника: координаты ниже сняты с него;
-    crop         область машины с запасом. Нижний край — над отражением в полу:
-                 страница рисует свой неон пола;
-    outWidth     ширина результата (DESIGN.md, «Фотографии»: от 1600 px);
+    crop         область машины с запасом [left, top, right, bottom]. Нижний край — над
+                 отражением в полу: страница рисует свой неон пола;
+    outWidth     ширина результата (DESIGN.md, «Фотографии»: от 1600 px). Увеличивать
+                 скрипт не станет: машина в исходнике должна быть шире;
     maskLevels   растяжка мягкой маски в 0–255: ниже — фон, выше — кузов;
-    lightZones   прямоугольники фар [left, top, right, bottom]. Вне них блики капота
-                 и крыльев не должны загораться;
-    lightLevels  яркость, с которой пиксель в зоне фары начинает и заканчивает
-                 становиться слоем светодиодов.
+    lightZones   прямоугольники вокруг фар [left, top, right, bottom], с запасом.
+                 Внутри зоны в слой идут только крупные пятна светодиодов: мелкие
+                 блики корпуса и капота отбрасываются;
+    lightLevels  яркость, с которой пиксель начинает и заканчивает становиться
+                 светодиодом.
 
 Маску даёт BiRefNet (rembg, модель birefnet-general, ~1 ГБ, скачивается один раз).
 На один кадр хватает процессора — около минуты.
@@ -30,9 +33,17 @@ import numpy as np
 from PIL import Image, ImageOps
 from pymatting import estimate_foreground_ml
 from rembg import new_session, remove
+from scipy import ndimage
 
+ROOT = Path(__file__).resolve().parents[2]
+PUBLIC = ROOT / "public"
 ALPHA_MIN = 16  # прозрачность ниже этой — фон, когда ищем границы машины
 LUMA = np.array([0.2126, 0.7152, 0.0722])
+# Пятно меньше десятой доли крупнейшего в зоне — блик на стекле или корпусе, а не
+# светодиод. На M3 при 5% проходила дуга кромки стекла только у левой фары.
+LED_MIN_SHARE = 0.1
+# Мягкий край вокруг светодиода, px результата: без него кольца обрезаны по порогу
+LED_EDGE = 3
 
 
 def car_alpha(crop: Image.Image, levels: tuple[int, int]) -> np.ndarray:
@@ -63,33 +74,41 @@ def resize(img: Image.Image, width: int) -> Image.Image:
     return img.convert("RGBa").resize((width, height), Image.LANCZOS).convert("RGBA")
 
 
-def extract_lights(car: Image.Image, zones: list[tuple[int, int, int, int]], levels) -> Image.Image:
-    """Только светодиоды: яркие пиксели внутри зон фар, тот же размер, что у машины."""
+def leds(ramp: np.ndarray, zone: tuple[int, int, int, int]) -> np.ndarray:
+    """Маска светодиодов в зоне: крупные связные пятна ярких пикселей."""
+    left, top, right, bottom = zone
+    strong = ramp[top:bottom, left:right] > 0.5
+    labels, count = ndimage.label(strong)
+    if count == 0:
+        raise SystemExit(f"в зоне фары {zone} нет светодиодов: проверьте lightLevels")
+    sizes = ndimage.sum(strong, labels, range(1, count + 1))
+    keep = np.isin(labels, 1 + np.flatnonzero(sizes >= sizes.max() * LED_MIN_SHARE))
+    if keep[0].any() or keep[-1].any() or keep[:, 0].any() or keep[:, -1].any():
+        raise SystemExit(f"зона фары {zone} режет свет или ловит блики: поправьте lightZones")
+    return keep
+
+
+def extract_lights(car: Image.Image, zones, levels) -> tuple[Image.Image, list[dict[str, float]]]:
+    """Слой светодиодов того же размера, что машина, и центры фар в процентах кадра.
+    Центр — середина рамки вокруг светодиодов: центр тяжести тянут вниз самые яркие
+    нижние дуги колец."""
     rgba = np.asarray(car, dtype=np.float64)
-    lum = rgba[..., :3] @ LUMA
     lo, hi = levels
-    ramp = np.clip((lum - lo) / (hi - lo), 0, 1)
+    ramp = np.clip((rgba[..., :3] @ LUMA - lo) / (hi - lo), 0, 1)
     alpha = np.zeros_like(ramp)
-    for left, top, right, bottom in zones:
-        alpha[top:bottom, left:right] = ramp[top:bottom, left:right]
-    alpha *= rgba[..., 3] / 255
-    out = np.dstack([rgba[..., :3], alpha * 255])
-    return Image.fromarray(out.round().astype(np.uint8), "RGBA")
-
-
-def light_centres(lights: Image.Image, zones) -> list[dict[str, float]]:
-    """Центр фары — середина рамки вокруг её горящих светодиодов, в процентах кадра
-    машины. Центр тяжести не годится: его тянут вниз самые яркие нижние дуги."""
-    a = np.asarray(lights.getchannel("A"))
     centres = []
-    for left, top, right, bottom in zones:
-        ys, xs = np.nonzero(a[top:bottom, left:right] > 127)
-        if len(xs) == 0:
-            raise SystemExit(f"в зоне фары {left, top, right, bottom} нет светодиодов: проверьте lightLevels")
+    for zone in zones:
+        left, top, right, bottom = zone
+        keep = leds(ramp, zone)
+        soft = ndimage.binary_dilation(keep, iterations=LED_EDGE)
+        alpha[top:bottom, left:right] = ramp[top:bottom, left:right] * soft
+        ys, xs = np.nonzero(keep)
         x = left + (xs.min() + xs.max() + 1) / 2
         y = top + (ys.min() + ys.max() + 1) / 2
-        centres.append({"x": round(x / lights.width * 100, 1), "y": round(y / lights.height * 100, 1)})
-    return centres
+        centres.append({"x": round(x / car.width * 100, 1), "y": round(y / car.height * 100, 1)})
+    alpha *= rgba[..., 3] / 255
+    out = np.dstack([rgba[..., :3], alpha * 255])
+    return Image.fromarray(out.round().astype(np.uint8), "RGBA"), centres
 
 
 def preview(car: Image.Image, lights: Image.Image, path: Path) -> None:
@@ -103,21 +122,34 @@ def preview(car: Image.Image, lights: Image.Image, path: Path) -> None:
     Image.fromarray(screen.round().astype(np.uint8), "RGB").save(path)
 
 
+def inside(box, width: int, height: int) -> bool:
+    left, top, right, bottom = box
+    return 0 <= left < right <= width and 0 <= top < bottom <= height
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("frame", type=Path, help="JSON с параметрами кадра")
     parser.add_argument("--source", type=Path, required=True, help="исходник машины")
-    parser.add_argument("--out", type=Path, default=Path("public/hero"))
+    parser.add_argument("--out", type=Path, help="папка внутри public/; по умолчанию public/hero/<имя JSON>")
     parser.add_argument("--preview", type=Path, help="папка для превью на тёмном фоне")
     args = parser.parse_args()
+
+    out = (args.out or PUBLIC / "hero" / args.frame.stem).resolve()
+    if not out.is_relative_to(PUBLIC):
+        raise SystemExit(f"{out} вне public/: сайт не отдаст файлы")
 
     frame = json.loads(args.frame.read_text(encoding="utf-8"))
     src = ImageOps.exif_transpose(Image.open(args.source)).convert("RGB")
     if list(src.size) != frame["sourceSize"]:
         raise SystemExit(f"исходник {src.size}, а координаты в {args.frame.name} сняты с {frame['sourceSize']}")
+    if not inside(frame["crop"], *src.size):
+        raise SystemExit(f"crop {frame['crop']} выходит за исходник {src.size}")
 
     crop = src.crop(tuple(frame["crop"]))
     car, (bx, by) = cut_car(crop, car_alpha(crop, tuple(frame["maskLevels"])))
+    if car.width < frame["outWidth"]:
+        raise SystemExit(f"машина в исходнике {car.width} px, уже outWidth {frame['outWidth']}: исходник мал")
     full_width = car.width
     car = resize(car, frame["outWidth"])
 
@@ -128,23 +160,25 @@ def main() -> None:
         tuple(round(v * scale) for v in (left - ox, top - oy, right - ox, bottom - oy))
         for left, top, right, bottom in frame["lightZones"]
     ]
-    lights = extract_lights(car, zones, frame["lightLevels"])
+    for source_zone, zone in zip(frame["lightZones"], zones):
+        if not inside(zone, car.width, car.height):
+            raise SystemExit(f"зона фары {source_zone} вне машины")
+    lights, centres = extract_lights(car, zones, frame["lightLevels"])
 
-    args.out.mkdir(parents=True, exist_ok=True)
-    car.save(args.out / "car.webp", "WEBP", quality=90, method=6)
-    lights.save(args.out / "car-lights.webp", "WEBP", lossless=True, method=6)
+    out.mkdir(parents=True, exist_ok=True)
+    car.save(out / "car.webp", "WEBP", quality=90, method=6)
+    lights.save(out / "car-lights.webp", "WEBP", lossless=True, method=6)
     if args.preview:
         args.preview.mkdir(parents=True, exist_ok=True)
         preview(car, lights, args.preview / "car-preview.png")
 
-    # Адрес на сайте: путь от public/
-    url = "/" + args.out.resolve().relative_to(Path("public").resolve()).as_posix()
+    url = "/" + out.relative_to(PUBLIC).as_posix()
     print(json.dumps({
         "src": f"{url}/car.webp",
         "lights": f"{url}/car-lights.webp",
         "width": car.width,
         "height": car.height,
-        "headlights": light_centres(lights, zones),
+        "headlights": centres,
     }, indent=2))
 
 

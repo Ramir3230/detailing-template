@@ -47,13 +47,13 @@ export const afterdark: Studio = {
     },
     /* M3 из мокапа, вырезка scripts/hero-car/m3.json */
     car: {
-      src: "/hero/car.webp",
-      lights: "/hero/car-lights.webp",
+      src: "/hero/m3/car.webp",
+      lights: "/hero/m3/car-lights.webp",
       width: 2000,
       height: 1501,
       headlights: [
-        { x: 18.4, y: 55 },
-        { x: 81.6, y: 55.4 },
+        { x: 16.4, y: 55.7 },
+        { x: 83.7, y: 55.3 },
       ],
     },
   },
