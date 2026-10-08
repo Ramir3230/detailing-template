@@ -1,31 +1,76 @@
 "use client";
 
 import Image from "next/image";
-import { createContext, use, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { HeroCar as HeroCarData } from "@/content/types";
 
-/* Фото машины загружено и раскодировано — сцена загорается. Не загрузилось — тоже:
-   погашенная навсегда сцена оставила бы логотип тусклым */
-const Ignite = createContext<() => void>(() => {});
+/*
+ * Фото загружено и раскодировано: машина и слой фар — каждый своим сигналом. Не
+ * загрузилось — тоже сигнал: погашенная навсегда сцена оставила бы логотип тусклым.
+ */
+const Ready = createContext({ car: () => {}, lights: () => {} });
 
 type StageProps = { id: string; className: string; children: ReactNode };
 
 /*
- * Секция hero со сценой зажигания (DESIGN.md, «Движение»). Когда машина загрузилась,
- * на секции появляется data-lit, и app/globals.css зажигает фары, кузов, неон пола и
- * логотип. Сама сцена — CSS, здесь только момент старта.
+ * Секция hero со сценой зажигания (DESIGN.md, «Движение»). Когда готовы и машина, и
+ * слой фар, на секции появляется data-lit, и app/globals.css зажигает фары, кузов, неон
+ * пола и логотип. Сама сцена — CSS, здесь только её моменты:
+ * - data-ignited — сцена отыграла. Next держит ушедшую страницу в DOM скрытой
+ *   (cacheComponents) и при возврате показывает снова, а показ перезапускает CSS-анимации:
+ *   после data-ignited их на сцене нет, остаётся финальный кадр;
+ * - data-hidden — страница скрыта: для CSS шапки hero на ней больше нет.
  */
 export function HeroStage({ id, className, children }: StageProps) {
-  const [lit, setLit] = useState(false);
+  const section = useRef<HTMLElement>(null);
+  const [car, setCar] = useState(false);
+  const [lights, setLights] = useState(false);
+  const [ignited, setIgnited] = useState(false);
+  const lit = car && lights;
+
+  // Очистка срабатывает и тогда, когда Next прячет страницу, а не только при размонтировании
+  useLayoutEffect(() => {
+    const element = section.current;
+    element?.removeAttribute("data-hidden");
+    return () => element?.setAttribute("data-hidden", "");
+  }, []);
+
+  // Сцена отыграла, когда закончились все её анимации и переходы
+  useEffect(() => {
+    if (!lit || ignited || !section.current) return;
+    let current = true;
+    const running = section.current.getAnimations({ subtree: true }).map((a) => a.finished);
+    Promise.allSettled(running).then(() => {
+      if (current) setIgnited(true);
+    });
+    return () => {
+      current = false;
+    };
+  }, [lit, ignited]);
 
   return (
-    <section id={id} data-ignition="" data-lit={lit ? "" : undefined} className={className}>
-      <Ignite value={() => setLit(true)}>{children}</Ignite>
+    <section
+      ref={section}
+      id={id}
+      data-ignition=""
+      data-lit={lit ? "" : undefined}
+      data-ignited={ignited ? "" : undefined}
+      className={className}
+    >
+      <Ready value={{ car: () => setCar(true), lights: () => setLights(true) }}>{children}</Ready>
     </section>
   );
 }
 
-/* Машина на телефоне — 92% ширины экрана, на десктопе — до 780 px */
+/* Машина на телефоне — 92% ширины экрана, на десктопе — до 780 px (--container-hero-car) */
 const sizes = "(min-width: 1024px) 780px, 92vw";
 
 const layer = "pointer-events-none absolute mix-blend-screen";
@@ -36,7 +81,7 @@ const layer = "pointer-events-none absolute mix-blend-screen";
  * совпадают при любой ширине. Картинки декоративные: смысл несёт заголовок.
  */
 export function HeroCar({ car, className = "" }: { car: HeroCarData; className?: string }) {
-  const ignite = use(Ignite);
+  const ready = use(Ready);
   const { src, lights, width, height, headlights } = car;
 
   return (
@@ -52,8 +97,8 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         sizes={sizes}
         alt=""
         preload
-        onLoad={ignite}
-        onError={ignite}
+        onLoad={ready.car}
+        onError={ready.car}
         className="fade-bottom ignite-body relative block size-full"
       />
       <Image
@@ -72,6 +117,8 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         sizes={sizes}
         alt=""
         loading="eager"
+        onLoad={ready.lights}
+        onError={ready.lights}
         className={`${layer} ignite-rings inset-0 size-full`}
       />
       {/* Ореол вдвое шире светодиодов фары: ложится на фару и край крыла */}

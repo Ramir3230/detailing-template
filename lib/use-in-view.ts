@@ -13,15 +13,16 @@ type Options = {
 /**
  * Виден ли на экране элемент с этим id. Нулевой порог ловит и момент касания края, где
  * доля ещё 0. Ответ помнится вместе со страницей, на которой получен: после перехода,
- * пока наблюдатель не ответил, и на странице без элемента — снова initial. Только для
- * клиентских компонентов.
+ * пока наблюдатель не ответил, и на странице без элемента или со скрытым — снова
+ * initial. Только для клиентских компонентов.
  */
 export function useInView(id: string, { initial, rootMargin = "0px", restartOn }: Options): boolean {
   const [seen, setSeen] = useState({ on: restartOn, visible: initial });
 
   useEffect(() => {
+    // Скрытый элемент — со страницы, которую Next держит в DOM после ухода с неё
     const element = document.getElementById(id);
-    if (!element) return;
+    if (!element || !element.getClientRects().length) return;
     const observer = new IntersectionObserver(
       ([entry]) => setSeen({ on: restartOn, visible: entry.isIntersecting }),
       { threshold: [0], rootMargin },
