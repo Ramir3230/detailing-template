@@ -45,6 +45,17 @@ export const afterdark: Studio = {
     lead: {
       pl: "Studio detailingu na Woli. Korekta lakieru, ceramika, wnętrze — z ceną dla Twojej klasy auta od razu na stronie.",
     },
+    /* M3 из мокапа, вырезка scripts/hero-car/m3.json */
+    car: {
+      src: "/hero/car.webp",
+      lights: "/hero/car-lights.webp",
+      width: 2000,
+      height: 1501,
+      headlights: [
+        { x: 18.4, y: 55 },
+        { x: 81.6, y: 55.4 },
+      ],
+    },
   },
   carClasses: {
     S: { pl: "Małe samochody, segment kompaktowy" },
