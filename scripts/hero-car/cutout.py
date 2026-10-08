@@ -89,9 +89,9 @@ def leds(ramp: np.ndarray, zone: tuple[int, int, int, int]) -> np.ndarray:
 
 
 def extract_lights(car: Image.Image, zones, levels) -> tuple[Image.Image, list[dict[str, float]]]:
-    """Слой светодиодов того же размера, что машина, и центры фар в процентах кадра.
-    Центр — середина рамки вокруг светодиодов: центр тяжести тянут вниз самые яркие
-    нижние дуги колец."""
+    """Слой светодиодов того же размера, что машина, и фары в процентах кадра: центр и
+    ширина рамки вокруг светодиодов. Центр — середина рамки: центр тяжести тянут вниз
+    самые яркие нижние дуги колец. По ширине страница растягивает ореол фары."""
     rgba = np.asarray(car, dtype=np.float64)
     lo, hi = levels
     ramp = np.clip((rgba[..., :3] @ LUMA - lo) / (hi - lo), 0, 1)
@@ -105,7 +105,12 @@ def extract_lights(car: Image.Image, zones, levels) -> tuple[Image.Image, list[d
         ys, xs = np.nonzero(keep)
         x = left + (xs.min() + xs.max() + 1) / 2
         y = top + (ys.min() + ys.max() + 1) / 2
-        centres.append({"x": round(x / car.width * 100, 1), "y": round(y / car.height * 100, 1)})
+        w = xs.max() - xs.min() + 1
+        centres.append({
+            "x": round(x / car.width * 100, 1),
+            "y": round(y / car.height * 100, 1),
+            "w": round(w / car.width * 100, 1),
+        })
     alpha *= rgba[..., 3] / 255
     out = np.dstack([rgba[..., :3], alpha * 255])
     return Image.fromarray(out.round().astype(np.uint8), "RGBA"), centres

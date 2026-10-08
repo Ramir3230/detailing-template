@@ -53,8 +53,8 @@ export const afterdark: Studio = {
       width: 2000,
       height: 1501,
       headlights: [
-        { x: 16.4, y: 55.7 },
-        { x: 83.7, y: 55.3 },
+        { x: 16.4, y: 55.7, w: 16.4 },
+        { x: 83.7, y: 55.3, w: 16.2 },
       ],
     },
   },

@@ -67,8 +67,8 @@ describe("active studio data", () => {
       expect(size).toEqual({ width: car.width, height: car.height });
     }
     expect(car.headlights[0].x).toBeLessThan(car.headlights[1].x);
-    for (const { x, y } of car.headlights) {
-      for (const value of [x, y]) expect(value > 0 && value < 100).toBe(true);
+    for (const { x, y, w } of car.headlights) {
+      for (const value of [x, y, w]) expect(value > 0 && value < 100).toBe(true);
     }
   });
 });

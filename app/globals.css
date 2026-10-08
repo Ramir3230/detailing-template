@@ -3,9 +3,9 @@
 /* Телефон ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается */
 @custom-variant short (@media (height < 600px) and (width < 64rem));
 
-/* Страница с hero, то есть главная (id — sectionIds.hero). :where — без веса: состояние
-   data-shown у шапки должно перебивать спрятанное */
-@custom-variant with-hero (:where(body:has(#top)) &);
+/* Страница с hero, то есть главная: на ней сцена зажигания. :where — без веса:
+   состояние data-shown у шапки должно перебивать спрятанное */
+@custom-variant with-hero (:where(body:has([data-ignition])) &);
 
 /*
  * База шаблона (DESIGN.md). Четыре цвета темы приходят из данных студии переменными
