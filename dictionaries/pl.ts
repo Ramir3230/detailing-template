@@ -50,7 +50,6 @@ export const pl: Dictionary = {
     stars: "{value} z 5 gwiazdek",
     count: { one: "opinia", few: "opinie", many: "opinii", other: "opinii" },
     inGoogle: "{count} w Google",
-    newTab: "otwiera się w nowej karcie",
     demoNote: "Wersja demonstracyjna. Tu będzie link do opinii Twojego studia w Google Maps.",
     close: "Zamknij",
     previous: "Poprzednia opinia",
@@ -62,6 +61,7 @@ export const pl: Dictionary = {
     google: "Opinia z Google",
   },
   contact: { title: "Kontakt", route: "Trasa" },
+  newTab: "otwiera się w nowej karcie",
   footer: { services: "Usługi", studio: "Studio" },
   language: { label: "Język", names: { pl: "PL", ru: "RU" } },
 };

@@ -55,6 +55,7 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
                 className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border border-line-strong px-4 text-15 font-medium transition-colors hover:border-accent-border"
               >
                 {dict.contact.route}
+                <span className="sr-only"> ({dict.newTab})</span>
                 <ArrowIcon size={16} />
               </a>
             )}

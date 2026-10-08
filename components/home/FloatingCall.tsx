@@ -42,7 +42,7 @@ export function FloatingCall({ href, label, phone }: Props) {
       href={href}
       inert={!shown}
       data-shown={shown ? "" : undefined}
-      className="group invisible fixed right-4 bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] z-30 translate-y-3 opacity-0 transition-[opacity,translate,visibility] duration-200 ease-in data-shown:visible data-shown:translate-y-0 data-shown:opacity-100 data-shown:transition-[translate] data-shown:duration-[600ms] data-shown:ease-warm lg:right-8 lg:bottom-8"
+      className="group invisible fixed right-4 bottom-4 z-30 translate-y-3 opacity-0 transition-[opacity,translate,visibility] duration-200 ease-in data-shown:visible data-shown:translate-y-0 data-shown:opacity-100 data-shown:transition-[translate] data-shown:duration-[600ms] data-shown:ease-warm lg:right-8 lg:bottom-8"
     >
       <span className="glass-float glow-call flex h-12 items-center gap-2 rounded-full border border-accent-border px-5 text-15 font-medium transition-colors group-data-shown:animate-[neon-strike_0.6s_linear_both] hover:bg-accent-hover">
         <PhoneIcon size={18} />

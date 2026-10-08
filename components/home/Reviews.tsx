@@ -42,7 +42,7 @@ export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
         <div className="lg:max-w-95 lg:flex-[1_1_300px]">
           <SectionTitle>{words.title}</SectionTitle>
           <div className="mt-6 flex items-center justify-center gap-4 lg:mt-7 lg:justify-start lg:gap-5">
-            <span className="display text-40 leading-none tracking-display normal-case lg:text-64">
+            <span aria-hidden="true" className="display text-40 leading-none tracking-display lg:text-64">
               {formatRating(rating.value)}
             </span>
             <div className="flex flex-col items-start gap-1 lg:gap-2">
@@ -60,7 +60,7 @@ export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
               {rating.url ? (
                 <a href={rating.url} target="_blank" rel="noopener noreferrer" className={ratingLinkClass}>
                   {ratingText}
-                  <span className="sr-only"> ({words.newTab})</span>
+                  <span className="sr-only"> ({dict.newTab})</span>
                   <ExternalIcon size={14} />
                 </a>
               ) : (

@@ -50,7 +50,6 @@ export const ru: Dictionary = {
     stars: "{value} из 5 звёзд",
     count: { one: "отзыв", few: "отзыва", many: "отзывов", other: "отзыва" },
     inGoogle: "{count} в Google",
-    newTab: "открывается в новой вкладке",
     demoNote: "Демо-версия. Здесь будет ссылка на отзывы вашей студии в Google Maps.",
     close: "Закрыть",
     previous: "Предыдущий отзыв",
@@ -62,6 +61,7 @@ export const ru: Dictionary = {
     google: "Отзыв из Google",
   },
   contact: { title: "Контакты", route: "Маршрут" },
+  newTab: "открывается в новой вкладке",
   footer: { services: "Услуги", studio: "Студия" },
   language: { label: "Язык", names: { pl: "PL", ru: "RU" } },
 };
