@@ -86,7 +86,12 @@ export type Volume = {
   setCar(layers: Layers): void;
   /** Браузер сменил кандидата из srcset — заново взять фото и фары. */
   refresh(): void;
-  draw(frame: Frame): void;
+  /**
+   * Что нарисовано: неон на полу (программы собраны — холст отвечает за неон, даже пока
+   * вспышка на нуле) и машина. waiting — программы ещё собираются, кадр надо повторить.
+   * Бросает исключение, если шейдер не собрался.
+   */
+  draw(frame: Frame): { floor: boolean; car: boolean; waiting: boolean };
   destroy(): void;
 };
 
@@ -258,7 +263,7 @@ uniform float uNeon;
 uniform float uGloss;
 // Трубка под губой: x левого и правого концов, z, высота
 uniform vec4 uTube;
-// Трубки порогов: |x|, z от и до, высота
+// Трубки порогов: x левой и правой, z от и до; высота — как у трубки под губой
 uniform vec4 uSill;
 // Колёса: x, полуширина, z, полуглубина
 uniform vec4 uWheels[2];
@@ -403,11 +408,12 @@ void main() {
       glint += stack.z * lineGlint(p, view, left, right, alpha, stack.x);
     }
     for (int side = -1; side <= 1; side += 2) {
-      vec3 sill0 = vec3(float(side) * uSill.x, uSill.w, uSill.y);
-      vec3 sill1 = vec3(float(side) * uSill.x, uSill.w, uSill.z);
+      float sillX = side < 0 ? uSill.x : uSill.y;
+      vec3 sill0 = vec3(sillX, uTube.w, uSill.z);
+      vec3 sill1 = vec3(sillX, uTube.w, uSill.w);
       // Бампер заслоняет и пороги: впереди губы их свет доходит только через щель. Сбоку
       // от кузова бампера нет
-      float sillAtLip = (uSill.w - FLOOR) * ahead / max(p.z - uSill.y, 1e-3);
+      float sillAtLip = (uTube.w - FLOOR) * ahead / max(p.z - uSill.z, 1e-3);
       float bumper = 1.0 - smoothstep(uBody.x - 0.05, uBody.x + 0.05, abs(p.x));
       float seen = visibility(p, sill0, sill1) * (1.0 - bumper * smoothstep(GAP * 0.5, GAP * 1.6, sillAtLip));
       diffuse += lineDiffuse(p, sill0, sill1) * seen;
@@ -458,31 +464,54 @@ void main() {
 }
 `;
 
-function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-  const shader = gl.createShader(type);
-  if (!shader) throw new Error("createShader");
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    throw new Error(gl.getShaderInfoLog(shader) ?? "compileShader");
-  }
-  return shader;
-}
+type Linking = { program: WebGLProgram; ready(): boolean };
 
-/* Собранной программе шейдеры больше не нужны */
-function link(gl: WebGL2RenderingContext, vertex: string, fragment: string): WebGLProgram {
+/*
+ * Сборка программы. С расширением KHR_parallel_shader_compile браузер собирает её в
+ * фоне, а ready() только спрашивает, готова ли: главный поток не встаёт посреди
+ * зажигания. Без расширения ready() ждёт сборку. Не собралась — исключение из ready()
+ * с журналом компилятора.
+ */
+function startLink(
+  gl: WebGL2RenderingContext,
+  parallel: KHR_parallel_shader_compile | null,
+  vertex: string,
+  fragment: string,
+): Linking {
   const program = gl.createProgram();
-  const shaders = [compile(gl, gl.VERTEX_SHADER, vertex), compile(gl, gl.FRAGMENT_SHADER, fragment)];
-  for (const shader of shaders) gl.attachShader(program, shader);
+  const sources = [
+    [gl.VERTEX_SHADER, vertex],
+    [gl.FRAGMENT_SHADER, fragment],
+  ] as const;
+  const shaders = sources.map(([type, source]) => {
+    const shader = gl.createShader(type);
+    if (!shader) throw new Error("createShader");
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    gl.attachShader(program, shader);
+    return shader;
+  });
   gl.linkProgram(program);
-  for (const shader of shaders) {
-    gl.detachShader(program, shader);
-    gl.deleteShader(shader);
-  }
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    throw new Error(gl.getProgramInfoLog(program) ?? "linkProgram");
-  }
-  return program;
+  let done = false;
+  return {
+    program,
+    ready() {
+      if (done) return true;
+      if (parallel && !gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)) return false;
+      const linked = Boolean(gl.getProgramParameter(program, gl.LINK_STATUS));
+      const log = linked
+        ? ""
+        : [...shaders.map((shader) => gl.getShaderInfoLog(shader)), gl.getProgramInfoLog(program)].join("\n");
+      // Собранной программе шейдеры больше не нужны
+      for (const shader of shaders) {
+        gl.detachShader(program, shader);
+        gl.deleteShader(shader);
+      }
+      done = true;
+      if (!linked) throw new Error(log || "linkProgram");
+      return true;
+    },
+  };
 }
 
 /* Фото — с premultiplied alpha и мип-уровнями (машина на экране меньше файла, а ореол
@@ -548,9 +577,10 @@ function linear([r, g, b]: [number, number, number]): [number, number, number] {
 }
 
 /**
- * Готовит сцену: шейдеры собираются сразу, ещё до фото, — неон на полу горит с самого
- * зажигания; машина и отражение — после setCar. Бросает исключение, если шейдеры не
- * собрались: страница остаётся со статичной машиной и неоном на CSS.
+ * Готовит сцену. Программы пола собираются сразу, ещё до фото, — неон на полу горит с
+ * самого зажигания; программа машины — в setCar, когда сцена отыграла. Не собравшийся
+ * шейдер бросает исключение из draw: страница остаётся со статичной машиной и неоном на
+ * CSS.
  */
 export function createVolume(
   gl: WebGL2RenderingContext,
@@ -566,77 +596,106 @@ export function createVolume(
     underglow?: Underglow;
   },
 ): Volume {
-  const carProgram = link(gl, carVertex, carFragment);
-  const floorProgram = link(gl, floorVertex, floorFragment);
-  const stretchProgram = link(gl, floorVertex, stretchFragment);
+  const parallel = gl.getExtension("KHR_parallel_shader_compile");
+  const floorLink = startLink(gl, parallel, floorVertex, floorFragment);
+  const stretchLink = startLink(gl, parallel, floorVertex, stretchFragment);
+  let carLink: Linking | null = null;
   const floorTexture = gl.createTexture();
   const floorBuffer = gl.createFramebuffer();
-  let floorSize = [1, 1];
-  const mesh = grid(gl, carProgram, aspect);
   const empty = gl.createVertexArray();
   const [color, lights, map] = [gl.createTexture(), gl.createTexture(), gl.createTexture()];
+  let mesh: ReturnType<typeof grid> | null = null;
   let layers: Layers | null = null;
+  let size = [0, 0];
+  let floorSize = [0, 0];
+  let carCssWidth = 0;
 
   const frame = [0, frameCenterY, aspect / 2 + FIELD.side, frameHalfY] as const;
-  const accentLinear = linear(accent);
-
-  const car = (name: string) => gl.getUniformLocation(carProgram, name);
-  gl.useProgram(carProgram);
-  gl.uniform1i(car("uColor"), 0);
-  gl.uniform1i(car("uLights"), 1);
-  gl.uniform1i(car("uMap"), 2);
-  gl.uniform1f(car("uAspect"), aspect);
-  gl.uniform3f(car("uAccent"), ...accent);
-  gl.uniform3fv(car("uHeadlights"), headlights.flatMap(({ x, y, w }) => [x / 100, y / 100, w / 100]));
-  gl.uniform4f(car("uFrame"), ...frame);
-  const carUniforms = {
-    rotation: car("uRotation"),
-    depth: car("uDepth"),
-    panel: car("uPanel"),
-    light: car("uLight"),
-    mirror: car("uMirror"),
-    fade: car("uFade"),
-    reflection: car("uReflection"),
-    gloss: car("uGloss"),
-    resolution: car("uResolution"),
-    bloomStep: car("uBloomStep"),
-    bloomLod: car("uBloomLod"),
-  };
-
-  const floor = (name: string) => gl.getUniformLocation(floorProgram, name);
-  gl.useProgram(floorProgram);
-  gl.uniform4f(floor("uFrame"), ...frame);
-  gl.uniform3f(floor("uAccent"), ...accentLinear);
-  const floorUniforms = {
-    resolution: floor("uResolution"),
-    yaw: floor("uYaw"),
-    neon: floor("uNeon"),
-    gloss: floor("uGloss"),
-    tube: floor("uTube"),
-    sill: floor("uSill"),
-    wheels: floor("uWheels"),
-    haze: floor("uHaze"),
-    body: floor("uBody"),
-  };
-
-  gl.useProgram(stretchProgram);
-  gl.uniform1i(gl.getUniformLocation(stretchProgram, "uFloor"), 3);
-  const stretchResolution = gl.getUniformLocation(stretchProgram, "uResolution");
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
 
-  let carCssWidth = 0;
-  let size = [1, 1];
+  /* Программы пола готовы — один раз задать то, что не меняется */
+  type FloorUniform = "resolution" | "yaw" | "neon" | "gloss" | "tube" | "sill" | "wheels" | "haze" | "body" | "stretch";
+  let floorUniforms: Record<FloorUniform, WebGLUniformLocation | null> | null = null;
+  const floorReady = () => {
+    if (floorUniforms) return true;
+    if (!floorLink.ready() || !stretchLink.ready()) return false;
+    const at = (name: string) => gl.getUniformLocation(floorLink.program, name);
+    gl.useProgram(floorLink.program);
+    gl.uniform4f(at("uFrame"), ...frame);
+    gl.uniform3f(at("uAccent"), ...linear(accent));
+    gl.useProgram(stretchLink.program);
+    gl.uniform1i(gl.getUniformLocation(stretchLink.program, "uFloor"), 3);
+    floorUniforms = {
+      resolution: at("uResolution"),
+      yaw: at("uYaw"),
+      neon: at("uNeon"),
+      gloss: at("uGloss"),
+      tube: at("uTube"),
+      sill: at("uSill"),
+      wheels: at("uWheels"),
+      haze: at("uHaze"),
+      body: at("uBody"),
+      stretch: gl.getUniformLocation(stretchLink.program, "uResolution"),
+    };
+    return true;
+  };
+
+  /* Программа машины готова — сетка и постоянные значения */
+  type CarUniform =
+    | "rotation"
+    | "depth"
+    | "light"
+    | "mirror"
+    | "fade"
+    | "reflection"
+    | "gloss"
+    | "resolution"
+    | "bloomStep"
+    | "bloomLod";
+  let carUniforms: Record<CarUniform, WebGLUniformLocation | null> | null = null;
   // Размытие ореола светодиодов — 6 CSS-пикселей, как blur(6px) у .lights-bloom
   const bloom = () => {
-    if (!carCssWidth || !layers) return;
+    if (!carCssWidth || !layers || !carUniforms || !carLink) return;
     const sigma = 6 / carCssWidth;
-    gl.useProgram(carProgram);
+    gl.useProgram(carLink.program);
     gl.uniform2f(carUniforms.bloomStep, sigma, sigma * aspect);
     gl.uniform1f(carUniforms.bloomLod, Math.max(0, Math.log2(sigma * layers.lights.naturalWidth)));
   };
+  const carReady = () => {
+    if (carUniforms) return true;
+    if (!carLink || !layers || !carLink.ready()) return false;
+    const program = carLink.program;
+    const at = (name: string) => gl.getUniformLocation(program, name);
+    mesh = grid(gl, program, aspect);
+    gl.useProgram(program);
+    gl.uniform1i(at("uColor"), 0);
+    gl.uniform1i(at("uLights"), 1);
+    gl.uniform1i(at("uMap"), 2);
+    gl.uniform1f(at("uAspect"), aspect);
+    gl.uniform3f(at("uAccent"), ...accent);
+    gl.uniform3fv(at("uHeadlights"), headlights.flatMap(({ x, y, w }) => [x / 100, y / 100, w / 100]));
+    gl.uniform4f(at("uFrame"), ...frame);
+    // Полтексела панели: выборка у её края не заглядывает в соседнюю
+    gl.uniform1f(at("uPanel"), 0.5 / (layers.map.naturalHeight / 3));
+    carUniforms = {
+      rotation: at("uRotation"),
+      depth: at("uDepth"),
+      light: at("uLight"),
+      mirror: at("uMirror"),
+      fade: at("uFade"),
+      reflection: at("uReflection"),
+      gloss: at("uGloss"),
+      resolution: at("uResolution"),
+      bloomStep: at("uBloomStep"),
+      bloomLod: at("uBloomLod"),
+    };
+    bloom();
+    return true;
+  };
+
   const photos = () => {
     if (!layers) return;
     upload(gl, 0, color, layers.color, "photo");
@@ -645,14 +704,13 @@ export function createVolume(
 
   /* Подсветка в машинных координатах: губа машины — на её ближайшей глубине */
   const x = (percent: number) => (percent / 100 - 0.5) * aspect;
+  const half = (percent: number) => (percent / 200) * aspect;
   const glow = (depth: number, yaw: number) => {
     if (!underglow) return null;
     const lip = (1 - PIVOT) * depth;
     const [left, right] = underglow.wheels;
     const wheelZ = lip - WHEEL_BEHIND_LIP;
-    const wheels = [left, right].flatMap(({ x: at, w }) => [x(at), (w / 200) * aspect, wheelZ, WHEEL_HALF_DEPTH]);
-    // Пороги — по внутреннему краю колёс, от колёс назад
-    const sillX = Math.abs(x(right.x)) - (right.w / 200) * aspect;
+    const wheels = [left, right].flatMap(({ x: at, w }) => [x(at), half(w), wheelZ, WHEEL_HALF_DEPTH]);
     const tubeZ = lip - TUBE_BEHIND_LIP;
     const tubeY = FLOOR + TUBE_HEIGHT;
     // Трубка под губой на экране: разворот, затем перспектива
@@ -666,7 +724,13 @@ export function createVolume(
     return {
       yaw: [cos, sin],
       tube: [x(underglow.tube[0]), x(underglow.tube[1]), tubeZ, tubeY],
-      sill: [sillX, wheelZ - WHEEL_HALF_DEPTH, wheelZ - WHEEL_HALF_DEPTH - SILL_LENGTH, tubeY],
+      // Пороги — по внутреннему краю своего колеса, от колёс назад
+      sill: [
+        x(left.x) + half(left.w),
+        x(right.x) - half(right.w),
+        wheelZ - WHEEL_HALF_DEPTH,
+        wheelZ - WHEEL_HALF_DEPTH - SILL_LENGTH,
+      ],
       wheels,
       haze: [...project(x(underglow.tube[0])), ...project(x(underglow.tube[1]))],
       body: [aspect / 2, lip],
@@ -695,10 +759,7 @@ export function createVolume(
       layers = loaded;
       photos();
       upload(gl, 2, map, loaded.map, "data");
-      gl.useProgram(carProgram);
-      // Полтексела панели: выборка у её края не заглядывает в соседнюю
-      gl.uniform1f(carUniforms.panel, 0.5 / (loaded.map.naturalHeight / 3));
-      bloom();
+      carLink = startLink(gl, parallel, carVertex, carFragment);
     },
     refresh() {
       photos();
@@ -707,12 +768,14 @@ export function createVolume(
     draw(state) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       const scene = glow(state.depth, state.yaw);
-      if (scene && state.neon > 0) {
+      const floor = Boolean(scene) && floorReady();
+      // Холст ещё не мерили — пол рисовать некуда
+      if (scene && floor && floorUniforms && state.neon > 0 && floorSize[0] > 0) {
         gl.disable(gl.DEPTH_TEST);
         gl.bindFramebuffer(gl.FRAMEBUFFER, floorBuffer);
         gl.viewport(0, 0, floorSize[0], floorSize[1]);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.useProgram(floorProgram);
+        gl.useProgram(floorLink.program);
         gl.bindVertexArray(empty);
         gl.uniform2f(floorUniforms.resolution, floorSize[0], floorSize[1]);
         gl.uniform2f(floorUniforms.yaw, scene.yaw[0], scene.yaw[1]);
@@ -726,15 +789,17 @@ export function createVolume(
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, size[0], size[1]);
-        gl.useProgram(stretchProgram);
+        gl.useProgram(stretchLink.program);
         gl.activeTexture(gl.TEXTURE3);
         gl.bindTexture(gl.TEXTURE_2D, floorTexture);
-        gl.uniform2f(stretchResolution, size[0], size[1]);
+        gl.uniform2f(floorUniforms.stretch, size[0], size[1]);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
-      if (!layers) return;
+      const car = carReady();
+      const waiting = (Boolean(scene) && !floor) || (Boolean(carLink) && !car);
+      if (!car || !carLink || !carUniforms || !mesh) return { floor, car: false, waiting };
       gl.enable(gl.DEPTH_TEST);
-      gl.useProgram(carProgram);
+      gl.useProgram(carLink.program);
       gl.bindVertexArray(mesh.vao);
       gl.uniformMatrix3fv(carUniforms.rotation, false, state.rotation);
       gl.uniform1f(carUniforms.depth, state.depth);
@@ -752,17 +817,23 @@ export function createVolume(
         gl.uniform1i(carUniforms.mirror, 0);
         gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
       }
+      return { floor, car: state.car, waiting };
     },
     destroy() {
-      gl.deleteVertexArray(mesh.vao);
+      if (mesh) {
+        gl.deleteVertexArray(mesh.vao);
+        for (const buffer of mesh.buffers) gl.deleteBuffer(buffer);
+      }
       gl.deleteVertexArray(empty);
-      for (const buffer of mesh.buffers) gl.deleteBuffer(buffer);
-      for (const texture of [color, lights, map]) gl.deleteTexture(texture);
-      gl.deleteProgram(carProgram);
-      gl.deleteProgram(floorProgram);
-      gl.deleteProgram(stretchProgram);
-      gl.deleteTexture(floorTexture);
+      for (const texture of [color, lights, map, floorTexture]) gl.deleteTexture(texture);
       gl.deleteFramebuffer(floorBuffer);
+      for (const linking of [floorLink, stretchLink, carLink]) {
+        if (!linking) continue;
+        // Программу, которая ещё собирается в фоне, сначала дособрать: удалённая посреди
+        // сборки, она сыплет в консоль ошибками GL (StrictMode, уход со страницы)
+        gl.getProgramParameter(linking.program, gl.LINK_STATUS);
+        gl.deleteProgram(linking.program);
+      }
     },
   };
 }
