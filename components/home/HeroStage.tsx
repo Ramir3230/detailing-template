@@ -4,7 +4,8 @@ import Image from "next/image";
 import { createContext, use, useState, type ReactNode } from "react";
 import type { HeroCar as HeroCarData } from "@/content/types";
 
-/* Фото машины загружено и раскодировано — сцена загорается */
+/* Фото машины загружено и раскодировано — сцена загорается. Не загрузилось — тоже:
+   погашенная навсегда сцена оставила бы логотип тусклым */
 const Ignite = createContext<() => void>(() => {});
 
 type StageProps = { id: string; className: string; children: ReactNode };
@@ -52,6 +53,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         alt=""
         preload
         onLoad={ignite}
+        onError={ignite}
         className="fade-bottom ignite-body relative block size-full"
       />
       <Image
@@ -72,12 +74,13 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         loading="eager"
         className={`${layer} ignite-rings inset-0 size-full`}
       />
-      {headlights.map(({ x, y }) => (
+      {/* Ореол вдвое шире светодиодов фары: ложится на фару и край крыла */}
+      {headlights.map(({ x, y, w }) => (
         <div
           key={`${x}-${y}`}
           aria-hidden="true"
-          style={{ left: `${x}%`, top: `${y}%` }}
-          className={`${layer} glow-headlight ignite-headlight aspect-[2/1] w-[34%] -translate-x-1/2 -translate-y-1/2`}
+          style={{ left: `${x}%`, top: `${y}%`, width: `${w * 2}%` }}
+          className={`${layer} glow-headlight ignite-headlight aspect-[2/1] -translate-x-1/2 -translate-y-1/2`}
         />
       ))}
     </div>

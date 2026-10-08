@@ -25,16 +25,14 @@ export function Hero({ lang, dict }: Props) {
       {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания */}
       <div className="text-center">
         <div className="grid text-30 short:text-24">
-          <span className="display col-start-1 row-start-1 leading-logo tracking-logo text-muted">
-            {studio.logo}
-          </span>
+          <Logo unlit className="col-start-1 row-start-1" />
           <span aria-hidden="true" className="ignite-logo col-start-1 row-start-1">
             <Logo />
           </span>
         </div>
         {studio.logoCaption && (
           // Слева поле на ширину разрядки: она висит и справа от последней буквы
-          <p className="mt-1 pl-[0.5em] text-11 tracking-wordmark text-muted uppercase">
+          <p className="mt-1 pl-(--tracking-wordmark) text-11 tracking-wordmark text-muted uppercase">
             {studio.logoCaption}
           </p>
         )}

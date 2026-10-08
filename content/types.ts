@@ -70,8 +70,8 @@ export type Review = {
   source: "google" | "example";
 };
 
-/** Точка в процентах кадра: x слева, y сверху, оба 0–100. */
-export type Point = { x: number; y: number };
+/** Фара в процентах кадра машины: центр (x слева, y сверху) и ширина её светодиодов. */
+export type Headlight = { x: number; y: number; w: number };
 
 /**
  * Машина hero (DESIGN.md, «Фотографии»): вырезка на прозрачном фоне и слой светодиодов
@@ -83,8 +83,8 @@ export type HeroCar = {
   lights: string;
   width: number;
   height: number;
-  /** Центры левой и правой фары: на них встаёт ореол. */
-  headlights: readonly [Point, Point];
+  /** Левая и правая фары: по ним встаёт и растягивается ореол. */
+  headlights: readonly [Headlight, Headlight];
 };
 
 /** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
