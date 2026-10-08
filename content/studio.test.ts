@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import { messengerHref, telHref } from "@/lib/contact";
@@ -56,6 +58,19 @@ describe("active studio data", () => {
       expect(day.close > day.open).toBe(true);
     }
   });
+
+  it("has the hero car files in the size the data claims, headlights inside the frame", () => {
+    const { car } = studio.hero;
+    for (const src of [car.src, car.lights]) {
+      expect(src).toMatch(/^\/[\w\-/]+\.webp$/);
+      const size = webpSize(readFileSync(join(process.cwd(), "public", src)));
+      expect(size).toEqual({ width: car.width, height: car.height });
+    }
+    expect(car.headlights[0].x).toBeLessThan(car.headlights[1].x);
+    for (const { x, y, w } of car.headlights) {
+      for (const value of [x, y, w]) expect(value > 0 && value < 100).toBe(true);
+    }
+  });
 });
 
 /* Контраст по WCAG 2: относительная яркость двух цветов #rrggbb. */
@@ -70,4 +85,19 @@ function luminance(hex: string): number {
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/* Размер WebP из заголовка: VP8X (с прозрачностью), VP8L (без потерь) или VP8 (простой). */
+function webpSize(file: Buffer): { width: number; height: number } {
+  expect(file.toString("ascii", 0, 4) + file.toString("ascii", 8, 12)).toBe("RIFFWEBP");
+  const chunk = file.toString("ascii", 12, 16);
+  if (chunk === "VP8X") {
+    return { width: file.readUIntLE(24, 3) + 1, height: file.readUIntLE(27, 3) + 1 };
+  }
+  if (chunk === "VP8L") {
+    const bits = file.readUInt32LE(21);
+    return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
+  }
+  expect(chunk).toBe("VP8 ");
+  return { width: file.readUInt16LE(26) & 0x3fff, height: file.readUInt16LE(28) & 0x3fff };
 }

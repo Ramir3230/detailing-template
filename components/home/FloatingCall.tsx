@@ -1,39 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { PhoneIcon } from "@/components/icons";
 import { sectionIds } from "@/lib/nav";
+import { useHeroInView, useInView } from "@/lib/use-in-view";
 
 type Props = { href: string; label: string; phone: string };
 
 /*
  * Плавающая «Zadzwoń» (DESIGN.md): видна только между hero и контактами — у обоих свои
- * кнопки звонка. Контакты считаются на экране, когда дошли до верхних 60% экрана.
+ * кнопки звонка. Появляется в один момент с шапкой: обе следят за hero одним хуком.
+ * Контакты считаются на экране, когда дошли до верхних 60% экрана.
  * Внешний слой выезжает и прячется (уход быстрее появления), внутренний загорается
  * ударом неона — так анимации не спорят за прозрачность.
  */
 export function FloatingCall({ href, label, phone }: Props) {
-  const [heroVisible, setHeroVisible] = useState(true);
-  const [contactVisible, setContactVisible] = useState(false);
-
-  useEffect(() => {
-    // isIntersecting с нулевым порогом ловит и момент касания края, где доля ещё 0.
-    const watch = (id: string, onChange: (visible: boolean) => void, rootMargin = "0px") => {
-      const element = document.getElementById(id);
-      if (!element) return null;
-      const observer = new IntersectionObserver(([entry]) => onChange(entry.isIntersecting), {
-        threshold: [0],
-        rootMargin,
-      });
-      observer.observe(element);
-      return observer;
-    };
-    const observers = [
-      watch(sectionIds.hero, setHeroVisible),
-      watch(sectionIds.contact, setContactVisible, "0px 0px -40% 0px"),
-    ];
-    return () => observers.forEach((observer) => observer?.disconnect());
-  }, []);
+  const heroVisible = useHeroInView();
+  const contactVisible = useInView(sectionIds.contact, {
+    initial: false,
+    rootMargin: "0px 0px -40% 0px",
+  });
 
   const shown = !heroVisible && !contactVisible;
 

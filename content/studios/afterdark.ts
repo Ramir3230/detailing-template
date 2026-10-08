@@ -9,6 +9,7 @@ import type { Studio } from "@/content/types";
 export const afterdark: Studio = {
   name: "Afterdark Detailing",
   logo: "Afterdark",
+  logoCaption: "Detailing",
   tagline: { pl: "Studio detailingu" },
   meta: {
     title: { pl: "Afterdark Detailing — studio detailingu, Warszawa-Wola" },
@@ -44,6 +45,17 @@ export const afterdark: Studio = {
     subtitle: { pl: "Studio detailingu na Woli" },
     lead: {
       pl: "Studio detailingu na Woli. Korekta lakieru, ceramika, wnętrze — z ceną dla Twojej klasy auta od razu na stronie.",
+    },
+    /* M3 из мокапа, вырезка scripts/hero-car/m3.json */
+    car: {
+      src: "/hero/m3/car.webp",
+      lights: "/hero/m3/car-lights.webp",
+      width: 2000,
+      height: 1501,
+      headlights: [
+        { x: 16.4, y: 55.7, w: 16.4 },
+        { x: 83.7, y: 55.3, w: 16.2 },
+      ],
     },
   },
   carClasses: {

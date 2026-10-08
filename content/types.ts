@@ -70,6 +70,23 @@ export type Review = {
   source: "google" | "example";
 };
 
+/** Фара в процентах кадра машины: центр (x слева, y сверху) и ширина её светодиодов. */
+export type Headlight = { x: number; y: number; w: number };
+
+/**
+ * Машина hero (DESIGN.md, «Фотографии»): вырезка на прозрачном фоне и слой светодиодов
+ * фар того же размера. Готовит scripts/hero-car/cutout.py — он же печатает это поле.
+ */
+export type HeroCar = {
+  /** Пути от public/: «/hero/m3/car.webp». */
+  src: string;
+  lights: string;
+  width: number;
+  height: number;
+  /** Левая и правая фары: по ним встаёт и растягивается ореол. */
+  headlights: readonly [Headlight, Headlight];
+};
+
 /** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
 export type Theme = { bg: string; fg: string; muted: string; accent: string };
 
@@ -78,6 +95,8 @@ export type Studio = {
   name: string;
   /** Логотип-заглушка надписью, прописными. */
   logo: string;
+  /** Подпись под логотипом в hero, разрядкой: «Detailing». */
+  logoCaption?: string;
   /** «Studio detailingu» — подпись под логотипом в подвале. */
   tagline: Text;
   meta: { title: Text; description: Text };
@@ -95,7 +114,7 @@ export type Studio = {
   /** routeUrl — маршрут в Google Maps для кнопки «Trasa»; нет ссылки — нет кнопки. */
   address: { street: string; area: string; routeUrl?: string };
   hours: WeekHours;
-  hero: { title: Text; subtitle: Text; lead: Text };
+  hero: { title: Text; subtitle: Text; lead: Text; car: HeroCar };
   carClasses: Record<CarClass, Text>;
   services: ServiceGroup[];
   /** url — страница отзывов в Google; нет ссылки — строка рейтинга открывает плашку демо. */
