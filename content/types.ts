@@ -95,6 +95,8 @@ export type Studio = {
   name: string;
   /** Логотип-заглушка надписью, прописными. */
   logo: string;
+  /** Подпись под логотипом в hero, разрядкой: «Detailing». */
+  logoCaption?: string;
   /** «Studio detailingu» — подпись под логотипом в подвале. */
   tagline: Text;
   meta: { title: Text; description: Text };

@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Телефон ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается */
+@custom-variant short (@media (height < 600px) and (width < 64rem));
+
+/* Страница с hero, то есть главная (id — sectionIds.hero). :where — без веса: состояние
+   data-shown у шапки должно перебивать спрятанное */
+@custom-variant with-hero (:where(body:has(#top)) &);
+
 /*
  * База шаблона (DESIGN.md). Четыре цвета темы приходят из данных студии переменными
  * --bg, --fg, --muted, --accent на <html>; всё остальное выводится из них здесь.
@@ -25,6 +32,7 @@
   --font-display: var(--font-science-gothic), var(--font-manrope), sans-serif;
 
   /* Шкала, px */
+  --text-11: 11px;
   --text-12: 12px;
   --text-13: 13px;
   --text-14: 14px;
@@ -37,6 +45,7 @@
   --text-22: 22px;
   --text-24: 24px;
   --text-28: 28px;
+  --text-30: 30px;
   --text-40: 40px;
   --text-64: 64px;
   --text-72: 72px;
@@ -55,6 +64,8 @@
   --tracking-display: 0.06em;
   --tracking-logo: 0.12em;
   --tracking-label: 0.14em;
+  /* «Detailing» под логотипом в hero */
+  --tracking-wordmark: 0.5em;
 
   /* Чем крупнее элемент, тем крупнее радиус: вложенные формы не спорят */
   --radius-switch-item: 10px;
@@ -95,6 +106,9 @@
     background: var(--color-bg);
     color: var(--color-fg);
     color-scheme: dark;
+    /* Якоря страницы — плавно: «Sprawdź cenę», меню, подвал. Переходы между страницами
+       остаются мгновенными: data-scroll-behavior на <html> в app/[lang]/layout.tsx */
+    scroll-behavior: smooth;
   }
 
   body {
@@ -153,6 +167,34 @@
   }
   70% {
     opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Текст hero проявляется снизу на 8 px */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Двойное моргание ксенона: кольца фар при зажигании */
+@keyframes xenon {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  55% {
+    opacity: 0.15;
   }
   100% {
     opacity: 1;
@@ -266,4 +308,89 @@
 /* Ореол цитаты отзыва */
 @utility glow-halo {
   background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 20%, transparent), transparent);
+}
+
+/* Машина растворяется в полу, а не обрывается краем */
+@utility fade-bottom {
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+
+/* Неон пола: горячее пятно под бампером (акцент с белым 45/55) и широкий разлив к
+   зрителю. Верх слоя маскирован мягко — свет не залезает на машину */
+@utility glow-floor {
+  background:
+    radial-gradient(
+      38% 14% at 50% 10%,
+      color-mix(in srgb, color-mix(in srgb, var(--accent) 45%, #fff) 75%, transparent),
+      color-mix(in srgb, var(--accent) 35%, transparent) 55%,
+      transparent
+    ),
+    radial-gradient(
+      55% 55% at 50% 12%,
+      color-mix(in srgb, var(--accent) 45%, transparent),
+      color-mix(in srgb, var(--accent) 12%, transparent) 55%,
+      transparent
+    );
+  mask-image: linear-gradient(to bottom, transparent, #000 18%);
+}
+
+/* Ореол фары: белое ядро в холодный голубой. Свет ксенона одинаковый у любой студии —
+   цвет базы, а не темы */
+@utility glow-headlight {
+  background: radial-gradient(
+    closest-side,
+    #fff,
+    rgb(215 230 255 / 0.8) 22%,
+    rgb(160 190 255 / 0.4) 50%,
+    rgb(120 150 255 / 0.1) 80%,
+    transparent
+  );
+}
+
+/* Размытая копия светодиодов: свет, растекающийся вокруг колец */
+@utility lights-bloom {
+  filter: blur(6px) brightness(1.5);
+}
+
+/*
+ * Зажигание hero (DESIGN.md, «Движение»). HeroStage ставит data-lit на секцию, когда фото
+ * машины загружено и раскодировано, — тайминги отсчитываются от этого момента.
+ * Финальный кадр — состояние по умолчанию, погашенное есть только там, где зажигание
+ * будет. При reduced motion, без JS и в браузере, не знающем запрос scripting, машина
+ * горит сразу, а разметка сервера и клиента одна и та же.
+ */
+.ignite-headlight {
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+  [data-ignition]:not([data-lit]) .ignite-body {
+    filter: brightness(0.25);
+  }
+
+  [data-ignition]:not([data-lit])
+    :is(.ignite-rings, .ignite-bloom, .ignite-headlight, .ignite-floor, .ignite-logo) {
+    opacity: 0;
+  }
+
+  [data-lit] .ignite-rings {
+    animation: xenon 0.35s linear 0.4s both;
+  }
+
+  [data-lit] :is(.ignite-bloom, .ignite-headlight) {
+    transition: opacity 1.6s var(--ease-warm) 0.6s;
+  }
+
+  [data-lit] .ignite-body {
+    transition: filter 1.8s var(--ease-warm) 0.7s;
+  }
+
+  [data-lit] .ignite-floor {
+    animation: neon-strike 0.6s linear 1.3s both;
+  }
+
+  /* Логотип загорается последним, вместе с концом проявления кузова */
+  [data-lit] .ignite-logo {
+    animation: neon-strike 0.6s linear 1.9s both;
+  }
 }

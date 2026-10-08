@@ -18,6 +18,7 @@ export type Dictionary = {
   nav: { services: string; contact: string };
   menu: { services: string; studio: string };
   call: { label: string };
+  hero: { checkPrice: string };
   messengers: Record<Messenger["kind"], string>;
   status: {
     open: string;
