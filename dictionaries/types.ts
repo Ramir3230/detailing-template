@@ -56,7 +56,6 @@ export type Dictionary = {
     count: PluralForms;
     /** Подставляется {count}: «24 opinie w Google». */
     inGoogle: string;
-    newTab: string;
     /** Плашка вместо ссылки, пока у студии нет страницы отзывов в Google. */
     demoNote: string;
     close: string;
@@ -70,6 +69,8 @@ export type Dictionary = {
     google: string;
   };
   contact: { title: string; route: string };
+  /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
+  newTab: string;
   footer: { services: string; studio: string };
   language: { label: string; names: Record<Lang, string> };
 };

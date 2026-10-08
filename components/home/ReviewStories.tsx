@@ -70,14 +70,19 @@ export function ReviewStories({ stories, words }: Props) {
   useEffect(() => {
     const element = card.current;
     if (!element) return;
-    // Видна — значит хотя бы наполовину. isIntersecting с порогом движки считают по-разному.
+    // Видна — значит видна хотя бы наполовину или закрывает половину экрана: на низком
+    // экране (масштаб 400%) половина карточки в него не помещается. isIntersecting с
+    // порогом движки считают по-разному, поэтому считаем сами по частым порогам.
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const visible = entry.intersectionRatio >= 0.5;
+        const visible =
+          entry.intersectionRatio >= 0.5 ||
+          (entry.rootBounds !== null &&
+            entry.intersectionRect.height >= entry.rootBounds.height / 2);
         setInView(visible);
         if (visible) setStarted(true);
       },
-      { threshold: [0, 0.5] },
+      { threshold: Array.from({ length: 11 }, (_, i) => i / 10) },
     );
     observer.observe(element);
     return () => observer.disconnect();

@@ -42,6 +42,7 @@ export function Messengers({
             >
               <MessengerIcon size={16} />
               {dict.messengers[messenger.kind]}
+              <span className="sr-only"> ({dict.newTab})</span>
             </a>
           </li>
         );
