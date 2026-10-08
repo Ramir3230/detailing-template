@@ -33,7 +33,9 @@ export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   return (
     <section
       id={sectionIds.reviews}
-      className="scroll-mt-16 py-14 lg:scroll-mt-0 lg:border-t lg:border-line lg:py-24"
+      // На секцию ставит фокус строка рейтинга в hero (ScrollLink), без обводки
+      tabIndex={-1}
+      className="scroll-mt-16 py-14 outline-none lg:scroll-mt-0 lg:border-t lg:border-line lg:py-24"
     >
       <div className="wrap lg:flex lg:flex-wrap lg:items-center lg:gap-x-20 lg:gap-y-12">
         <div className="lg:max-w-95 lg:flex-[1_1_300px]">
