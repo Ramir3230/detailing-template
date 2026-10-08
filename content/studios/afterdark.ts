@@ -50,6 +50,7 @@ export const afterdark: Studio = {
     car: {
       src: "/hero/m3/car.webp",
       lights: "/hero/m3/car-lights.webp",
+      depth: "/hero/m3/car-depth.webp",
       width: 2000,
       height: 1501,
       headlights: [

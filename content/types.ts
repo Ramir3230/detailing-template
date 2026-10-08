@@ -81,6 +81,9 @@ export type HeroCar = {
   /** Пути от public/: «/hero/m3/car.webp». */
   src: string;
   lights: string;
+  /** Карта объёма: глубина и её наклоны, три серые панели в кадр машины. Без неё
+   *  машина статичная. */
+  depth?: string;
   width: number;
   height: number;
   /** Левая и правая фары: по ним встаёт и растягивается ореол. */
