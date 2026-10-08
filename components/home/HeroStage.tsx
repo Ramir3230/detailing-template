@@ -123,7 +123,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
     <div className={`relative ${className}`} style={{ aspectRatio: `${width} / ${height}` }}>
       <div
         aria-hidden="true"
-        className="glow-floor ignite-floor pointer-events-none absolute inset-x-[-4%] top-[96%] h-[38%]"
+        className="glow-floor ignite-floor pointer-events-none absolute inset-x-[-12%] top-[96%] h-[38%]"
       />
       <Image
         src={src}
