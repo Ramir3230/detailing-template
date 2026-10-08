@@ -70,6 +70,23 @@ export type Review = {
   source: "google" | "example";
 };
 
+/** Точка в процентах кадра: x слева, y сверху, оба 0–100. */
+export type Point = { x: number; y: number };
+
+/**
+ * Машина hero (DESIGN.md, «Фотографии»): вырезка на прозрачном фоне и слой светодиодов
+ * фар того же размера. Готовит scripts/hero-car/cutout.py — он же печатает это поле.
+ */
+export type HeroCar = {
+  /** Пути от public/: «/hero/car.webp». */
+  src: string;
+  lights: string;
+  width: number;
+  height: number;
+  /** Центры левой и правой фары: на них встаёт ореол. */
+  headlights: readonly [Point, Point];
+};
+
 /** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
 export type Theme = { bg: string; fg: string; muted: string; accent: string };
 
@@ -95,7 +112,7 @@ export type Studio = {
   /** routeUrl — маршрут в Google Maps для кнопки «Trasa»; нет ссылки — нет кнопки. */
   address: { street: string; area: string; routeUrl?: string };
   hours: WeekHours;
-  hero: { title: Text; subtitle: Text; lead: Text };
+  hero: { title: Text; subtitle: Text; lead: Text; car: HeroCar };
   carClasses: Record<CarClass, Text>;
   services: ServiceGroup[];
   /** url — страница отзывов в Google; нет ссылки — строка рейтинга открывает плашку демо. */
