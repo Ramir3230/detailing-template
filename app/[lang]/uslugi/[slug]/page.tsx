@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GroupIntro } from "@/components/group/GroupIntro";
+import { GroupServices } from "@/components/group/GroupServices";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
 import { fill, isLang, t } from "@/lib/i18n";
@@ -48,6 +49,7 @@ export default async function GroupPage({ params }: PageProps<"/[lang]/uslugi/[s
   return (
     <main className="flex-1">
       <GroupIntro group={group} lang={lang} dict={dict} />
+      <GroupServices group={group} lang={lang} dict={dict} />
     </main>
   );
 }

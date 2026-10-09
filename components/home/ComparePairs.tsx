@@ -10,7 +10,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Price, ServiceName } from "@/components/home/PriceList";
+import { Price, ServiceName } from "@/components/Price";
 import { DragSidewaysIcon } from "@/components/icons";
 import { frameSizes } from "@/lib/frame";
 import type { PriceParts } from "@/lib/format";

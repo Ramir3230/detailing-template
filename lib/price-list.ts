@@ -1,4 +1,4 @@
-import type { CarClass, Price, ServiceGroup } from "@/content/types";
+import type { CarClass, Price, ServiceGroup, Text } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { carClasses } from "@/lib/car-class";
 import { glue, priceParts, type PriceParts } from "@/lib/format";
@@ -54,6 +54,13 @@ export function priceList(
       rolling: service.price.kind === "byClass" ? rolling(service.price, words) : undefined,
     })),
   }));
+}
+
+/** Описания классов под переключателем — на языке страницы, с приклеенными предлогами. */
+export function classDescriptions(texts: Record<CarClass, Text>, lang: Lang): Record<CarClass, string> {
+  return Object.fromEntries(
+    carClasses.map((carClass) => [carClass, glue(t(texts[carClass], lang), lang)]),
+  ) as Record<CarClass, string>;
 }
 
 function rolling(

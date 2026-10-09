@@ -76,6 +76,7 @@ export const ru: Dictionary = {
     metaTitle: "{group} — {studio}",
     breadcrumbs: "Путь по сайту",
     whatsIncluded: "Что входит",
+    scope: "Состав работ",
   },
   newTab: "открывается в новой вкладке",
   footer: { services: "Услуги", studio: "Студия" },

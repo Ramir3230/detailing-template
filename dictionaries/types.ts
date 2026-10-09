@@ -95,6 +95,8 @@ export type Dictionary = {
     breadcrumbs: string;
     /** Ссылка над группой в прайсе главной — на страницу группы. */
     whatsIncluded: string;
+    /** Метка над составом услуги в карточке. */
+    scope: string;
   };
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
   newTab: string;
