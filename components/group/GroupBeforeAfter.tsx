@@ -16,8 +16,10 @@ export function GroupBeforeAfter({ group, lang, dict }: { group: GroupWithPage; 
   if (!pairs.length) return null;
 
   return (
-    <section className="pt-12">
+    // Контейнер для раскладки шторки: кадр и текст рядом, только если колонка достаточно широка
+    <section className="@container pt-12">
       <ComparePairs
+        layout="column"
         heading={
           <>
             <PageHeading>{words.title}</PageHeading>
