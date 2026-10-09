@@ -14,7 +14,8 @@ import {
 import type { VolumeState } from "@/components/home/CarVolume";
 import type { HeroCar as HeroCarData } from "@/content/types";
 
-/* Код WebGL — отдельным куском и только там, где объём включён: главной он не нужен */
+/* Код WebGL — отдельным куском и только у машины с картой объёма. Грузится после
+   гидрации: фото машины и зажигание его не ждут */
 const CarVolume = dynamic(() => import("@/components/home/CarVolume").then((m) => m.CarVolume), {
   ssr: false,
 });
@@ -117,22 +118,16 @@ const sizes = "(min-width: 1024px) 780px, 92vw";
 
 const layer = "pointer-events-none absolute mix-blend-screen";
 
-type CarProps = {
-  car: HeroCarData;
-  /** Объёмная машина (эксперимент, /lab/car): только при карте объёма в данных. */
-  volume?: boolean;
-  className?: string;
-};
-
 /*
  * Машина: вырезка, под ней неон пола, поверх — светодиоды фар двумя слоями (резкий и
  * размытый ореолом) и ореол каждой фары. Слои фар того же размера, что машина, поэтому
  * совпадают при любой ширине. Картинки декоративные: смысл несёт заголовок.
- * С объёмом холст CarVolume лежит под фото: рисует неон на полу вместо CSS-слоя
- * (data-neon) и, когда сцена отыграла, машину со всем светом фар вместо фото
- * (data-volume). Пока он не готов или если холста не будет, остаются эти слои.
+ * У машины с картой объёма (depth в данных) под фото лежит холст CarVolume: рисует
+ * неон на полу вместо CSS-слоя (data-neon, если в данных есть underglow) и, когда
+ * сцена отыграла, машину со всем светом фар вместо фото (data-volume). Пока он не готов
+ * или если холста не будет, остаются эти слои.
  */
-export function HeroCar({ car, volume = false, className = "" }: CarProps) {
+export function HeroCar({ car, className = "" }: { car: HeroCarData; className?: string }) {
   const ready = use(Ready);
   const { src, lights, depth, width, height, headlights, underglow } = car;
   const body = useRef<HTMLImageElement>(null);
@@ -153,7 +148,7 @@ export function HeroCar({ car, volume = false, className = "" }: CarProps) {
         aria-hidden="true"
         className="glow-floor ignite-floor pointer-events-none absolute top-[96%] h-[38%] in-data-neon:invisible"
       />
-      {volume && depth && (
+      {depth && (
         <CarVolume
           map={depth}
           aspect={width / height}

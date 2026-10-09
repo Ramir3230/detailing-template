@@ -1,55 +1,27 @@
 "use client";
 
-import { createContext, use, useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { Headlight, Underglow } from "@/content/types";
 import { approach, rotation } from "@/lib/car-volume";
 import { createVolume, FIELD, type Volume } from "@/lib/car-volume-gl";
 
-export type VolumeSettings = {
-  /** Машина поворачивается: холст рисует и её. Выключено — машина остаётся фото. */
-  on: boolean;
-  /** Наибольший поворот, градусы; вверх-вниз — вдвое меньше. */
-  angle: number;
-  /** Глубина рельефа, в высотах кадра. */
-  depth: number;
-  /** Сила отсвета неона пола на кузове. */
-  light: number;
-  /** Неон под машиной рисует код. Выключено — неон пола на CSS. */
-  neon: boolean;
-  /** Яркость неона на полу. */
-  glow: number;
-  /** Глянец пола 0..1: от матового бетона до зеркальной эпоксидки. */
-  gloss: number;
-  /** Сила отражения машины в полу. */
-  mirror: number;
-};
-
-/* Значения владельца из лаборатории (09.10.2026): тихий неон на зеркальном полу */
-export const defaultVolume: VolumeSettings = {
-  on: true,
-  angle: 5,
-  depth: 0.2,
-  light: 0.3,
-  neon: true,
-  glow: 0.3,
-  gloss: 1,
-  mirror: 0.5,
-};
-
-/** Почему холста нет совсем; «still» — холст есть, но без движения. */
-export type VolumeOff = "save-data" | "no-webgl" | "shader" | "no-image" | "slow" | "lost";
-export type VolumeStatus = "loading" | "live" | "still" | VolumeOff;
-
 /** Что холст сейчас подменяет: машину (фото и свет фар) и неон пола на CSS. */
 export type VolumeState = { car: boolean; neon: boolean };
 
-/* Без провайдера — значения по умолчанию, и отчёт о состоянии никуда не идёт.
-   Провайдер ставит лаборатория /lab/car */
-export const VolumeContext = createContext<{
-  settings: VolumeSettings;
-  report: (status: VolumeStatus) => void;
-}>({ settings: defaultVolume, report: () => {} });
-
+/* Объёмная машина — DESIGN.md, «Движение», «Объёмная машина». Значения выбрал владелец
+   в лаборатории 09.10.2026 (ветка exp/car-depth): тихий неон на зеркальном полу */
+/* Наибольший поворот, градусы; вверх-вниз — вдвое меньше */
+const ANGLE = 5;
+/* Глубина рельефа, в высотах кадра */
+const DEPTH = 0.2;
+/* Сила отсвета неона пола на кузове */
+const BODY_LIGHT = 0.3;
+/* Яркость неона на полу */
+const GLOW = 0.3;
+/* Глянец пола 0..1: от матового бетона до зеркальной эпоксидки */
+const GLOSS = 1;
+/* Сила отражения машины в полу */
+const MIRROR = 0.5;
 /* Догоняние цели, с: за курсором — мягко, за прокруткой — почти сразу, она и так плавная */
 const POINTER_TAU = 0.35;
 const SCROLL_TAU = 0.12;
@@ -123,7 +95,7 @@ type Props = {
 };
 
 /*
- * Объёмная машина hero (ROADMAP 3b, эксперимент). Холст лежит под фото машины: пока
+ * Объёмная машина hero (DESIGN.md, «Движение»). Холст лежит под фото машины: пока
  * машину показывает фото, свет пола и отражение уходят под неё, как и должны.
  *
  * Неон на полу холст рисует с самого начала, вместо CSS-слоя: вспышку берёт у этого
@@ -138,15 +110,7 @@ type Props = {
  * устройство не тянет: тогда фото и неон на CSS.
  */
 export function CarVolume({ map, aspect, headlights, underglow, body, rings, floor, onState }: Props) {
-  const { settings, report } = use(VolumeContext);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const latest = useRef(settings);
-  const wake = useRef(() => {});
-
-  useEffect(() => {
-    latest.current = settings;
-    wake.current();
-  }, [settings]);
 
   useEffect(() => {
     const element = canvas.current;
@@ -165,22 +129,21 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       volume?.destroy();
       volume = null;
     };
-    const off = (reason: VolumeOff) => {
+    // Холста больше нет: машина — фото, неон — на CSS
+    const off = () => {
       stop();
       onState({ car: false, neon: false });
-      report(reason);
     };
 
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (connection?.saveData) return off("save-data");
+    if (connection?.saveData) return off();
     const gl = element.getContext("webgl2", {
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
       failIfMajorPerformanceCaveat: true,
     });
-    if (!gl || software(gl)) return off("no-webgl");
-    report("loading");
+    if (!gl || software(gl)) return off();
 
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
     let still = reducedMotion.matches;
@@ -203,7 +166,8 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       const accent = components(getComputedStyle(element).color);
       volume = createVolume(gl, { aspect, accent, headlights, underglow });
     } catch {
-      return off("shader");
+      // Шейдер не собрался на этом устройстве
+      return off();
     }
     const scene = volume;
 
@@ -214,7 +178,6 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     let pitch = 0;
     let last = 0;
     let carAt = 0;
-    let reported = false;
     let shown: VolumeState = { car: false, neon: false };
     // Размер холста, который видела эта сцена: сам холст мог остаться от прошлой
     // (StrictMode, возврат на страницу), и его размер новой сцене ничего не говорит
@@ -231,13 +194,12 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     /* Кадр по текущему состоянию; force — холст стёрт или сменились текстуры. Возвращает
        проявление после подмены и силу неона; null — шейдер не собрался, холста больше нет */
     const paint = (now: number, force = false) => {
-      const settings = latest.current;
-      const lit = settings.neon && Boolean(underglow);
+      const lit = Boolean(underglow);
       // При reduced motion — сразу финальный кадр, без проявления
       const fadeIn = carAt ? (still ? 1 : Math.min(1, (now - carAt) / FADE_IN_MS)) : 0;
-      const neon = lit ? settings.glow * opacity(floor.current) : 0;
-      const car = Boolean(carAt) && settings.on && !still;
-      const key = [yaw, pitch, neon, fadeIn, car, ...Object.values(settings)].join();
+      const neon = lit ? GLOW * opacity(floor.current) : 0;
+      const car = Boolean(carAt) && !still;
+      const key = [yaw, pitch, neon, fadeIn, car].join();
       if (!force && !waiting && key === painted) return { fadeIn, neon };
       painted = key;
       let result;
@@ -245,16 +207,16 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
         result = scene.draw({
           rotation: rotation(yaw, pitch),
           yaw,
-          depth: settings.depth,
+          depth: DEPTH,
           car,
-          light: settings.light * fadeIn,
+          light: BODY_LIGHT * fadeIn,
           neon,
           fade: lit ? FADE_ON_NEON : FADE,
-          gloss: settings.gloss,
-          reflection: settings.mirror * fadeIn,
+          gloss: GLOSS,
+          reflection: MIRROR * fadeIn,
         });
       } catch {
-        off("shader");
+        off();
         return null;
       }
       waiting = result.waiting;
@@ -262,10 +224,6 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       if (next.car !== shown.car || next.neon !== shown.neon) {
         shown = next;
         onState(shown);
-      }
-      if (!reported && !waiting) {
-        reported = true;
-        report(still ? "still" : "live");
       }
       return { fadeIn, neon };
     };
@@ -295,8 +253,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
 
     const tick = (now: number) => {
       frame = 0;
-      const { on, angle } = latest.current;
-      const turning = Boolean(carAt) && on && !still;
+      const turning = Boolean(carAt) && !still;
 
       const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
       let yawTarget = 0;
@@ -306,14 +263,14 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
         const box = element.getBoundingClientRect();
         const x = (pointer.x - (box.left + box.width / 2)) / (innerWidth / 2);
         const y = (box.top + box.height / 2 - pointer.y) / (innerHeight / 2);
-        yawTarget = Math.max(-1, Math.min(1, x)) * angle;
-        pitchTarget = (Math.max(-1, Math.min(1, y)) * angle) / 2;
+        yawTarget = Math.max(-1, Math.min(1, x)) * ANGLE;
+        pitchTarget = (Math.max(-1, Math.min(1, y)) * ANGLE) / 2;
       } else if (turning && !fine && stage) {
         // Доля прокрученного hero: машина уходит вверх — видна чуть снизу и сбоку
         const hero = stage.getBoundingClientRect();
         const scrolled = Math.max(0, Math.min(1, -hero.top / hero.height));
-        yawTarget = scrolled * angle;
-        pitchTarget = (scrolled * angle) / 2;
+        yawTarget = scrolled * ANGLE;
+        pitchTarget = (scrolled * ANGLE) / 2;
       }
       const tau = fine ? POINTER_TAU : SCROLL_TAU;
       yaw = approach(yaw, yawTarget, dt, tau);
@@ -328,7 +285,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
         samples.push(now - last);
         if (samples.length === SLOW_SAMPLES) {
           const median = [...samples].sort((a, b) => a - b)[SLOW_SAMPLES / 2];
-          if (median > SLOW_FRAME_MS) return off("slow");
+          if (median > SLOW_FRAME_MS) return off();
         }
       }
       last = now;
@@ -346,7 +303,6 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     const awake = () => {
       if (!stopped && visible && !frame) frame = requestAnimationFrame(tick);
     };
-    wake.current = awake;
 
     size();
     const resized = new ResizeObserver(([entry]) => {
@@ -400,24 +356,22 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       } else {
         listen();
       }
-      report(still ? "still" : "live");
       awake();
     };
-    const onLost = () => off("lost");
     photo.addEventListener("load", onPhoto);
     leds.addEventListener("load", onPhoto);
     if (!still) listen();
     reducedMotion.addEventListener("change", onMotion);
-    element.addEventListener("webglcontextlost", onLost);
+    // WebGL сбросился — холст не восстанавливаем
+    element.addEventListener("webglcontextlost", off);
     cleanups.push(() => {
-      wake.current = () => {};
       resized.disconnect();
       seen.disconnect();
       photo.removeEventListener("load", onPhoto);
       leds.removeEventListener("load", onPhoto);
       unlisten();
       reducedMotion.removeEventListener("change", onMotion);
-      element.removeEventListener("webglcontextlost", onLost);
+      element.removeEventListener("webglcontextlost", off);
     });
     awake();
 
@@ -428,8 +382,9 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
         carAt = performance.now();
         awake();
       },
+      // Не загрузились картинки
       () => {
-        if (!stopped) off("no-image");
+        if (!stopped) off();
       },
     );
 
@@ -437,7 +392,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       stop();
       onState({ car: false, neon: false });
     };
-  }, [map, aspect, headlights, underglow, body, rings, floor, onState, report]);
+  }, [map, aspect, headlights, underglow, body, rings, floor, onState]);
 
   // Холст — кадр машины с полями FIELD: свет на полу и отражение, запас на поворот
   const side = (FIELD.side / aspect) * 100;

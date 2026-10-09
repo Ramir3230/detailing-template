@@ -55,6 +55,18 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(car).not.toContain('loading="lazy"');
   });
 
+  it("leaves the volumetric car to the browser: the photo comes first", () => {
+    const { html, head } = page(lang);
+    // Холст рисует только браузер, после гидрации: без WebGL и до него машина — фото
+    expect(html).not.toMatch(/<canvas\b/);
+    // Карта объёма грузится после фото машины и не спорит с ним за канал
+    const { depth } = studio.hero.car;
+    if (depth) {
+      const preloads = tags(head, /<link\b[^>]*>/g).filter((tag) => tag.includes(depth));
+      expect(preloads, "карта объёма в preload").toEqual([]);
+    }
+  });
+
   it("serves the hero unlit: ignition starts in the browser", () => {
     const { html } = page(lang);
     const hero = tags(html, /<section\b[^>]*>/g).find((tag) => tag.includes(`id="${sectionIds.hero}"`));

@@ -11,12 +11,7 @@ import { formatPhone, formatRating, formatReviewsInGoogle, glue } from "@/lib/fo
 import { fill, t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 
-type Props = {
-  lang: Lang;
-  dict: Dictionary;
-  /** Объёмная машина — эксперимент, пока только на /lab/car. */
-  volume?: boolean;
-};
+type Props = { lang: Lang; dict: Dictionary };
 
 /* Текст проявляется снизу сразу при загрузке, не дожидаясь машины; кнопка — позже.
    Отыгравшая сцена (data-ignited) не проявляет его заново при возврате на страницу */
@@ -32,7 +27,7 @@ const riseLater =
  * Десктоп: логотип несёт шапка; текст слева, машина справа на всё оставшееся место.
  * Hero с шапкой — не ниже экрана: шапка (--spacing-header) и линия под ней.
  */
-export function Hero({ lang, dict, volume = false }: Props) {
+export function Hero({ lang, dict }: Props) {
   const { rating } = studio;
 
   return (
@@ -113,7 +108,6 @@ export function Hero({ lang, dict, volume = false }: Props) {
             />
             <HeroCar
               car={studio.hero.car}
-              volume={volume}
               className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:max-w-hero-car"
             />
           </div>
