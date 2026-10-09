@@ -134,6 +134,13 @@ describe("active studio data", () => {
     }
   });
 
+  it("has a hero lead of three desktop lines at most: the low window fit counts on it", () => {
+    // Колонка hero 380 px, текст 18 px — около 40 знаков в строке (DESIGN.md, «Hero на
+    // низком окне десктопа»): строка сверх трёх вытолкнет статус под сгиб
+    const { lead } = studio.hero;
+    for (const text of [lead.pl, lead.ru ?? ""]) expect(text.length).toBeLessThanOrEqual(120);
+  });
+
   it("has the entrance photo in 4:5, if there is one", () => {
     if (studio.address.photo) expectFrame(studio.address.photo);
   });
