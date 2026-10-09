@@ -28,8 +28,9 @@ type Props = {
 
 /*
  * Контакты — одни на главной и на странице Kontakt. Телефон — одна колонка, как на
- * холсте: фото входа под заголовком. Десктоп с фото — фото слева, всё остальное справа
- * по центру его высоты. Без фото две колонки: слева заголовок и адрес, справа часы,
+ * холсте: фото входа под заголовком. Десктоп с фото — фото до 520 слева, всё остальное
+ * справа, до 536, по центру его высоты: 520, 80 и 536 — ровно контейнер, правый край на
+ * линии прайса и до/после, как у ComparePairs. Без фото две колонки: слева заголовок и адрес, справа часы,
  * звонок и мессенджеры.
  */
 export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: Props) {
@@ -75,7 +76,7 @@ export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: P
   const after = heading ? "mt-6" : "";
 
   return address.photo ? (
-    <div className="wrap lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,520px)] lg:grid-rows-[1fr_auto_auto_auto_1fr] lg:gap-x-20">
+    <div className="wrap lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,536px)] lg:grid-rows-[1fr_auto_auto_auto_1fr] lg:gap-x-20">
       {heading && <div className="lg:col-start-2 lg:row-start-2">{heading}</div>}
       <EntrancePhoto
         photo={address.photo}
