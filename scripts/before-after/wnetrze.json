@@ -1,0 +1,17 @@
+{
+  "out": "przed-po/wnetrze",
+  "po": {
+    "prompt": "professional photo of the front passenger seat of a modern car seen through the open door, light beige leather seat with fine stitching, clean centre console, clean floor mat, soft white studio light, car detailing studio, automotive interior photography, sharp focus, realistic, high detail",
+    "negative": "logo, emblem, badge, brand name, text, letters, writing, sign, watermark, license plate, number plate, people, person, hands, cartoon, illustration, 3d render, cgi, painting, deformed, distorted, blurry, lowres, oversaturated, steering wheel",
+    "seed": 501
+  },
+  "przed": {
+    "kind": "dirt",
+    "prompt": "photo of the same light beige leather car seat very dirty after months without cleaning, dark grey grime ground into the seams and stitching, large brown coffee stain on the seat cushion, blue denim dye transfer on the side bolster, crumbs and sand scattered on the seat, dusty dirty floor mat with dried mud, dust on the centre console, the dirt is obvious at a glance, realistic",
+    "negative": "logo, emblem, badge, brand name, text, letters, writing, sign, watermark, license plate, number plate, people, person, hands, cartoon, illustration, 3d render, cgi, painting, deformed, distorted, blurry, lowres, oversaturated, steering wheel, clean, spotless",
+    "seed": 601,
+    "strength": 0.7,
+    "control": 0.7,
+    "mask": "subject"
+  }
+}
