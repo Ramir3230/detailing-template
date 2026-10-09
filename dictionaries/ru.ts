@@ -72,6 +72,12 @@ export const ru: Dictionary = {
     examples: "Фото для примера",
   },
   contact: { title: "Контакты", route: "Маршрут", photoExample: "Фото для примера" },
+  contactPage: {
+    metaTitle: "Контакты — {studio}",
+    metaDescription: "{studio}: адрес, часы работы и телефон. {address}.",
+    map: "Карта проезда: {address}",
+    mapData: "Карта",
+  },
   group: {
     metaTitle: "{group} — {studio}",
     breadcrumbs: "Путь по сайту",

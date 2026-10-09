@@ -89,13 +89,14 @@ export function Header({ lang, dict }: Props) {
             })}
             <p className="caps-label mt-6 mb-1">{dict.menu.studio}</p>
             {studioPages.map(({ key, path }) => (
-              <Link
+              <NavLink
                 key={key}
                 href={localePath(lang, path)}
+                currentOn={path}
                 className="flex min-h-12 items-center border-t border-line text-20 font-medium"
               >
                 {dict.nav[key]}
-              </Link>
+              </NavLink>
             ))}
           </nav>
 

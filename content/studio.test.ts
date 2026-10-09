@@ -137,6 +137,21 @@ describe("active studio data", () => {
   it("has the entrance photo in 4:5, if there is one", () => {
     if (studio.address.photo) expectFrame(studio.address.photo);
   });
+
+  it("has the map files in the size the data claims, enough for the map block on 2x", () => {
+    const { map } = studio.address;
+    if (!map) return;
+    for (const { src, width, height } of [map.wide, map.narrow]) {
+      expect(src).toMatch(/^\/[\w\-/]+\.webp$/);
+      expect(webpSize(readFileSync(join(process.cwd(), "public", src)))).toEqual({ width, height });
+    }
+    // Блок карты (DESIGN.md, «Страница Kontakt»): десктоп — контент 1136 px в 8:3, телефон
+    // и планшет — до 640 px в 4:3. Файл показывается в половину размера и не растягивается
+    expect(map.wide.width).toBeGreaterThanOrEqual(2 * 1136);
+    expect(map.wide.height).toBeGreaterThanOrEqual(2 * 426);
+    expect(map.narrow.width).toBeGreaterThanOrEqual(2 * 640);
+    expect(map.narrow.height).toBeGreaterThanOrEqual(2 * 480);
+  });
 });
 
 /*
