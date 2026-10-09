@@ -1,0 +1,266 @@
+"use client";
+
+import Image from "next/image";
+import {
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
+import { Price } from "@/components/home/PriceList";
+import { DragSidewaysIcon } from "@/components/icons";
+import type { PriceParts } from "@/lib/format";
+
+export type ComparePhoto = { src: string; width: number; height: number; alt: string };
+
+export type ComparePair = {
+  label: string;
+  service: string;
+  brand?: string;
+  price: PriceParts;
+  /** Подпись ползунка для диктора и клавиатуры. */
+  compare: string;
+  /** Хоть один кадр пары сделан ИИ — под парой «Zdjęcia przykładowe». */
+  examples: boolean;
+  before: ComparePhoto;
+  after: ComparePhoto;
+};
+
+type Words = { before: string; after: string; pairs: string; examples: string };
+
+/* Кадр до 520 px на десктопе, на телефоне — экран без полей */
+const sizes = "(min-width: 1024px) 520px, calc(100vw - 48px)";
+
+const tagClass =
+  "pointer-events-none absolute top-3 rounded-full bg-bg/55 px-3 py-1 text-13 leading-body font-medium";
+
+const clamp = (value: number) => Math.min(100, Math.max(0, value));
+
+const keySteps: Record<string, (index: number, count: number) => number> = {
+  ArrowRight: (index) => index + 1,
+  ArrowLeft: (index) => index - 1,
+  Home: () => 0,
+  End: (_, count) => count - 1,
+};
+
+/**
+ * До/после главной: вкладки пар, шторка, услуга с ценой «od …». Телефон — одной
+ * колонкой, как на холсте; десктоп — кадр слева, заголовок, вкладки и услуга справа,
+ * по центру высоты кадра.
+ */
+export function ComparePairs({
+  heading,
+  pairs,
+  words,
+}: {
+  heading: ReactNode;
+  pairs: ComparePair[];
+  words: Words;
+}) {
+  const [active, setActive] = useState(0);
+  const [position, setPosition] = useState(50);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const id = useId();
+  const pair = pairs[active];
+  const withTabs = pairs.length > 1;
+
+  // Новая пара — шторка снова посередине
+  function show(index: number) {
+    if (index === active) return;
+    setActive(index);
+    setPosition(50);
+  }
+
+  function onTabKey(event: KeyboardEvent<HTMLDivElement>) {
+    const step = keySteps[event.key];
+    if (!step) return;
+    event.preventDefault();
+    const next = (step(active, pairs.length) + pairs.length) % pairs.length;
+    show(next);
+    tabs.current[next]?.focus();
+  }
+
+  return (
+    <div className="lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,460px)] lg:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:gap-x-20">
+      <div className="lg:col-start-2 lg:row-start-2">{heading}</div>
+
+      {withTabs && (
+        <div
+          role="tablist"
+          aria-label={words.pairs}
+          onKeyDown={onTabKey}
+          className="mt-6 grid auto-cols-fr grid-flow-col gap-1 rounded-switch border border-line p-1 lg:col-start-2 lg:row-start-3 lg:mt-7"
+        >
+          {pairs.map((item, index) => (
+            <button
+              key={item.label}
+              ref={(button) => {
+                tabs.current[index] = button;
+              }}
+              id={`${id}-tab-${index}`}
+              type="button"
+              role="tab"
+              aria-selected={index === active}
+              aria-controls={`${id}-panel`}
+              tabIndex={index === active ? 0 : -1}
+              onClick={() => show(index)}
+              className="min-h-11 rounded-switch-item border border-transparent text-15 leading-item font-medium text-muted transition-colors hover:text-fg aria-selected:border-accent aria-selected:bg-accent-selected aria-selected:text-fg"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        id={`${id}-panel`}
+        role={withTabs ? "tabpanel" : undefined}
+        aria-labelledby={withTabs ? `${id}-tab-${active}` : undefined}
+        className="mt-4 lg:col-start-1 lg:row-span-full lg:mt-0"
+      >
+        <Slider
+          pairs={pairs}
+          active={active}
+          position={position}
+          onMove={setPosition}
+          words={words}
+        />
+      </div>
+
+      <div className="mt-4 flex items-baseline justify-between gap-3 lg:col-start-2 lg:row-start-4 lg:mt-6 lg:border-t lg:border-line lg:pt-4">
+        <span className="text-15 leading-item font-medium lg:text-16">
+          {pair.service}
+          {pair.brand && <span className="text-accent"> {pair.brand}</span>}
+        </span>
+        <Price parts={pair.price} />
+      </div>
+      {pairs.some((item) => item.examples) && (
+        // Место держится и под парой без ИИ: строка не прыгает при смене вкладки
+        <p
+          className={`mt-2 text-12 leading-body text-muted lg:col-start-2 lg:row-start-5 ${pair.examples ? "" : "invisible"}`}
+        >
+          {words.examples}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Шторка: мышью, пальцем и стрелками. Кадры всех пар лежат в рамке друг на друге, видна
+ * только выбранная: браузер грузит их вместе, когда блок подходит к экрану, и смена
+ * вкладки не показывает пустую рамку.
+ */
+function Slider({
+  pairs,
+  active,
+  position,
+  onMove,
+  words,
+}: {
+  pairs: ComparePair[];
+  active: number;
+  position: number;
+  onMove: (position: number) => void;
+  words: Words;
+}) {
+  // Палец ведёт шторку один: второй (щипок) не перехватывает
+  const drag = useRef<{ id: number; x: number; from: number } | null>(null);
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const box = event.currentTarget.getBoundingClientRect();
+    // Мышь ставит шторку под курсор. Палец двигает её на пройденное расстояние: пока
+    // браузер решает, отдать ли вертикальный жест прокрутке страницы, он присылает
+    // несколько pointermove — они не должны дёргать шторку туда, где палец коснулся
+    const from =
+      event.pointerType === "mouse"
+        ? clamp(((event.clientX - box.left) / box.width) * 100)
+        : position;
+    onMove(from);
+    drag.current = { id: event.pointerId, x: event.clientX, from };
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id !== event.pointerId) return;
+    const { width } = event.currentTarget.getBoundingClientRect();
+    onMove(clamp(drag.current.from + ((event.clientX - drag.current.x) / width) * 100));
+  }
+
+  function onPointerEnd(event: PointerEvent<HTMLDivElement>) {
+    if (drag.current?.id === event.pointerId) drag.current = null;
+  }
+
+  const pair = pairs[active];
+
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      className="relative aspect-[4/5] cursor-ew-resize touch-pan-y touch-pinch-zoom overflow-hidden rounded-tile bg-surface select-none lg:rounded-card"
+    >
+      {pairs.map((item, index) => (
+        <div key={item.label} className={index === active ? undefined : "invisible"}>
+          <Image
+            src={item.after.src}
+            width={item.after.width}
+            height={item.after.height}
+            alt={item.after.alt}
+            sizes={sizes}
+            draggable={false}
+            className="pointer-events-none absolute inset-0 size-full object-cover"
+          />
+          <span aria-hidden="true" className={`${tagClass} right-3`}>
+            {words.after}
+          </span>
+          {/* «До» со своей меткой поверх «после»: метка видна только над своим кадром */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
+          >
+            <Image
+              src={item.before.src}
+              width={item.before.width}
+              height={item.before.height}
+              alt={item.before.alt}
+              sizes={sizes}
+              draggable={false}
+              className="absolute inset-0 size-full object-cover"
+            />
+            <span aria-hidden="true" className={`${tagClass} left-3`}>
+              {words.before}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {/* Клавиатура и диктор двигают ту же шторку обычным ползунком */}
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={Math.round(position)}
+        onChange={(event) => onMove(Number(event.target.value))}
+        aria-label={pair.compare}
+        className="peer sr-only"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white"
+        style={{ left: `${position}%` }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 grid size-11 -translate-1/2 place-items-center rounded-full border-2 border-white bg-bg/55 text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent lg:size-12"
+        style={{ left: `${position}%` }}
+      >
+        <DragSidewaysIcon size={22} />
+      </div>
+    </div>
+  );
+}

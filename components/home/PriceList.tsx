@@ -121,7 +121,8 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
   );
 }
 
-function Price({ parts }: { parts: PriceParts }) {
+/** Цена строкой: «od» приглушённым, цифры моноширинные. Её же ставит до/после под кадр. */
+export function Price({ parts }: { parts: PriceParts }) {
   if (parts.kind === "individual") {
     return (
       <span className="shrink-0 text-14 leading-heading text-muted lg:text-15">{parts.text}</span>

@@ -70,6 +70,22 @@ export type Dictionary = {
     example: string;
     google: string;
   };
+  beforeAfter: {
+    title: string;
+    /** Подсказка под заголовком на телефоне. */
+    hint: string;
+    /** Она же длиннее — на десктопе, где шторку двигают и стрелками. */
+    hintLong: string;
+    /** Метки на кадрах. */
+    before: string;
+    after: string;
+    /** Вкладки пар — для диктора. */
+    pairs: string;
+    /** Подставляется {service}: ползунок шторки для диктора и клавиатуры. */
+    compare: string;
+    /** Подпись под парами, где хоть один кадр сделан ИИ. */
+    examples: string;
+  };
   contact: { title: string; route: string };
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
   newTab: string;

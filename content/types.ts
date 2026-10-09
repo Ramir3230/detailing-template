@@ -19,6 +19,31 @@ export type Price =
 /** «1 dzień», «3–4 dni», «2 godziny». */
 export type Duration = { unit: "hour" | "day"; min: number; max?: number };
 
+/**
+ * Фото на странице. Размер — файла: по нему страница держит место под кадр, и вёрстка
+ * не сдвигается при загрузке.
+ */
+export type Photo = {
+  /** Путь от public/: «/przed-po/mycie/po.webp». */
+  src: string;
+  width: number;
+  height: number;
+  alt: Text;
+  /** Кадр сделан ИИ: на странице подписан как пример (DESIGN.md, «Фотографии»). */
+  ai: boolean;
+};
+
+/**
+ * До/после услуги: кадры 4:5 одного размера, «после» — тот же кадр, что «до». Готовит
+ * scripts/before-after/generate.py — он же печатает пути и размеры.
+ */
+export type BeforeAfter = {
+  /** Короткая подпись вкладки на главной: «Mycie». */
+  label: Text;
+  before: Photo;
+  after: Photo;
+};
+
 export type Service = {
   name: Text;
   /** Марка продукта после названия, подсвечивается акцентом: GYEON. */
@@ -29,6 +54,8 @@ export type Service = {
   duration?: Duration;
   /** Что входит — пунктами, для страницы группы. */
   scope?: Text[];
+  /** До/после этой услуги: на главной — вкладкой в порядке прайса. */
+  beforeAfter?: BeforeAfter;
 };
 
 export type Faq = { question: Text; answer: Text };
