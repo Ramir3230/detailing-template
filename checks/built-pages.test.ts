@@ -5,6 +5,7 @@ import { studio } from "@/content/studio";
 import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
+import { homePairServices } from "@/lib/compare";
 import { glue, priceParts } from "@/lib/format";
 import { langs, localePath, t, type Lang } from "@/lib/i18n";
 import { contactPagePath, groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
@@ -121,8 +122,18 @@ describe.each(langs)("built home page /%s", (lang) => {
   });
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
-    const services = studio.services.flatMap((group) => group.services);
+    const services = homePairServices(studio.services);
     expectLazyPhotos(lang, [...pairPhotos(services), ...(studio.address.photo ? [studio.address.photo.src] : [])]);
+  });
+
+  it("leaves the pairs beyond the first of each group to their group pages", () => {
+    const home = new Set(homePairServices(studio.services));
+    const rest = studio.services.flatMap((group) => group.services).filter((service) => !home.has(service));
+    const { html } = page(lang);
+    // И в адресе оптимизатора картинок, и в данных клиентского компонента
+    for (const src of pairPhotos(rest)) {
+      for (const text of [src, encodeURIComponent(src)]) expect(html, `кадр ${src} на главной`).not.toContain(text);
+    }
   });
 
   it("has one main heading", () => {

@@ -2,21 +2,17 @@ import { ComparePairs } from "@/components/ComparePairs";
 import { SectionTitle } from "@/components/home/SectionTitle";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
-import { comparePairs, compareWords } from "@/lib/compare";
+import { comparePairs, compareWords, homePairServices } from "@/lib/compare";
 import { glue } from "@/lib/format";
 import type { Lang } from "@/lib/i18n";
 
 /*
- * До/после сразу после цен (BRIEF.md): сначала «сколько», потом «а вдруг плохо». Пары
- * берутся у услуг в порядке прайса; ни у одной нет — секции нет.
+ * До/после сразу после цен (BRIEF.md): сначала «сколько», потом «а вдруг плохо». По паре
+ * от группы в порядке прайса; ни у одной нет — секции нет.
  */
 export function BeforeAfter({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   const words = dict.beforeAfter;
-  const pairs = comparePairs(
-    studio.services.flatMap((group) => group.services),
-    lang,
-    dict,
-  );
+  const pairs = comparePairs(homePairServices(studio.services), lang, dict);
   if (!pairs.length) return null;
 
   return (
