@@ -10,11 +10,11 @@
  * отдельно (HeroCar): светодиоды фар, их размытый ореол и ореол каждой фары. Иначе при
  * повороте свет отставал бы от кузова.
  *
- * Под машиной — пол и неон подсветки днища, нарисованные кодом: трубки под передней
- * губой и вдоль порогов светят на пол, свет затухает с квадратом расстояния, колёса
- * заслоняют свет порогов и отбрасывают тени, глянцевый пол даёт блик трубки и отражение
- * машины. Трубки закреплены на машине: при повороте пятно света и тени поворачиваются
- * вместе с ней. Цвет — акцент темы.
+ * Под машиной — пол и неон подсветки днища, нарисованные кодом, слоем под машиной:
+ * источник на уровне колёс даёт на полу эллипс с мягким ядром и длинным хвостом, под
+ * шинами и у бампера — тень контакта, размытая маска машины — ореол по её нижним
+ * кромкам, глянцевый пол — блик источника и отражение машины. Подсветка закреплена на
+ * машине: при повороте пятно и тени поворачиваются вместе с ней. Цвет — акцент темы.
  *
  * Единицы — высоты кадра машины, начало — центр кадра, z к зрителю, пол — низ кадра.
  */
@@ -41,15 +41,18 @@ const FLOOR_SCALE = 0.5;
 
 /*
  * Подсветка в машинных координатах, в высотах кадра; размеры машины — как у настоящей:
- * кадр в высоту ~1,4 м. Трубка — чуть позади губы и над полом, колёса — в полуметре
- * за губой, пороги тянутся от передних колёс назад
+ * кадр в высоту ~1,4 м. Колёса — в полуметре за губой, источник — между передними
+ * колёсами на уровне их осей. Пятно — эллипс с центром под источником: поперёк шире
+ * трубки из данных, вдоль машины длиннее
  */
-const TUBE_BEHIND_LIP = 0.08;
-const TUBE_HEIGHT = 0.1;
 const WHEEL_BEHIND_LIP = 0.55;
-/* Половина пятна шины на высоте трубки по глубине: свет идёт низко над полом */
-const WHEEL_HALF_DEPTH = 0.17;
-const SILL_LENGTH = 1.8;
+/* Половина пятна шины на полу по глубине — для тени контакта */
+const WHEEL_HALF_DEPTH = 0.12;
+const SOURCE_HEIGHT = 0.22;
+const POOL_WIDTH = 1.6;
+const POOL_LENGTH = 1.1;
+/* Ореол по маске: размытие силуэта, CSS-пиксели */
+const MASK_BLUR = 22;
 
 export type Layers = {
   /** Фото машины, светодиоды фар — те же <img>, что показывает страница. */
@@ -77,6 +80,8 @@ export type Frame = {
   gloss: number;
   /** Сила отражения машины в полу; 0 — без отражения. */
   reflection: number;
+  /** Ореол по маске машины под ней: проявляется вместе с машиной, 0..1. */
+  mask: number;
 };
 
 export type Volume = {
@@ -267,28 +272,35 @@ uniform vec2 uYaw;
 uniform vec3 uAccent;
 uniform float uNeon;
 uniform float uGloss;
-// Трубка под губой: x левого и правого концов, z, высота
-uniform vec4 uTube;
-// Трубки порогов: x левой и правой, z от и до; высота — как у трубки под губой
-uniform vec4 uSill;
-// Колёса: x, полуширина, z, полуглубина
+uniform float uAspect;
+// Пятно света на полу — эллипс в координатах машины: центр x и z, полуоси по x и z
+uniform vec4 uPool;
+// Источник на уровне колёс: x левого и правого концов, z, высота — для блика на глянце
+uniform vec4 uSource;
+// Колёса: x, полуширина, z, полуглубина пятна шины
 uniform vec4 uWheels[2];
-// Трубка под губой на экране — для дымки: концы в координатах кадра
-uniform vec4 uHaze;
 // Кузов в координатах машины: полуширина и губа
 uniform vec2 uBody;
+// Маска машины — альфа фото: размытая, она даёт ореол по силуэту под кузовом
+uniform sampler2D uMask;
+uniform float uMaskGlow;
+uniform float uMaskLod;
 out vec4 outColor;
 ${constants}
 const float PI = 3.14159265;
-const int SHADOW_SAMPLES = 8;
-// Щель под передней губой, в высотах кадра (~5 см)
-const float GAP = 0.035;
-// Как глубоко под машину виден освещённый пол — через щель под бампером
-const float UNDER_DEPTH = 0.55;
-// Свет из-под машины: высота над полом, ширина в долях кузова, сила
-const vec3 BOUNCE[3] = vec3[3](vec3(0.035, 0.9, 0.8), vec3(0.14, 1.0, 0.5), vec3(0.34, 1.12, 0.3));
-// Пол тёмный, как бетон или эпоксидка
-const float ALBEDO = 0.2;
+// Пятно: сила, мягкое ядро и длинный хвост — края нет нигде
+const float POOL = 0.8;
+const float POOL_CORE = 2.0;
+const float POOL_TAIL = 0.22;
+// Блик источника на глянце
+const float GLINT = 0.55;
+// Тень контакта: размытие у шин и у бампера, в высотах кадра, и её глубина
+const float CONTACT = 0.07;
+const float BUMPER_SHADOW = 0.06;
+const float SHADOW = 0.85;
+// Ореол по маске: доля от неона и как высоко по кузову он поднимается
+const float MASK = 0.55;
+const float MASK_RISE = 0.14;
 const float EXPOSURE = 1.5;
 
 float hash(vec2 p) {
@@ -308,34 +320,9 @@ float grainOf(vec2 p) {
   return noise(p * 38.0) * 0.55 + noise(turned * 131.0 + 17.0) * 0.45;
 }
 
-// Отрезок от a до b в плоскости пола проходит через пятно шины
-bool blocked(vec2 a, vec2 b, vec4 wheel) {
-  vec2 low = vec2(wheel.x - wheel.y, wheel.z - wheel.w);
-  vec2 high = vec2(wheel.x + wheel.y, wheel.z + wheel.w);
-  vec2 d = b - a;
-  vec2 inv = 1.0 / (d + vec2(1e-6));
-  vec2 t0 = (low - a) * inv;
-  vec2 t1 = (high - a) * inv;
-  float enter = max(min(t0.x, t1.x), min(t0.y, t1.y));
-  float leave = min(max(t0.x, t1.x), max(t0.y, t1.y));
-  return enter < leave && leave > 0.0 && enter < 1.0;
-}
-
-// Освещённость пола от отрезка трубки a–b: интеграл cos/r² вдоль трубки — точно, без
-// пунктира от отдельных точек
-float lineDiffuse(vec3 p, vec3 a, vec3 b) {
-  vec3 d = a - p;
-  vec3 s = b - a;
-  float al = dot(d, d);
-  float be = dot(d, s);
-  float ga = dot(s, s);
-  float det = max(al * ga - be * be, 1e-8);
-  return d.y * sqrt(ga) / det * ((ga + be) * inversesqrt(al + 2.0 * be + ga) - be * inversesqrt(al));
-}
-
-// Блик трубки на глянце (GGX): берётся точка трубки, ближайшая к отражённому лучу, — так
-// считают трубчатые лампы в реальном времени. Свет копится с куска трубки шириной
-// в лепесток блика
+// Блик отрезка-источника на глянце (GGX): берётся точка источника, ближайшая к
+// отражённому лучу, — так считают трубчатые лампы в реальном времени. Источник с
+// размером размывает блик, энергия сохраняется
 float lineGlint(vec3 p, vec3 view, vec3 a, vec3 b, float alpha, float radius) {
   vec3 r = vec3(-view.x, view.y, -view.z);
   vec3 l0 = a - p;
@@ -348,7 +335,6 @@ float lineGlint(vec3 p, vec3 view, vec3 a, vec3 b, float alpha, float radius) {
   float nl = max(l.y, 0.0);
   vec3 h = normalize(l + view);
   float nh = max(h.y, 0.0);
-  // Источник с размером размывает блик: шероховатость растёт, энергия сохраняется
   float wide = min(1.0, alpha + radius * inversesqrt(r2) / 2.0);
   float a2 = wide * wide;
   float distribution = a2 / (PI * pow(nh * nh * (a2 - 1.0) + 1.0, 2.0)) * pow(alpha / wide, 2.0);
@@ -360,22 +346,18 @@ float lineGlint(vec3 p, vec3 view, vec3 a, vec3 b, float alpha, float radius) {
   return distribution * fresnel * geometry / 4.0 * nl / r2 * width;
 }
 
-// Доля трубки, видимой из точки пола мимо колёс. Точки трубки — со своим сдвигом в
-// каждом пикселе: край тени выходит мягким зерном, а не ступеньками
-float visibility(vec3 p, vec3 a, vec3 b) {
-  float jitter = hash(gl_FragCoord.xy + a.xz * 91.0);
-  float seen = 0.0;
-  for (int i = 0; i < SHADOW_SAMPLES; i++) {
-    vec3 q = mix(a, b, (float(i) + jitter) / float(SHADOW_SAMPLES));
-    if (!blocked(q.xz, p.xz, uWheels[0]) && !blocked(q.xz, p.xz, uWheels[1])) seen += 1.0;
+// Тень контакта: под шинами и у бампера пол темнее — машина стоит на полу, а не висит
+float contact(vec3 p) {
+  float lit = 1.0;
+  for (int i = 0; i < 2; i++) {
+    vec4 wheel = uWheels[i];
+    vec2 outside = max(abs(p.xz - wheel.xz) - wheel.yw, 0.0);
+    lit *= 1.0 - SHADOW * exp(-dot(outside, outside) / (CONTACT * CONTACT));
   }
-  return seen / float(SHADOW_SAMPLES);
-}
-
-float segmentDistance(vec2 p, vec2 a, vec2 b) {
-  vec2 ab = b - a;
-  float t = clamp(dot(p - a, ab) / dot(ab, ab), 0.0, 1.0);
-  return length(p - a - ab * t);
+  // У бампера: чем ближе к губе, тем темнее; под кузовом — тень целиком
+  float across = 1.0 - smoothstep(uBody.x - 0.08, uBody.x + 0.06, abs(p.x));
+  lit *= 1.0 - across * SHADOW * exp(-max(p.z - uBody.y, 0.0) / BUMPER_SHADOW);
+  return lit;
 }
 
 void main() {
@@ -391,54 +373,30 @@ void main() {
     vec3 p = vec3(hit.x * uYaw.x - hit.z * uYaw.y, FLOOR, hit.x * uYaw.y + hit.z * uYaw.x);
     vec3 e = vec3(eye.x * uYaw.x - eye.z * uYaw.y, 0.0, eye.x * uYaw.y + eye.z * uYaw.x);
     vec3 view = normalize(e - p);
-
-    // Фактура пола: чуть разная шероховатость и тон
     float grain = grainOf(p.xz);
-    float rough = clamp(mix(0.55, 0.07, uGloss) * (0.85 + 0.3 * grain), 0.03, 1.0);
+    float shade = contact(p);
 
-    float alpha = rough * rough;
-    // Прямой свет трубки: бампер заслоняет её от пола впереди, свет проходит только
-    // через щель под губой — яркая полоска у самой губы
-    vec3 front0 = vec3(uTube.x, uTube.w, uTube.z);
-    vec3 front1 = vec3(uTube.y, uTube.w, uTube.z);
-    float ahead = max(p.z - uBody.y, 0.0);
-    float rayAtLip = (uTube.w - FLOOR) * ahead / max(p.z - uTube.z, 1e-3);
-    float gap = 1.0 - smoothstep(GAP * 0.5, GAP * 1.6, rayAtLip);
-    float diffuse = lineDiffuse(p, front0, front1) * gap;
-    float glint = lineGlint(p, view, front0, front1, alpha, 0.02) * gap;
-    // Свет, отражённый между днищем и полом, выходит из-под губы широко и мягко: стопка
-    // источников у губы, чем выше — тем шире и слабее; концы пятна от этого мягкие
-    for (int i = 0; i < 3; i++) {
-      vec3 stack = BOUNCE[i];
-      vec3 left = vec3(-uBody.x * stack.y, FLOOR + stack.x, uBody.y);
-      vec3 right = vec3(uBody.x * stack.y, FLOOR + stack.x, uBody.y);
-      diffuse += stack.z * lineDiffuse(p, left, right);
-      glint += stack.z * lineGlint(p, view, left, right, alpha, stack.x);
-    }
-    for (int side = -1; side <= 1; side += 2) {
-      float sillX = side < 0 ? uSill.x : uSill.y;
-      vec3 sill0 = vec3(sillX, uTube.w, uSill.z);
-      vec3 sill1 = vec3(sillX, uTube.w, uSill.w);
-      // Бампер заслоняет и пороги: впереди губы их свет доходит только через щель. Сбоку
-      // от кузова бампера нет
-      float sillAtLip = (uTube.w - FLOOR) * ahead / max(p.z - uSill.z, 1e-3);
-      float bumper = 1.0 - smoothstep(uBody.x - 0.05, uBody.x + 0.05, abs(p.x));
-      float seen = visibility(p, sill0, sill1) * (1.0 - bumper * smoothstep(GAP * 0.5, GAP * 1.6, sillAtLip));
-      diffuse += lineDiffuse(p, sill0, sill1) * seen;
-      glint += lineGlint(p, view, sill0, sill1, alpha, 0.05) * seen;
-    }
-    // Под машиной пол виден только в щели под бампером — сквозь растворённый срез кадра.
-    // Там и самое яркое: трубка прямо над ним. Глубже под машину взгляд не достаёт
-    float under = (1.0 - smoothstep(uBody.y - UNDER_DEPTH - 0.3, uBody.y - UNDER_DEPTH, p.z))
-      * (1.0 - smoothstep(uBody.x - 0.05, uBody.x, abs(p.x)));
-    diffuse *= 1.0 - under;
-    glint *= 1.0 - under;
-    light = uAccent * (diffuse * ALBEDO / PI * (0.9 + 0.2 * grain) + glint);
+    // Пятно — эллипс на плоскости пола под машиной: мягкое ядро и длинный хвост
+    vec2 q = (p.xz - uPool.xy) / uPool.zw;
+    float d2 = dot(q, q);
+    float pool = exp(-POOL_CORE * d2) + POOL_TAIL / (1.0 + 3.0 * d2);
+    light += uAccent * (POOL * pool * (0.9 + 0.2 * grain) * shade);
+
+    // Блик источника на глянце — внутри пятна
+    float rough = clamp(mix(0.55, 0.07, uGloss) * (0.85 + 0.3 * grain), 0.03, 1.0);
+    vec3 a = vec3(uSource.x, uSource.w, uSource.z);
+    vec3 b = vec3(uSource.y, uSource.w, uSource.z);
+    light += uAccent * (GLINT * lineGlint(p, view, a, b, rough * rough, 0.2) * pool * shade);
   }
 
-  // Дымка: свет трубки, рассеянный в воздухе у пола
-  float d = segmentDistance(screen, uHaze.xy, uHaze.zw);
-  light += uAccent * (0.9 * exp(-pow(d / 0.035, 2.0)) + 0.12 / (1.0 + pow(d / 0.09, 2.0)));
+  // Ореол по маске машины: размытый силуэт, сильнее у низа кузова. Лежит под машиной —
+  // кузов его закрывает, виден только мягкий край вокруг нижних кромок
+  if (uMaskGlow > 0.0) {
+    vec2 uv = vec2(screen.x / uAspect + 0.5, 0.5 - screen.y);
+    float mask = textureLod(uMask, uv, uMaskLod).a;
+    float low = exp(-max(1.0 - uv.y, 0.0) / MASK_RISE);
+    light += uAccent * (MASK * uMaskGlow * mask * low);
+  }
 
   // Экспозиция: яркое уходит в белое само, как у снимка неона; затем sRGB
   vec3 color = 1.0 - exp(-light * uNeon * EXPOSURE);
@@ -625,7 +583,18 @@ export function createVolume(
   gl.clearColor(0, 0, 0, 0);
 
   /* Программы пола готовы — один раз задать то, что не меняется */
-  type FloorUniform = "resolution" | "yaw" | "neon" | "gloss" | "tube" | "sill" | "wheels" | "haze" | "body" | "stretch";
+  type FloorUniform =
+    | "resolution"
+    | "yaw"
+    | "neon"
+    | "gloss"
+    | "pool"
+    | "source"
+    | "wheels"
+    | "body"
+    | "maskGlow"
+    | "maskLod"
+    | "stretch";
   let floorUniforms: Record<FloorUniform, WebGLUniformLocation | null> | null = null;
   const floorReady = () => {
     if (floorUniforms) return true;
@@ -634,6 +603,9 @@ export function createVolume(
     gl.useProgram(floorLink.program);
     gl.uniform4f(at("uFrame"), ...frame);
     gl.uniform3f(at("uAccent"), ...linear(accent));
+    gl.uniform1f(at("uAspect"), aspect);
+    // Маска — альфа фото машины в блоке 0
+    gl.uniform1i(at("uMask"), 0);
     gl.useProgram(stretchLink.program);
     gl.uniform1i(gl.getUniformLocation(stretchLink.program, "uFloor"), 3);
     floorUniforms = {
@@ -641,11 +613,12 @@ export function createVolume(
       yaw: at("uYaw"),
       neon: at("uNeon"),
       gloss: at("uGloss"),
-      tube: at("uTube"),
-      sill: at("uSill"),
+      pool: at("uPool"),
+      source: at("uSource"),
       wheels: at("uWheels"),
-      haze: at("uHaze"),
       body: at("uBody"),
+      maskGlow: at("uMaskGlow"),
+      maskLod: at("uMaskLod"),
       stretch: gl.getUniformLocation(stretchLink.program, "uResolution"),
     };
     return true;
@@ -719,28 +692,12 @@ export function createVolume(
     const [left, right] = underglow.wheels;
     const wheelZ = lip - WHEEL_BEHIND_LIP;
     const wheels = [left, right].flatMap(({ x: at, w }) => [x(at), half(w), wheelZ, WHEEL_HALF_DEPTH]);
-    const tubeZ = lip - TUBE_BEHIND_LIP;
-    const tubeY = FLOOR + TUBE_HEIGHT;
-    // Трубка под губой на экране: разворот, затем перспектива
-    const [cos, sin] = [Math.cos((yaw * Math.PI) / 180), Math.sin((yaw * Math.PI) / 180)];
-    const project = (px: number) => {
-      const wx = px * cos + tubeZ * sin;
-      const wz = -px * sin + tubeZ * cos;
-      const scale = CAMERA / (CAMERA - wz);
-      return [wx * scale, tubeY * scale];
-    };
+    const [from, to] = [x(underglow.tube[0]), x(underglow.tube[1])];
     return {
-      yaw: [cos, sin],
-      tube: [x(underglow.tube[0]), x(underglow.tube[1]), tubeZ, tubeY],
-      // Пороги — по внутреннему краю своего колеса, от колёс назад
-      sill: [
-        x(left.x) + half(left.w),
-        x(right.x) - half(right.w),
-        wheelZ - WHEEL_HALF_DEPTH,
-        wheelZ - WHEEL_HALF_DEPTH - SILL_LENGTH,
-      ],
+      yaw: [Math.cos((yaw * Math.PI) / 180), Math.sin((yaw * Math.PI) / 180)],
+      pool: [(from + to) / 2, wheelZ, ((to - from) / 2) * POOL_WIDTH, POOL_LENGTH],
+      source: [from, to, wheelZ, FLOOR + SOURCE_HEIGHT],
       wheels,
-      haze: [...project(x(underglow.tube[0])), ...project(x(underglow.tube[1]))],
       body: [aspect / 2, lip],
     };
   };
@@ -789,11 +746,19 @@ export function createVolume(
         gl.uniform2f(floorUniforms.yaw, scene.yaw[0], scene.yaw[1]);
         gl.uniform1f(floorUniforms.neon, state.neon);
         gl.uniform1f(floorUniforms.gloss, state.gloss);
-        gl.uniform4fv(floorUniforms.tube, scene.tube);
-        gl.uniform4fv(floorUniforms.sill, scene.sill);
+        gl.uniform4fv(floorUniforms.pool, scene.pool);
+        gl.uniform4fv(floorUniforms.source, scene.source);
         gl.uniform4fv(floorUniforms.wheels, scene.wheels);
-        gl.uniform4fv(floorUniforms.haze, scene.haze);
         gl.uniform2fv(floorUniforms.body, scene.body);
+        // Маска есть, только когда фото уже в текстуре
+        const mask = layers && carCssWidth ? state.mask : 0;
+        gl.uniform1f(floorUniforms.maskGlow, mask);
+        if (mask > 0 && layers) {
+          const lod = Math.log2((MASK_BLUR / carCssWidth) * layers.color.naturalWidth);
+          gl.uniform1f(floorUniforms.maskLod, Math.max(0, lod));
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, color);
+        }
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, size[0], size[1]);

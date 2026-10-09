@@ -62,7 +62,7 @@ const SLOW_FRAME_MS = 50;
 /* Низ машины растворяется в полу с этой доли высоты — как .fade-bottom и .fade-bottom-short
    в app/globals.css: на неоне кодом машина стоит на освещённом полу */
 const FADE = 0.7;
-const FADE_ON_NEON = 0.96;
+const FADE_ON_NEON = 0.97;
 /* Плотность холста — как у экрана, до 3 (iPhone): реже — машина при подмене мягчеет.
    Плотнее разницы не видно, а работы больше */
 const MAX_DPR = 3;
@@ -251,6 +251,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
           fade: lit ? FADE_ON_NEON : FADE,
           gloss: settings.gloss,
           reflection: settings.mirror * fadeIn,
+          mask: fadeIn,
         });
       } catch {
         off("shader");
