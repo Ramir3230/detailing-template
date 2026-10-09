@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
-import { glue } from "@/lib/format";
+import { getDictionary } from "@/dictionaries";
+import { defaultCarClass } from "@/lib/car-class";
+import { glue, priceParts } from "@/lib/format";
 import { langs, t, type Lang } from "@/lib/i18n";
 import { groupPagePath, hasGroupPage, sectionIds } from "@/lib/nav";
 
@@ -23,6 +25,10 @@ function page(route: string): { html: string; head: string } {
 /* Файл машины hero из данных так, как он стоит в адресах next/image */
 const carFile = encodeURIComponent(studio.hero.car.src);
 const tags = (html: string, pattern: RegExp) => html.match(pattern) ?? [];
+
+/* Текст так, как React кладёт его в HTML */
+const escaped = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
 
 function expectPrerendered(route: string) {
   expect(
@@ -149,6 +155,18 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
     // В заголовке страницы однобуквенные слова приклеены неразрывным пробелом, во вкладке — нет
     expect(headings[0]).toContain(glue(name, lang));
     expect(head.match(/<title>([^<]*)<\/title>/)?.[1]).toContain(name);
+  });
+
+  it("serves every service of the group with its scope and the default class price", () => {
+    // Сервер рисует класс по умолчанию: без JS и до гидрации цена уже на месте
+    const { html } = page(route);
+    const dict = getDictionary(lang);
+    for (const service of group.services) {
+      expect(html).toContain(escaped(glue(t(service.name, lang), lang)));
+      for (const line of service.scope ?? []) expect(html).toContain(escaped(glue(t(line, lang), lang)));
+      const parts = priceParts(service.price, defaultCarClass, dict.price);
+      expect(html).toContain(escaped(parts.kind === "amount" ? parts.amount : parts.text));
+    }
   });
 
   it("leaves the hero car to the home page", () => {

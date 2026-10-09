@@ -76,6 +76,7 @@ export const pl: Dictionary = {
     metaTitle: "{group} — {studio}",
     breadcrumbs: "Ścieżka",
     whatsIncluded: "Co wchodzi",
+    scope: "W zakresie",
   },
   newTab: "otwiera się w nowej karcie",
   footer: { services: "Usługi", studio: "Studio" },
