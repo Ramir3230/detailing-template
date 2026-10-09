@@ -60,13 +60,13 @@ export const afterdark: Studio = {
   address: {
     street: "[Ulica i numer]",
     area: "Warszawa-Wola",
-    /* Сделано ИИ, scripts/before-after/wejscie.json: вход SPECTRE с вывеской не берём */
+    /* Кадр владельца (ИИ, вывеска Afterdark), решение 09.10.2026; вход SPECTRE не берём */
     photo: {
       src: "/kontakt/wejscie.webp",
       width: 1040,
       height: 1300,
       alt: {
-        pl: "Wjazd do studia wieczorem: otwarta brama, w środku auto w świetle lamp",
+        pl: "Wjazd do studia Afterdark wieczorem: fioletowy neon, w środku czarne auto",
       },
       ai: true,
     },
