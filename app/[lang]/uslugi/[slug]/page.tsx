@@ -54,8 +54,9 @@ export default async function GroupPage({ params }: PageProps<"/[lang]/uslugi/[s
     <main className="flex-1">
       <GroupIntro group={group} lang={lang} dict={dict} />
       <GroupContent group={group} lang={lang} dict={dict} />
-      <section className="wrap pt-12 pb-14 lg:pb-24">
-        <AdviceCard group={group} lang={lang} dict={dict} />
+      {/* На десктопе карточка «Nie wiesz…» — в липкой колонке GroupContent */}
+      <section className="wrap pt-12 pb-14 lg:hidden">
+        <AdviceCard group={group} lang={lang} dict={dict} place="end" callId={groupSectionIds.adviceCall} />
       </section>
       <FloatingCall
         href={telHref(studio.phone)}
@@ -63,6 +64,7 @@ export default async function GroupPage({ params }: PageProps<"/[lang]/uslugi/[s
         phone={formatPhone(studio.phone)}
         afterHero={false}
         hideAt={groupSectionIds.adviceCall}
+        phoneOnly
       />
     </main>
   );
