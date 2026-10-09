@@ -12,23 +12,8 @@ import {
 } from "react";
 import { Price, ServiceName } from "@/components/Price";
 import { DragSidewaysIcon } from "@/components/icons";
+import type { ComparePair, ComparePhoto } from "@/lib/compare";
 import { frameSizes } from "@/lib/frame";
-import type { PriceParts } from "@/lib/format";
-
-export type ComparePhoto = { src: string; width: number; height: number; alt: string };
-
-export type ComparePair = {
-  label: string;
-  service: string;
-  brand?: string;
-  price: PriceParts;
-  /** Подпись ползунка для диктора и клавиатуры. */
-  compare: string;
-  /** Хоть один кадр пары сделан ИИ — под парой «Zdjęcia przykładowe». */
-  examples: boolean;
-  before: ComparePhoto;
-  after: ComparePhoto;
-};
 
 type Words = { before: string; after: string; pairs: string; examples: string };
 
@@ -45,9 +30,9 @@ const keySteps: Record<string, (index: number, count: number) => number> = {
 };
 
 /**
- * До/после главной: вкладки пар, шторка, услуга с ценой «od …». Телефон — одной
- * колонкой, как на холсте; десктоп — кадр слева, заголовок, вкладки и услуга справа,
- * по центру высоты кадра.
+ * До/после главной и страницы группы: вкладки пар, шторка, услуга с ценой «od …».
+ * Телефон — одной колонкой, как на холсте; десктоп — кадр слева, заголовок, вкладки и
+ * услуга справа, по центру высоты кадра.
  */
 export function ComparePairs({
   heading,

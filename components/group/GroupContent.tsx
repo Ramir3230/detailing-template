@@ -15,7 +15,8 @@ import { classDescriptions } from "@/lib/price-list";
  */
 export function GroupContent({ group, lang, dict }: { group: GroupWithPage; lang: Lang; dict: Dictionary }) {
   return (
-    <ClassScope className="wrap">
+    // Телефон: фокус с клавиатуры не прячется под шапку с липким переключателем
+    <ClassScope className="wrap max-lg:[&_:is(a,button,input,summary)]:scroll-mt-36">
       <ClassPicker
         label={dict.prices.classLabel}
         descriptions={classDescriptions(studio.carClasses, lang)}
