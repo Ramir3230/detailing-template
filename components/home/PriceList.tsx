@@ -92,9 +92,11 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
               {group.page && (
                 <Link
                   href={group.page}
-                  className="-my-3 inline-block py-3 text-13 text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg lg:text-14"
+                  className="-my-3 inline-flex min-h-11 shrink-0 items-center text-13 whitespace-nowrap text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg lg:text-14"
                 >
                   {words.whatsIncluded}
+                  {/* Диктор в списке ссылок различает четыре «Co wchodzi» по группе */}
+                  <span className="sr-only">: {group.name}</span>
                 </Link>
               )}
             </div>

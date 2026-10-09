@@ -4,7 +4,7 @@ type Crumb = { name: string; href: string };
 
 /**
  * Хлебные крошки внутренней страницы: «Usługi / Lakier». Текущая страница — последней,
- * без ссылки. Цель ссылки — 44 px высотой за счёт полей, вёрстку она не раздувает.
+ * без ссылки. Цель ссылки — от 44×44 за счёт полей, вёрстку она не раздувает.
  */
 export function Breadcrumbs({ label, trail, current }: { label: string; trail: Crumb[]; current: string }) {
   return (
@@ -14,7 +14,7 @@ export function Breadcrumbs({ label, trail, current }: { label: string; trail: C
           <li key={href} className="flex items-baseline gap-2">
             <Link
               href={href}
-              className="-my-3 inline-block py-3 underline underline-offset-4 transition-colors hover:text-fg"
+              className="-mx-2 -my-3 inline-flex min-h-11 items-center px-2 underline underline-offset-4 transition-colors hover:text-fg"
             >
               {name}
             </Link>
