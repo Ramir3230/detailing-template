@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { FloatingCall } from "@/components/FloatingCall";
+import { AdviceCard } from "@/components/group/AdviceCard";
+import { GroupContent } from "@/components/group/GroupContent";
 import { GroupIntro } from "@/components/group/GroupIntro";
-import { GroupServices } from "@/components/group/GroupServices";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
+import { telHref } from "@/lib/contact";
+import { formatPhone } from "@/lib/format";
 import { fill, isLang, t } from "@/lib/i18n";
-import { hasGroupPage } from "@/lib/nav";
+import { groupSectionIds, hasGroupPage } from "@/lib/nav";
 
 /*
  * Страница группы услуг (BRIEF.md): главная отвечает «сколько», страница группы — «что
@@ -49,7 +53,17 @@ export default async function GroupPage({ params }: PageProps<"/[lang]/uslugi/[s
   return (
     <main className="flex-1">
       <GroupIntro group={group} lang={lang} dict={dict} />
-      <GroupServices group={group} lang={lang} dict={dict} />
+      <GroupContent group={group} lang={lang} dict={dict} />
+      <section className="wrap pt-12 pb-14">
+        <AdviceCard group={group} lang={lang} dict={dict} />
+      </section>
+      <FloatingCall
+        href={telHref(studio.phone)}
+        label={dict.call.label}
+        phone={formatPhone(studio.phone)}
+        afterHero={false}
+        hideAt={groupSectionIds.adviceCall}
+      />
     </main>
   );
 }

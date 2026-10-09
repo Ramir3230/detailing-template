@@ -66,6 +66,8 @@ export type ServiceGroup = {
   name: Text;
   /** Вводный абзац страницы группы. Есть он — у группы есть страница. */
   intro?: Text;
+  /** Строка под «Nie wiesz, którą wybrać?» на странице группы: «Zadzwoń — doradzimy…». */
+  advice?: Text;
   services: Service[];
   faq?: Faq[];
 };

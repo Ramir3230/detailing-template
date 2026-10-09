@@ -11,6 +11,13 @@ export const sectionIds = {
   contactCall: "kontakt-zadzwon",
 } as const;
 
+/** Якоря страницы группы. */
+export const groupSectionIds = {
+  faq: "faq",
+  /** Кнопка звонка карточки «Nie wiesz…»: когда она на экране, плавающая «Zadzwoń» прячется. */
+  adviceCall: "nie-wiesz-zadzwon",
+} as const;
+
 /*
  * Навигация ведёт только на готовое. Страница появилась — её пункт добавляется сюда
  * и в словари. Пока прайс и контакты живут на главной, пункты ведут к её блокам.

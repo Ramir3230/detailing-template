@@ -77,6 +77,8 @@ export const ru: Dictionary = {
     breadcrumbs: "Путь по сайту",
     whatsIncluded: "Что входит",
     scope: "Состав работ",
+    faq: "Частые вопросы",
+    adviceTitle: "Не знаете, что выбрать?",
   },
   newTab: "открывается в новой вкладке",
   footer: { services: "Услуги", studio: "Студия" },

@@ -77,6 +77,8 @@ export const pl: Dictionary = {
     breadcrumbs: "Ścieżka",
     whatsIncluded: "Co wchodzi",
     scope: "W zakresie",
+    faq: "Częste pytania",
+    adviceTitle: "Nie wiesz, którą wybrać?",
   },
   newTab: "otwiera się w nowej karcie",
   footer: { services: "Usługi", studio: "Studio" },
