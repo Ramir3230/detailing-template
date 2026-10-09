@@ -29,7 +29,10 @@ N сидов подряд от сида в JSON; --vary przed держит «po�
             <out>/przed.webp, одиночный кадр — в <out>.webp;
     po      prompt, negative, seed; erase (необязательно) — прямоугольники [left, top,
             right, bottom] в пикселях кадра 1040×1300, которые затираются окружением:
-            эмблема или номер, нарисованные моделью вопреки negative;
+            эмблема или номер, нарисованные моделью вопреки negative. right и bottom не
+            входят, как в PIL crop: брать с запасом 2–3 px. erase привязан к po.seed —
+            сменил сид, перемерь прямоугольники или убери поле; на листе кандидатов он
+            действует только на кадр этого сида;
     przed   kind, seed и mask — "subject" (BiRefNet: машина или сиденье, фон не
             трогается) или "full" (весь кадр).
             kind "dirt" — грязь рисует модель: prompt, negative; strength — насколько
@@ -158,7 +161,7 @@ def noise(seed: int) -> torch.Generator:
     return torch.Generator("cpu").manual_seed(seed)
 
 
-def draw_po(draw: StableDiffusionXLPipeline, spec: dict, seed: int) -> Image.Image:
+def draw_po(draw: StableDiffusionXLPipeline, spec: dict, seed: int, boxes: list) -> Image.Image:
     po = draw(
         prompt=spec["prompt"],
         negative_prompt=spec["negative"],
@@ -168,18 +171,24 @@ def draw_po(draw: StableDiffusionXLPipeline, spec: dict, seed: int) -> Image.Ima
         guidance_scale=GUIDANCE,
         generator=noise(seed),
     ).images[0]
-    return erase(po, spec.get("erase", []))
+    return erase(po, boxes)
+
+
+def crop_top(height: int) -> int:
+    """Сколько пикселей кадра модели срезается сверху до кадра 1040×1300."""
+    return (height - SIZE[1]) // 2
 
 
 def erase(image: Image.Image, boxes: list) -> Image.Image:
     """Эмблемы, которые модель рисует вопреки negative, — заливкой от краёв прямоугольника.
-    Затирается «po» до «przed»: в паре эмблемы нет ни на одном кадре."""
+    Затираются «po» и грязь, которую модель нарисовала заново: в паре эмблемы нет ни на
+    одном кадре."""
     if not boxes:
         return image
     rgb = np.asarray(image)
     mask = np.zeros(rgb.shape[:2], np.uint8)
-    # Прямоугольники — в пикселях кадра 1040×1300, а «po» на 4 px выше
-    top = (GEN_SIZE[1] - SIZE[1]) // 2
+    # Прямоугольники — в пикселях кадра 1040×1300: to_size срежет сверху столько же
+    top = crop_top(image.height)
     for left, upper, right, lower in boxes:
         mask[upper + top : lower + top, left:right] = 255
     return Image.fromarray(cv2.inpaint(rgb, mask, ERASE_RADIUS, cv2.INPAINT_TELEA))
@@ -225,7 +234,7 @@ def with_region(przed: Image.Image, region: Image.Image) -> Image.Image:
 
 
 def paint_dirt(
-    paint: StableDiffusionXLControlNetInpaintPipeline, po: Image.Image, spec: dict, seed: int
+    paint: StableDiffusionXLControlNetInpaintPipeline, po: Image.Image, spec: dict, seed: int, boxes: list
 ) -> Image.Image:
     repaint, soft = dirt_masks(po, spec["mask"])
     dirty = paint(
@@ -242,6 +251,8 @@ def paint_dirt(
         guidance_scale=GUIDANCE,
         generator=noise(seed),
     ).images[0]
+    # Внутри маски модель рисует предмет почти заново — и эмблему тоже может вернуть
+    dirty = erase(dirty, boxes)
     # Модель перекодирует весь кадр, и вне маски пиксели чуть плывут. Возвращаем «po»
     return with_region(Image.composite(dirty, po, soft), soft)
 
@@ -321,16 +332,17 @@ def paint_swirls(po: Image.Image, spec: dict, seed: int) -> Image.Image:
 
 
 def make_przed(
-    paint: StableDiffusionXLControlNetInpaintPipeline, po: Image.Image, spec: dict, seed: int
+    paint: StableDiffusionXLControlNetInpaintPipeline, po: Image.Image, spec: dict, seed: int, boxes: list
 ) -> Image.Image:
-    """«przed» с прозрачностью вне испорченного места."""
+    """«przed» с прозрачностью вне испорченного места. Голограммы код кладёт на уже
+    затёртый «po», грязь модели затирается заново."""
     if spec["kind"] == "swirls":
         return paint_swirls(po, spec, seed)
-    return paint_dirt(paint, po, spec, seed)
+    return paint_dirt(paint, po, spec, seed, boxes)
 
 
 def to_size(image: Image.Image) -> Image.Image:
-    top = (image.height - SIZE[1]) // 2
+    top = crop_top(image.height)
     return image.crop((0, top, SIZE[0], top + SIZE[1]))
 
 
@@ -432,12 +444,13 @@ def main() -> None:
     draw, paint = load()
 
     if args.candidates is None:
-        po = draw_po(draw, frame["po"], frame["po"]["seed"])
+        boxes = frame["po"].get("erase", [])
+        po = draw_po(draw, frame["po"], frame["po"]["seed"], boxes)
         if przed is None:
             save(to_size(po), out.with_suffix(".webp"))
             print(json.dumps(photo(out.with_suffix(".webp")), indent=2))
             return
-        dirty = make_przed(paint, po, przed, przed["seed"])
+        dirty = make_przed(paint, po, przed, przed["seed"], boxes)
         save(to_size(po), out / "po.webp")
         save(to_size(dirty), out / "przed.webp")
         print(json.dumps({"przed": photo(out / "przed.webp"), "po": photo(out / "po.webp")}, indent=2))
@@ -447,13 +460,15 @@ def main() -> None:
     po = None
     for i in range(args.candidates):
         po_seed = frame["po"]["seed"] + (i if vary == "po" else 0)
+        # Прямоугольники сняты с кадра сида из JSON: у других сидов эмблема в другом месте
+        boxes = frame["po"].get("erase", []) if po_seed == frame["po"]["seed"] else []
         if po is None or vary == "po":
-            po = draw_po(draw, frame["po"], po_seed)
+            po = draw_po(draw, frame["po"], po_seed, boxes)
         images = [po]
         label = f"po {po_seed}"
         if przed is not None:
             przed_seed = przed["seed"] + (i if vary == "przed" else 0)
-            images.insert(0, make_przed(paint, po, przed, przed_seed))
+            images.insert(0, make_przed(paint, po, przed, przed_seed, boxes))
             label += f", przed {przed_seed}"
         images = [to_size(image) for image in images]
         for image, part in zip(images, ["przed", "po"] if przed is not None else ["po"]):
