@@ -25,9 +25,9 @@ const riseLater =
  * свободная высота делится поровну над и под средней группой. Ниже 600 px высотой всё
  * сжимается, чтобы hero влез целиком.
  * Десктоп: логотип несёт шапка; текст слева, машина справа на всё оставшееся место.
- * Hero с шапкой — не ниже экрана: шапка (--spacing-header) и линия под ней. На низком
- * окне (ниже 800 px) сжимаются поля и интервалы, машина встаёт по высоте экрана,
- * заголовок мельчает последним: рейтинг, статус и неон под машиной — на первом экране.
+ * Hero с шапкой — не ниже экрана: шапка (--spacing-header) и линия под ней. Машина не
+ * выше 70% hero — под ней виден неон. На низком окне (ниже 800 px) сжимаются поля и
+ * интервалы, заголовок мельчает последним: рейтинг, статус и неон — на первом экране.
  */
 export function Hero({ lang, dict }: Props) {
   const { rating } = studio;
@@ -78,12 +78,13 @@ export function Hero({ lang, dict }: Props) {
               {/* Рейтинг и под ним статус: рядом длинный статус («Zamknięte · w poniedziałek
                   od 10:00») не влезал в колонку и после загрузки переносился — колонка
                   прыгала. Статус появляется только в браузере: место под строку держим
-                  заранее */}
+                  заранее. Поле нажатия рейтинга (44 px) заходит на строку статуса —
+                  relative ставит ссылку поверх неё */}
               <div className="mt-10 flex flex-col items-start gap-2 text-14 text-muted low:mt-6">
                 {studio.reviews.length > 0 && (
                   <ScrollLink
                     target={sectionIds.reviews}
-                    className="-my-3 inline-flex items-center gap-1 py-3 transition-colors hover:text-fg"
+                    className="relative -my-3 inline-flex items-center gap-1 py-3 transition-colors hover:text-fg"
                   >
                     <span className="text-accent">
                       <StarIcon size={14} />
@@ -108,16 +109,16 @@ export function Hero({ lang, dict }: Props) {
           {/* Телефон: во всю ширину секции — 92% и 80% от экрана (на планшете — от колонки
               640 с полями), а не от колонки без полей.
               Десктоп: всё место после колонки текста, с заходом на правое поле контейнера;
-              за машиной — свет акцента. На низком окне машина уже места и стоит в его
-              середине: свет остаётся с ней по центру */}
-          <div className="-mx-6 mt-8 lg:relative lg:m-0 lg:-mr-8 lg:flex lg:min-w-0 lg:flex-1 lg:justify-end low:justify-center">
+              за машиной — свет акцента. Машина по высоте экрана бывает уже места и стоит
+              в его середине: свет остаётся с ней по центру */}
+          <div className="-mx-6 mt-8 lg:relative lg:m-0 lg:-mr-8 lg:flex lg:min-w-0 lg:flex-1 lg:justify-center">
             <div
               aria-hidden="true"
               className="glow-hero pointer-events-none absolute -inset-[40%] hidden lg:block"
             />
             <HeroCar
               car={studio.hero.car}
-              className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:max-w-hero-car low:hero-car-low"
+              className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:hero-car-fit"
             />
           </div>
         </div>
