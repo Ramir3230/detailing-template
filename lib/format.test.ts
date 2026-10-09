@@ -71,17 +71,17 @@ describe("startingPriceParts", () => {
   it("gives a price by class as «od» the lowest class", () => {
     expect(startingPriceParts({ kind: "byClass", S: 1150, M: 1000, L: 1300 }, pl.price)).toEqual({
       kind: "amount",
-      prefix: "od ",
-      amount: "1000 zł",
+      prefix: "od\u00A0",
+      amount: "1000\u00A0zł",
     });
   });
 
   it("keeps the other kinds as the price list shows them", () => {
     expect(startingPriceParts({ kind: "fixed", amount: 300 }, pl.price)).toEqual({
       kind: "amount",
-      amount: "300 zł",
+      amount: "300\u00A0zł",
     });
-    expect(startingPriceParts({ kind: "from", amount: 600 }, ru.price)).toMatchObject({ prefix: "от " });
+    expect(startingPriceParts({ kind: "from", amount: 600 }, ru.price)).toMatchObject({ prefix: "от\u00A0" });
     expect(startingPriceParts({ kind: "individual" }, pl.price)).toEqual({
       kind: "individual",
       text: "indywidualnie",

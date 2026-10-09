@@ -60,12 +60,9 @@ export function priceParts(
  * низкой из классов. Остальные виды от класса не зависят.
  */
 export function startingPriceParts(price: Price, words: Dictionary["price"]): PriceParts {
-  if (price.kind !== "byClass") return priceParts(price, "S", words);
-  return {
-    kind: "amount",
-    prefix: `${words.from}${NBSP}`,
-    amount: formatAmount(Math.min(price.S, price.M, price.L), words),
-  };
+  const shown: Price =
+    price.kind === "byClass" ? { kind: "from", amount: Math.min(price.S, price.M, price.L) } : price;
+  return priceParts(shown, "S", words);
 }
 
 /** Самая низкая цена в группе — для «od …» в меню. Нет ни одной с числом — null. */

@@ -93,6 +93,12 @@ describe("active studio data", () => {
     );
     // Вкладки различаются подписью: по ней React различает кадры пар
     expect(new Set(pairs.map(({ label }) => label.pl)).size).toBe(pairs.length);
+    // Вкладки делят ширину телефона поровну: на 375 px помещаются четыре по 9 знаков
+    // (DESIGN.md, «До/после»)
+    expect(pairs.length).toBeLessThanOrEqual(4);
+    for (const { label } of pairs) {
+      for (const text of [label.pl, label.ru ?? ""]) expect(text.length).toBeLessThanOrEqual(9);
+    }
     for (const { before, after } of pairs) {
       // Шторка режет один кадр по другому: разный размер — сдвиг на линии
       expect({ width: before.width, height: before.height }).toEqual({
