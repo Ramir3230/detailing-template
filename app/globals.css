@@ -85,6 +85,8 @@
   --color-slider: #fff;
 
   --container-page: 1200px;
+  /* Планшет и телефон: контент не шире 640 px по центру, плюс поля 24 */
+  --container-tablet: 688px;
   /* Машина hero на десктопе не шире */
   --container-hero-car: 780px;
   /* Шапка десктопа: hero вместе с ней даёт экран */
@@ -238,14 +240,16 @@
   }
 }
 
-/* Поля страницы: телефон — 24 px, десктоп — контейнер 1200 px с полями 32 px */
+/* Поля страницы: телефон — 24 px, на планшете контент не шире 640 px по центру;
+   десктоп — контейнер 1200 px с полями 32 px */
 @utility wrap {
   width: 100%;
-  max-width: var(--container-page);
+  max-width: var(--container-tablet);
   margin-inline: auto;
   padding-inline: 24px;
 
   @media (width >= 64rem) {
+    max-width: var(--container-page);
     padding-inline: 32px;
   }
 }

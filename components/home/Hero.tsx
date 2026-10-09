@@ -33,7 +33,7 @@ export function Hero({ lang, dict }: Props) {
   return (
     <HeroStage id={sectionIds.hero} className="relative clip-x">
       {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh */}
-      <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between px-6 pt-10 pb-6 short:pt-6 short:pb-4 lg:wrap lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
+      <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between wrap pt-10 pb-6 short:pt-6 short:pb-4 lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12">
         {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания.
             Оба слоя — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает */}
         <div className="text-center lg:hidden">
@@ -98,7 +98,8 @@ export function Hero({ lang, dict }: Props) {
             </div>
           </div>
 
-          {/* Телефон: во всю ширину секции — 92% и 80% от экрана, а не от колонки с полями.
+          {/* Телефон: во всю ширину секции — 92% и 80% от экрана (на планшете — от колонки
+              640 с полями), а не от колонки без полей.
               Десктоп: всё место после колонки текста, с заходом на правое поле контейнера;
               за машиной — свет акцента */}
           <div className="-mx-6 mt-8 lg:relative lg:m-0 lg:-mr-8 lg:flex lg:min-w-0 lg:flex-1 lg:justify-end">
