@@ -26,9 +26,13 @@ export function ServiceCards({ group, lang, dict }: { group: GroupWithPage; lang
             className="rounded-card border border-line bg-surface p-5 lg:rounded-card-lg lg:p-8"
           >
             <div className="flex items-start justify-between gap-4 lg:gap-6">
-              <h2>
-                <ServiceName name={row.name} brand={row.brand} size="card" />
-              </h2>
+              <div className="flex flex-col gap-1">
+                <h2>
+                  <ServiceName name={row.name} brand={row.brand} size="card" />
+                </h2>
+                {/* «Wszystkie klasy», от чего зависит цена «od» — как в строке прайса */}
+                {row.note && <p className="text-13 leading-note text-muted lg:text-14">{row.note}</p>}
+              </div>
               <ClassPrice prices={row.prices} rolling={row.rolling} order={i} size="card" />
             </div>
             {service.duration && (

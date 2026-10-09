@@ -158,14 +158,15 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
   });
 
   it("serves every service of the group with its scope and the default class price", () => {
-    // Сервер рисует класс по умолчанию: без JS и до гидрации цена уже на месте
-    const { html } = page(route);
+    // Сервер рисует класс по умолчанию: без JS и до гидрации цена уже на месте. Ищем в
+    // разметке без скриптов: в данных для гидрации те же тексты и цены лежат пропсами
+    const visible = page(route).html.replace(/<script\b[\s\S]*?<\/script>/g, "");
     const dict = getDictionary(lang);
     for (const service of group.services) {
-      expect(html).toContain(escaped(glue(t(service.name, lang), lang)));
-      for (const line of service.scope ?? []) expect(html).toContain(escaped(glue(t(line, lang), lang)));
+      expect(visible).toContain(escaped(glue(t(service.name, lang), lang)));
+      for (const line of service.scope ?? []) expect(visible).toContain(escaped(glue(t(line, lang), lang)));
       const parts = priceParts(service.price, defaultCarClass, dict.price);
-      expect(html).toContain(escaped(parts.kind === "amount" ? parts.amount : parts.text));
+      expect(visible).toContain(escaped(parts.kind === "amount" ? parts.amount : parts.text));
     }
   });
 
