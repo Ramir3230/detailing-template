@@ -134,10 +134,21 @@ describe("active studio data", () => {
     }
   });
 
-  it("has a hero lead of three desktop lines at most: the low window fit counts on it", () => {
-    // Колонка hero 380 px, текст 18 px — около 40 знаков в строке (DESIGN.md, «Hero на
-    // низком окне десктопа»): строка сверх трёх вытолкнет статус под сгиб
-    const { lead } = studio.hero;
+  it("has a hero title and lead the low desktop window fit counts on", () => {
+    // DESIGN.md, «Hero на низком окне десктопа»: заголовок — четыре строки колонки 380 px,
+    // вводный текст — три. Строка сверх них вытолкнет статус под сгиб
+    const { title, lead } = studio.hero;
+    for (const text of [title.pl, title.ru ?? ""]) {
+      const lines = text.split("\n");
+      expect(lines.length).toBeLessThanOrEqual(2);
+      // Строка данных встаёт в две строки экрана: два слова по 7 знаков на 52 px
+      for (const line of lines) {
+        const words = line.trim().split(/\s+/);
+        expect(words.length).toBeLessThanOrEqual(2);
+        for (const word of words) expect(word.length).toBeLessThanOrEqual(7);
+      }
+    }
+    // Текст 18 px — около 40 знаков в строке колонки
     for (const text of [lead.pl, lead.ru ?? ""]) expect(text.length).toBeLessThanOrEqual(120);
   });
 
