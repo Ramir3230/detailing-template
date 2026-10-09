@@ -72,9 +72,10 @@ export function Header({ lang, dict }: Props) {
             {studio.services.map((group) => {
               const from = lowestAmount(group.services);
               return (
-                <Link
+                <NavLink
                   key={group.slug}
                   href={localePath(lang, groupPath(group))}
+                  currentOn={groupPath(group)}
                   className="flex min-h-13 items-center justify-between gap-3 border-t border-line text-20 font-medium"
                 >
                   {glue(t(group.name, lang), lang)}
@@ -83,7 +84,7 @@ export function Header({ lang, dict }: Props) {
                       {formatFrom(from, dict.price)}
                     </span>
                   )}
-                </Link>
+                </NavLink>
               );
             })}
             <p className="caps-label mt-6 mb-1">{dict.menu.studio}</p>

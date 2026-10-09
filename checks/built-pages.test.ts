@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
+import { glue } from "@/lib/format";
 import { langs, t, type Lang } from "@/lib/i18n";
 import { groupPagePath, hasGroupPage, sectionIds } from "@/lib/nav";
 
@@ -122,6 +123,17 @@ const groupPages = studio.services
   .filter(hasGroupPage)
   .flatMap((group) => langs.map((lang) => ({ lang, group, route: `${lang}${groupPagePath(group.slug)}` })));
 
+describe("built group route", () => {
+  it("renders an unknown address in full before answering: its 404 goes out as 404", () => {
+    // ensureStatic = "navigation" в маршруте. Без неё шапка незнакомого адреса ушла бы
+    // раньше страницы, и 404 приходил бы со статусом 200
+    const manifest = JSON.parse(readFileSync(join(process.cwd(), ".next", "prerender-manifest.json"), "utf-8"));
+    const route = manifest.dynamicRoutes?.["/[lang]/uslugi/[slug]"];
+    expect(route, "маршрута групп нет в prerender-manifest — Next мог сменить формат").toBeDefined();
+    expect(route.compute, "маршрут групп отвечает до конца отрисовки — или Next сменил формат").toBe("blocking");
+  });
+});
+
 describe.each(groupPages)("built group page /$route", ({ lang, group, route }) => {
   it("is prerendered: `npm run build` has run", () => expectPrerendered(route));
 
@@ -134,7 +146,8 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
     const name = t(group.name, lang);
     const headings = tags(html, /<h1\b[^>]*>[\s\S]*?<\/h1>/g);
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toContain(name);
+    // В заголовке страницы однобуквенные слова приклеены неразрывным пробелом, во вкладке — нет
+    expect(headings[0]).toContain(glue(name, lang));
     expect(head.match(/<title>([^<]*)<\/title>/)?.[1]).toContain(name);
   });
 

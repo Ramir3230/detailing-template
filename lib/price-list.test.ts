@@ -33,6 +33,13 @@ describe("priceList", () => {
     expect(group.rows[1].prices.XL).toEqual({ kind: "amount", amount: "300\u00A0zł" });
   });
 
+  it("links a group to its page in the page language, once it has one", () => {
+    const withPage: ServiceGroup[] = [{ ...groups[0], slug: "lakier", intro: { pl: "Korekta usuwa rysy." } }];
+    expect(priceList(withPage, "pl", pl.price)[0].page).toBe("/uslugi/lakier");
+    expect(priceList(withPage, "ru", pl.price)[0].page).toBe("/ru/uslugi/lakier");
+    expect(priceList(groups, "pl", pl.price)[0].page).toBeUndefined();
+  });
+
   it("puts texts in the page language and glues short words", () => {
     expect(priceList(groups, "pl", pl.price)[0].name).toBe("Mycie i\u00A0szyby");
     expect(priceList(groups, "ru", pl.price)[0].name).toBe("Мойка и\u00A0стёкла");
