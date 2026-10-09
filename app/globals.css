@@ -320,10 +320,10 @@
   mask-image: linear-gradient(to bottom, #000 70%, transparent);
 }
 
-/* Под неоном, нарисованным кодом, машина стоит на полу в тени контакта: растворяется
-   только срез кадра (CarVolume, FADE_ON_NEON) */
+/* Под неоном, нарисованным кодом, машина стоит на освещённом полу: растворяется только
+   срез кадра — щель под бампером, где светится пол под машиной (CarVolume, FADE_ON_NEON) */
 @utility fade-bottom-short {
-  mask-image: linear-gradient(to bottom, #000 97%, transparent);
+  mask-image: linear-gradient(to bottom, #000 96%, transparent);
 }
 
 /* Неон пола: горячее пятно под бампером (акцент с белым 45/55) и широкий разлив к
