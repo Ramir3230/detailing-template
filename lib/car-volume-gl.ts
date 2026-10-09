@@ -50,6 +50,15 @@ const WHEEL_BEHIND_LIP = 0.55;
 /* Половина пятна шины на высоте трубки по глубине: свет идёт низко над полом */
 const WHEEL_HALF_DEPTH = 0.17;
 const SILL_LENGTH = 1.8;
+/*
+ * Отсвет неона на кузове даёт освещённый пол перед губой, а не сама трубка под ней:
+ * передние грани кузова смотрят на пол перед машиной. Источник — полоса по ширине
+ * трубки впереди губы и чуть ниже пола, чтобы светить снизу. Без underglow (неон на
+ * CSS) — по ширине трубки M3, под которую отсвет подбирался
+ */
+const BOUNCE_AHEAD_OF_LIP = 0.17;
+const BOUNCE_BELOW_FLOOR = 0.05;
+const BOUNCE_SPAN = [15, 85] as const;
 
 export type Layers = {
   /** Фото машины, светодиоды фар — те же <img>, что показывает страница. */
@@ -88,10 +97,11 @@ export type Volume = {
   refresh(): void;
   /**
    * Что нарисовано: неон на полу (программы собраны — холст отвечает за неон, даже пока
-   * вспышка на нуле) и машина. waiting — программы ещё собираются, кадр надо повторить.
-   * Бросает исключение, если шейдер не собрался.
+   * вспышка на нуле) и машина. carReady — программа машины собрана: рисуются машина и её
+   * отражение. waiting — программы ещё собираются, кадр надо повторить. Бросает
+   * исключение, если шейдер не собрался.
    */
-  draw(frame: Frame): { floor: boolean; car: boolean; waiting: boolean };
+  draw(frame: Frame): { floor: boolean; car: boolean; carReady: boolean; waiting: boolean };
   destroy(): void;
 };
 
@@ -143,6 +153,8 @@ uniform float uAspect;
 uniform float uDepth;
 uniform float uPanel;
 uniform float uLight;
+// Источник отсвета неона: x левого и правого края, высота, глубина (BOUNCE_*)
+uniform vec4 uBounce;
 uniform vec3 uAccent;
 uniform vec2 uBloomStep;
 uniform float uBloomLod;
@@ -206,9 +218,9 @@ void main() {
       uDepth * slope(2.0),
       1.0
     ));
-    // Неон днища — трубка поперёк машины чуть впереди и ниже бампера
-    vec3 tube = vec3(clamp(vPosition.x, -0.35 * uAspect, 0.35 * uAspect), FLOOR - 0.05, 0.25);
-    vec3 toLight = tube - (uMirror ? vec3(vPosition.x, 2.0 * FLOOR - vPosition.y, vPosition.z) : vPosition);
+    // Освещённый пол перед губой — ближайшая точка полосы
+    vec3 source = vec3(clamp(vPosition.x, uBounce.x, uBounce.y), uBounce.zw);
+    vec3 toLight = source - (uMirror ? vec3(vPosition.x, 2.0 * FLOOR - vPosition.y, vPosition.z) : vPosition);
     float reach = length(toLight);
     float lit = max(dot(normal, toLight / reach), 0.0) / (1.0 + 6.0 * reach * reach);
     // Светлая краска отражает больше тёмного стекла и шин
@@ -472,13 +484,14 @@ void main() {
 }
 `;
 
-type Linking = { program: WebGLProgram; ready(): boolean };
+type Linking = { program: WebGLProgram; ready(): boolean; dispose(): void };
 
 /*
  * Сборка программы. С расширением KHR_parallel_shader_compile браузер собирает её в
  * фоне, а ready() только спрашивает, готова ли: главный поток не встаёт посреди
  * зажигания. Без расширения ready() ждёт сборку. Не собралась — исключение из ready()
- * с журналом компилятора.
+ * с журналом компилятора. dispose() удаляет программу вместе с шейдерами, даже если
+ * ready() до конца так и не дошёл.
  */
 function startLink(
   gl: WebGL2RenderingContext,
@@ -503,6 +516,15 @@ function startLink(
   let done = false;
   // Несобранная программа отвечает исключением на каждый вопрос, а не «готова» со второго
   let failed: Error | null = null;
+  let shadersFreed = false;
+  const freeShaders = () => {
+    if (shadersFreed) return;
+    shadersFreed = true;
+    for (const shader of shaders) {
+      gl.detachShader(program, shader);
+      gl.deleteShader(shader);
+    }
+  };
   return {
     program,
     ready() {
@@ -514,16 +536,20 @@ function startLink(
         ? ""
         : [...shaders.map((shader) => gl.getShaderInfoLog(shader)), gl.getProgramInfoLog(program)].join("\n");
       // Собранной программе шейдеры больше не нужны
-      for (const shader of shaders) {
-        gl.detachShader(program, shader);
-        gl.deleteShader(shader);
-      }
+      freeShaders();
       if (!linked) {
         failed = new Error(log || "linkProgram");
         throw failed;
       }
       done = true;
       return true;
+    },
+    dispose() {
+      // Программу, которая ещё собирается в фоне, сначала дособрать: удалённая посреди
+      // сборки, она сыплет в консоль ошибками GL (StrictMode, уход со страницы)
+      gl.getProgramParameter(program, gl.LINK_STATUS);
+      freeShaders();
+      gl.deleteProgram(program);
     },
   };
 }
@@ -662,6 +688,7 @@ export function createVolume(
     | "rotation"
     | "depth"
     | "light"
+    | "bounce"
     | "mirror"
     | "fade"
     | "reflection"
@@ -698,6 +725,7 @@ export function createVolume(
       rotation: at("uRotation"),
       depth: at("uDepth"),
       light: at("uLight"),
+      bounce: at("uBounce"),
       mirror: at("uMirror"),
       fade: at("uFade"),
       reflection: at("uReflection"),
@@ -809,15 +837,20 @@ export function createVolume(
         gl.uniform2f(floorUniforms.stretch, size[0], size[1]);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
-      const car = carReady();
-      const waiting = (Boolean(scene) && !floor) || (Boolean(carLink) && !car);
-      if (!car || !carLink || !carUniforms || !mesh) return { floor, car: false, waiting };
+      const carProgram = carReady();
+      const waiting = (Boolean(scene) && !floor) || (Boolean(carLink) && !carProgram);
+      if (!carProgram || !carLink || !carUniforms || !mesh) {
+        return { floor, car: false, carReady: false, waiting };
+      }
       gl.enable(gl.DEPTH_TEST);
       gl.useProgram(carLink.program);
       gl.bindVertexArray(mesh.vao);
       gl.uniformMatrix3fv(carUniforms.rotation, false, state.rotation);
       gl.uniform1f(carUniforms.depth, state.depth);
       gl.uniform1f(carUniforms.light, state.light);
+      const [from, to] = underglow?.tube ?? BOUNCE_SPAN;
+      const lip = (1 - PIVOT) * state.depth;
+      gl.uniform4f(carUniforms.bounce, x(from), x(to), FLOOR - BOUNCE_BELOW_FLOOR, lip + BOUNCE_AHEAD_OF_LIP);
       gl.uniform1f(carUniforms.gloss, state.gloss);
       gl.uniform1f(carUniforms.fade, state.fade);
       gl.uniform2f(carUniforms.resolution, size[0], size[1]);
@@ -831,7 +864,7 @@ export function createVolume(
         gl.uniform1i(carUniforms.mirror, 0);
         gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
       }
-      return { floor, car: state.car, waiting };
+      return { floor, car: state.car, carReady: true, waiting };
     },
     destroy() {
       if (mesh) {
@@ -841,13 +874,7 @@ export function createVolume(
       gl.deleteVertexArray(empty);
       for (const texture of [color, lights, map, floorTexture]) gl.deleteTexture(texture);
       gl.deleteFramebuffer(floorBuffer);
-      for (const linking of [floorLink, stretchLink, carLink]) {
-        if (!linking) continue;
-        // Программу, которая ещё собирается в фоне, сначала дособрать: удалённая посреди
-        // сборки, она сыплет в консоль ошибками GL (StrictMode, уход со страницы)
-        gl.getProgramParameter(linking.program, gl.LINK_STATUS);
-        gl.deleteProgram(linking.program);
-      }
+      for (const linking of [floorLink, stretchLink, carLink]) linking?.dispose();
     },
   };
 }
