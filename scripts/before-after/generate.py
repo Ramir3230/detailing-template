@@ -5,29 +5,38 @@
 «Фотографии»).
 
 «po» модель рисует с нуля по промпту. «przed» — тот же кадр, испорченный только внутри
-маски, а вне маски остаются пиксели «po» один в один: шторка до/после не сдвигает ни
-стену, ни пол. Грязь и пятна дорисовывает модель, держась за контуры «po»; голограммы
-на лаке рисует код — модель их не умеет. Кадр без «przed» в JSON — одиночный.
+маски. Грязь и пятна дорисовывает модель, держась за контуры «po»; голограммы на лаке
+рисует код — модель их не умеет. przed.webp вне маски прозрачный: страница кладёт его
+поверх po.webp, и фон под шторкой — пиксели самого po.webp. Два непрозрачных кадра
+сжатие испортило бы по-разному, и по тёмной стене вдоль шторки шла бы рябь. Кадр без
+«przed» в JSON — одиночный.
 
     <python окружения> scripts/before-after/generate.py scripts/before-after/mycie.json
         [--candidates N [--vary po|przed] --preview DIR]
 
 Без --candidates кадр собирается по сидам из JSON: файлы ложатся в public/, в stdout —
 поле для файла данных студии. С --candidates N — только лист для выбора в --preview:
-N сидов подряд от сида в JSON; --vary przed держит «po» и перебирает дорисовку грязи.
-Выбранный сид записывается в JSON: на той же видеокарте и тех же версиях кадр
-повторяется.
+N сидов подряд от сида в JSON; --vary przed держит «po» и перебирает «przed». Выбранный
+сид записывается в JSON: на той же видеокарте и тех же версиях кадр повторяется.
+
+Кадры шаблона общие для всех демо, и правка JSON шаблона перезапишет файлы, на которые
+ссылаются данные студий. Для своей студии — новый JSON с out вида
+«przed-po/<студия>/<кадр>», существующие не править.
 
 Поля JSON:
     out     путь внутри public/ без расширения. Пара ложится в <out>/po.webp и
             <out>/przed.webp, одиночный кадр — в <out>.webp;
     po      prompt, negative, seed;
-    przed   kind и seed. kind "dirt" — грязь рисует модель: prompt, negative;
-            strength — насколько она перерисовывает кадр внутри маски, 0–1: меньше —
-            ближе к «po», больше — грязнее и дальше от него; control — насколько контуры
-            «po» держат форму предмета, 0–1; mask — "subject" (BiRefNet: машина или
-            сиденье, фон не трогается) или "full". kind "swirls" — голограммы, матовость,
-            царапины и следы капель на лаке машины рисует код, сид — их случайная россыпь.
+    przed   kind, seed и mask — "subject" (BiRefNet: машина или сиденье, фон не
+            трогается) или "full" (весь кадр).
+            kind "dirt" — грязь рисует модель: prompt, negative; strength — насколько
+            она перерисовывает кадр внутри маски, 0–1: меньше — ближе к «po», больше —
+            грязнее и дальше от него; control — насколько контуры «po» держат форму
+            предмета, 0–1.
+            kind "swirls" — голограммы, матовость, царапины и следы капель рисует код,
+            сид — их случайная россыпь. Только тёмный лак: на светлой машине почти весь
+            кузов светлее порога отражения, и «przed» не отличается от «po» — её грязь
+            рисует kind "dirt".
 
 Окружение — requirements.txt рядом. Модель (~7 ГБ) скачивается один раз в кэш Hugging
 Face, маска BiRefNet — та же, что у вырезки машины hero. На RTX 2060 6 ГБ модель
@@ -78,7 +87,7 @@ CANNY = (100, 200)
 LUMA = np.array([0.2126, 0.7152, 0.0722], np.float32)
 # Яркость, с которой пиксель — отражение лампы, а не лак
 SWIRL_LIGHT = (0.55, 0.9)
-# Радиус ореола царапин вокруг отражения, px
+# Радиус размытия ореола царапин вокруг отражения
 SWIRL_HALO = 28
 # Доля пикселей, из которых тянутся царапины, и их длина в каждую сторону, px
 SWIRL_DENSITY = 0.045
@@ -94,12 +103,14 @@ WATER_SPOTS = 70
 # кратными 8, поэтому кадр на 4 px выше — лишнее срезается поровну сверху и снизу
 SIZE = (1040, 1300)
 GEN_SIZE = (1040, 1304)
-# DPM++ 2M Karras и 40 шагов — из рекомендаций автора модели
+# Планировщик DPM++ 2M Karras — из рекомендаций автора модели. Шагов он советует от 50;
+# 40 — выбор по времени на RTX 2060, проверено глазами. Не менять: сиды в JSON перестанут
+# повторять выбранные кадры
 STEPS = 40
 GUIDANCE = 5.0
-# Маска «subject» расширяется за край предмета и растушёвывается, px: грязь заходит на
-# кромку, а граница дорисовки не видна ступенькой
-MASK_EXPAND = 12
+# Маска «subject» — радиусы размытия: раздувание за край предмета (запас около 20 px) и
+# растушёвка края грязи (ещё около 20 px), чтобы граница дорисовки не была видна
+MASK_GROW = 12
 MASK_FEATHER = 8
 QUALITY = 85
 # Лист кандидатов: кадр в треть размера, под ним сид
@@ -163,17 +174,21 @@ def subject_mask(po: Image.Image) -> np.ndarray:
     """Машина или сиденье по BiRefNet: 0 — фон, 1 — предмет."""
     mask = np.asarray(remove(po, session=birefnet(), only_mask=True), np.float32) / 255
     if mask.max() < 0.5:
-        raise SystemExit("BiRefNet не нашёл предмет в кадре: для грязи возьмите mask \"full\"")
+        raise SystemExit("BiRefNet не нашёл предмет в кадре: возьмите mask \"full\"")
     return (mask > 0.5).astype(np.float32)
 
 
-def make_mask(po: Image.Image, kind: str) -> Image.Image:
-    """Где модели можно рисовать грязь: белое — можно, чёрное — пиксели «po»."""
+def dirt_masks(po: Image.Image, kind: str) -> tuple[Image.Image, Image.Image]:
+    """Где модель перерисовывает кадр и как её кадр ложится на «po». Пайплайн сам
+    округляет маску до чёрно-белой по половине, поэтому перерисовывает он всю полосу
+    растушёвки (repaint), а растушёвка (soft) гасит грязь к краю при наложении."""
     if kind == "full":
-        return Image.new("L", po.size, 255)
+        full = Image.new("L", po.size, 255)
+        return full, full
     subject = Image.fromarray((subject_mask(po) * 255).astype(np.uint8))
-    grown = subject.filter(ImageFilter.GaussianBlur(MASK_EXPAND)).point(lambda v: 255 if v > 8 else 0)
-    return grown.filter(ImageFilter.GaussianBlur(MASK_FEATHER))
+    grown = subject.filter(ImageFilter.GaussianBlur(MASK_GROW)).point(lambda v: 255 if v > 8 else 0)
+    soft = grown.filter(ImageFilter.GaussianBlur(MASK_FEATHER))
+    return soft.point(lambda v: 255 if v else 0), soft
 
 
 def edges(image: Image.Image) -> Image.Image:
@@ -182,15 +197,22 @@ def edges(image: Image.Image) -> Image.Image:
     return Image.fromarray(lines).convert("RGB")
 
 
+def with_region(przed: Image.Image, region: Image.Image) -> Image.Image:
+    """«przed» с прозрачностью: непрозрачен только там, где отличается от «po»."""
+    rgba = przed.convert("RGBA")
+    rgba.putalpha(region.point(lambda v: 255 if v else 0))
+    return rgba
+
+
 def paint_dirt(
     paint: StableDiffusionXLControlNetInpaintPipeline, po: Image.Image, spec: dict, seed: int
 ) -> Image.Image:
-    mask = make_mask(po, spec["mask"])
+    repaint, soft = dirt_masks(po, spec["mask"])
     dirty = paint(
         prompt=spec["prompt"],
         negative_prompt=spec["negative"],
         image=po,
-        mask_image=mask,
+        mask_image=repaint,
         control_image=edges(po),
         controlnet_conditioning_scale=spec["control"],
         width=GEN_SIZE[0],
@@ -201,7 +223,7 @@ def paint_dirt(
         generator=noise(seed),
     ).images[0]
     # Модель перекодирует весь кадр, и вне маски пиксели чуть плывут. Возвращаем «po»
-    return Image.composite(dirty, po, mask)
+    return with_region(Image.composite(dirty, po, soft), soft)
 
 
 def along_circles(seeds: np.ndarray, tx: np.ndarray, ty: np.ndarray, length: int) -> np.ndarray:
@@ -222,13 +244,16 @@ def along_circles(seeds: np.ndarray, tx: np.ndarray, ty: np.ndarray, length: int
     return trace / length
 
 
-def paint_swirls(po: Image.Image, seed: int) -> Image.Image:
+def paint_swirls(po: Image.Image, spec: dict, seed: int) -> Image.Image:
     """Тот же лак до полировки: голограммы вокруг отражений ламп, матовость, дымка,
-    длинные царапины и следы капель. Только по машине — фон остаётся пикселями «po»."""
+    длинные царапины и следы капель. Только по маске — фон остаётся пикселями «po»."""
     rng = np.random.default_rng(seed)
     rgb = np.asarray(po, np.float32) / 255
     height, width = rgb.shape[:2]
-    car = cv2.GaussianBlur(subject_mask(po), (0, 0), 3)
+    if spec["mask"] == "full":
+        car = np.ones((height, width), np.float32)
+    else:
+        car = cv2.GaussianBlur(subject_mask(po), (0, 0), 3)
 
     lo, hi = SWIRL_LIGHT
     light = np.clip((rgb @ LUMA - lo) / (hi - lo), 0, 1)
@@ -271,14 +296,16 @@ def paint_swirls(po: Image.Image, seed: int) -> Image.Image:
     out += haze[..., None] * np.array([0.85, 0.88, 0.95], np.float32)
     shine = swirls * 0.8 + scratches * (0.15 + 0.6 * spread) * 0.6 + spots * (0.25 + 0.6 * spread) * 0.5
     out += (shine * car)[..., None] * np.array([0.95, 0.97, 1.0], np.float32)
-    return Image.fromarray((np.clip(out, 0, 1) * 255).round().astype(np.uint8))
+    przed = Image.fromarray((np.clip(out, 0, 1) * 255).round().astype(np.uint8))
+    return with_region(przed, Image.fromarray((car > 1e-3).astype(np.uint8) * 255))
 
 
 def make_przed(
     paint: StableDiffusionXLControlNetInpaintPipeline, po: Image.Image, spec: dict, seed: int
 ) -> Image.Image:
+    """«przed» с прозрачностью вне испорченного места."""
     if spec["kind"] == "swirls":
-        return paint_swirls(po, seed)
+        return paint_swirls(po, spec, seed)
     return paint_dirt(paint, po, spec, seed)
 
 
@@ -289,6 +316,7 @@ def to_size(image: Image.Image) -> Image.Image:
 
 def save(image: Image.Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Прозрачность сжимается без потерь: край «przed» ложится на «po» ровно
     image.save(path, "WEBP", quality=QUALITY, method=6)
 
 
@@ -311,33 +339,46 @@ def sheet(cells: list[tuple[str, list[Image.Image]]], per_row: int, path: Path) 
         x = GAP * 2 + (i % per_row) * (cell_w + GAP * 2)
         y = GAP + (i // per_row) * (cell_h + GAP)
         for j, image in enumerate(images):
-            out.paste(image.resize(THUMB, Image.LANCZOS), (x + j * (THUMB[0] + GAP), y))
+            # «przed» — уже наложенный на «po»: прозрачность сняли без потери цвета
+            out.paste(image.convert("RGB").resize(THUMB, Image.LANCZOS), (x + j * (THUMB[0] + GAP), y))
         pen.text((x, y + THUMB[1] + 8), label, fill=(245, 245, 247), font=font)
     path.parent.mkdir(parents=True, exist_ok=True)
     out.save(path, quality=90)
 
 
+def is_number(value, whole: bool = False) -> bool:
+    kinds = int if whole else (int, float)
+    return isinstance(value, kinds) and not isinstance(value, bool)
+
+
 def check(frame: dict, name: str) -> Path:
-    out = (PUBLIC / frame["out"]).resolve()
-    if not out.is_relative_to(PUBLIC):
-        raise SystemExit(f"{name}: out {frame['out']} вне public/ — сайт не отдаст файлы")
+    """Ошибки JSON — до загрузки модели на 7 ГБ, а не после."""
+    for key in ("out", "po"):
+        if key not in frame:
+            raise SystemExit(f"{name}: нет поля {key}")
+    out = (PUBLIC / str(frame["out"])).resolve()
+    if out == PUBLIC or not out.is_relative_to(PUBLIC):
+        raise SystemExit(f"{name}: out {frame['out']!r} — путь внутри public/, иначе сайт не отдаст файлы")
     need = {"po": {"prompt", "negative", "seed"}}
     przed = frame.get("przed")
     if przed is not None:
         if przed.get("kind") not in ("dirt", "swirls"):
             raise SystemExit(f"{name}: przed.kind — \"dirt\" или \"swirls\"")
+        if przed.get("mask") not in ("subject", "full"):
+            raise SystemExit(f"{name}: przed.mask — \"subject\" или \"full\"")
         need["przed"] = {"seed"}
         if przed["kind"] == "dirt":
             need["przed"] |= {"prompt", "negative"}
             for field in ("strength", "control"):
-                if not 0 < przed.get(field, 0) <= 1:
-                    raise SystemExit(f"{name}: przed.{field} — от 0 до 1")
-            if przed.get("mask") not in ("subject", "full"):
-                raise SystemExit(f"{name}: przed.mask — \"subject\" или \"full\"")
+                value = przed.get(field)
+                if not is_number(value) or not 0 < value <= 1:
+                    raise SystemExit(f"{name}: przed.{field} — число от 0 до 1")
     for part, fields in need.items():
         missing = fields - frame[part].keys()
         if missing:
             raise SystemExit(f"{name}: в {part} нет {', '.join(sorted(missing))}")
+        if not is_number(frame[part]["seed"], whole=True):
+            raise SystemExit(f"{name}: {part}.seed — целое число")
     return out
 
 
@@ -345,7 +386,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("frame", type=Path, help="JSON с параметрами кадра")
     parser.add_argument("--candidates", type=int, help="сколько сидов показать на листе выбора")
-    parser.add_argument("--vary", choices=["po", "przed"], default="po", help="какой сид перебирать")
+    parser.add_argument("--vary", choices=["po", "przed"], help="какой сид перебирать, по умолчанию po")
     parser.add_argument("--preview", type=Path, help="папка для листа кандидатов и их кадров")
     args = parser.parse_args()
 
@@ -353,11 +394,15 @@ def main() -> None:
     name = args.frame.stem
     out = check(frame, name)
     przed = frame.get("przed")
+    vary = args.vary or "po"
     if args.candidates is not None:
         if args.candidates < 1 or args.preview is None:
             raise SystemExit("--candidates N — от одного, и с --preview: лист кладётся туда")
-        if args.vary == "przed" and przed is None:
+        if vary == "przed" and przed is None:
             raise SystemExit(f"{name}: --vary przed, а przed в JSON нет")
+    elif args.preview is not None or args.vary is not None:
+        # Без --candidates скрипт пишет рабочие файлы в public/, а не лист выбора
+        raise SystemExit("--preview и --vary — только с --candidates")
 
     draw, paint = load()
 
@@ -376,13 +421,13 @@ def main() -> None:
     cells = []
     po = None
     for i in range(args.candidates):
-        po_seed = frame["po"]["seed"] + (i if args.vary == "po" else 0)
-        if po is None or args.vary == "po":
+        po_seed = frame["po"]["seed"] + (i if vary == "po" else 0)
+        if po is None or vary == "po":
             po = draw_po(draw, frame["po"], po_seed)
         images = [po]
         label = f"po {po_seed}"
         if przed is not None:
-            przed_seed = przed["seed"] + (i if args.vary == "przed" else 0)
+            przed_seed = przed["seed"] + (i if vary == "przed" else 0)
             images.insert(0, make_przed(paint, po, przed, przed_seed))
             label += f", przed {przed_seed}"
         images = [to_size(image) for image in images]
