@@ -1,18 +1,30 @@
 import type { BeforeAfter, Studio } from "@/content/types";
 
+/** Кадр пары: подпись для диктора и сделан ли он ИИ. */
+type Frame = { alt: string; ai: boolean };
+
 /*
- * Пары до/после сделаны ИИ (scripts/before-after/<пара>.json) и подписаны на странице
- * как примеры: у выдуманной студии нет своих работ, а чужие брать нельзя.
+ * Пары до/после в public/przed-po/<пара>/, 1040×1300. У выдуманной студии своих работ
+ * нет: кадры ИИ подписаны на странице как примеры (DESIGN.md, «Фотографии»).
  */
-function aiPair(slug: string, label: string, before: string, after: string): BeforeAfter {
-  const frame = (file: string, alt: string) => ({
+function pair(
+  slug: string,
+  label: string,
+  before: Frame,
+  after: Frame,
+): BeforeAfter {
+  const photo = (file: string, { alt, ai }: Frame) => ({
     src: `/przed-po/${slug}/${file}.webp`,
     width: 1040,
     height: 1300,
     alt: { pl: alt },
-    ai: true,
+    ai,
   });
-  return { label: { pl: label }, before: frame("przed", before), after: frame("po", after) };
+  return {
+    label: { pl: label },
+    before: photo("przed", before),
+    after: photo("po", after),
+  };
 }
 
 /**
@@ -53,7 +65,9 @@ export const afterdark: Studio = {
       src: "/kontakt/wejscie.webp",
       width: 1040,
       height: 1300,
-      alt: { pl: "Wjazd do studia wieczorem: otwarta brama, w środku auto w świetle lamp" },
+      alt: {
+        pl: "Wjazd do studia wieczorem: otwarta brama, w środku auto w świetle lamp",
+      },
       ai: true,
     },
   },
@@ -107,11 +121,18 @@ export const afterdark: Studio = {
         {
           name: { pl: "Mycie detailingowe nadwozia" },
           price: { kind: "byClass", S: 200, M: 220, L: 250 },
-          beforeAfter: aiPair(
+          /* Оба кадра — ИИ, scripts/before-after/mycie.json */
+          beforeAfter: pair(
             "mycie",
             "Mycie",
-            "Koło i nadkole przed myciem: błoto na oponie, pył z hamulców na feldze, kurz na lakierze",
-            "To samo koło po myciu: czysta felga i błyszczący lakier",
+            {
+              alt: "Koło i nadkole przed myciem: błoto na oponie, pył z hamulców na feldze, kurz na lakierze",
+              ai: true,
+            },
+            {
+              alt: "To samo koło po myciu: czysta felga i błyszczący lakier",
+              ai: true,
+            },
           ),
         },
         {
@@ -146,15 +167,25 @@ export const afterdark: Studio = {
             { pl: "Polerowanie jednym etapem: lekkie rysy i hologramy" },
             { pl: "Kontrola efektu w świetle studyjnym" },
           ],
-          beforeAfter: aiPair(
+          /* Из мокапа (решение владельца 09.10.2026): «po» — фото со свободной лицензией,
+             «przed» — его правка ИИ */
+          beforeAfter: pair(
             "lakier",
             "Lakier",
-            "Czarny lakier przed korektą: hologramy i rysy wokół odbić światła",
-            "Ten sam lakier po korekcie: lustrzane odbicia lamp",
+            {
+              alt: "Czarny lakier przed korektą: hologramy i rysy wokół reflektora",
+              ai: true,
+            },
+            {
+              alt: "Ten sam lakier po korekcie: lustrzane odbicia lamp",
+              ai: false,
+            },
           ),
         },
         {
-          name: { pl: "Wieloetapowa korekta lakieru — 3 etapy + powłoka ceramiczna" },
+          name: {
+            pl: "Wieloetapowa korekta lakieru — 3 etapy + powłoka ceramiczna",
+          },
           brand: "GYEON",
           price: { kind: "byClass", S: 3300, M: 3600, L: 4000 },
           duration: { unit: "day", min: 3, max: 4 },
@@ -187,16 +218,25 @@ export const afterdark: Studio = {
         {
           name: { pl: "Kompleksowe czyszczenie wnętrza" },
           price: { kind: "byClass", S: 800, M: 900, L: 1000 },
-          beforeAfter: aiPair(
+          /* Из мокапа (решение владельца 09.10.2026): «po» — фото со свободной лицензией,
+             «przed» — его правка ИИ */
+          beforeAfter: pair(
             "wnetrze",
             "Wnętrze",
-            "Jasny skórzany fotel przed czyszczeniem: plamy, okruchy i brud w szwach",
-            "Ten sam fotel po czyszczeniu",
+            {
+              alt: "Jasny skórzany fotel przed czyszczeniem: brud w szwach i na siedzisku",
+              ai: true,
+            },
+            { alt: "Ten sam fotel po czyszczeniu", ai: false },
           ),
         },
         {
-          name: { pl: "Kompleksowe czyszczenie wnętrza z demontażem elementów" },
-          note: { pl: "Ostateczna cena zależy od stanu samochodu i zakresu prac" },
+          name: {
+            pl: "Kompleksowe czyszczenie wnętrza z demontażem elementów",
+          },
+          note: {
+            pl: "Ostateczna cena zależy od stanu samochodu i zakresu prac",
+          },
           price: { kind: "from", amount: 1500 },
         },
       ],
@@ -211,7 +251,9 @@ export const afterdark: Studio = {
         },
         {
           name: { pl: "Detailing komory silnika" },
-          note: { pl: "Ostateczna cena ustalana jest po oględzinach samochodu" },
+          note: {
+            pl: "Ostateczna cena ustalana jest po oględzinach samochodu",
+          },
           price: { kind: "from", amount: 600 },
         },
       ],
