@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Photo } from "@/content/types";
+import { maxPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
 
@@ -119,8 +120,12 @@ describe("active studio data", () => {
     const ru = pairs.flatMap(({ label }) => (label.ru ? [label.ru] : []));
     expect(new Set(ru).size).toBe(ru.length);
     // Вкладки делят ширину телефона поровну: на 375 px помещаются четыре по 9 знаков
-    // (DESIGN.md, «До/после»)
-    expect(pairs.length).toBeLessThanOrEqual(4);
+    // (DESIGN.md, «До/после»). Главная сама берёт не больше четырёх, страница группы —
+    // все пары группы
+    for (const group of studio.services) {
+      const count = group.services.filter(({ beforeAfter }) => beforeAfter).length;
+      expect(count, `${group.slug}: пар больше, чем вкладок`).toBeLessThanOrEqual(maxPairs);
+    }
     for (const { label } of pairs) {
       for (const text of [label.pl, label.ru ?? ""]) expect(text.length).toBeLessThanOrEqual(9);
     }

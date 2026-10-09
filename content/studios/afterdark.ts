@@ -384,6 +384,13 @@ export const afterdark: Studio = {
             { pl: "Powłoka ceramiczna na felgi" },
             { pl: "Dressing opon" },
           ],
+          /* Заглушки до фото владельца (решение 09.10.2026): тёмный кадр с контуром диска */
+          beforeAfter: pair(
+            "felgi",
+            "Felgi",
+            { alt: "Miejsce na zdjęcie felgi przed czyszczeniem", ai: false },
+            { alt: "Miejsce na zdjęcie felgi po czyszczeniu i powłoce", ai: false },
+          ),
         },
         {
           name: { pl: "Detailing komory silnika" },
@@ -399,6 +406,13 @@ export const afterdark: Studio = {
             { pl: "Osuszanie sprężonym powietrzem" },
             { pl: "Matowy dressing na plastiki i gumy" },
           ],
+          /* Заглушки до фото владельца (решение 09.10.2026): тёмный кадр с контуром мотора */
+          beforeAfter: pair(
+            "silnik",
+            "Silnik",
+            { alt: "Miejsce na zdjęcie komory silnika przed detailingiem", ai: false },
+            { alt: "Miejsce na zdjęcie komory silnika po detailingu", ai: false },
+          ),
         },
       ],
       faq: [
