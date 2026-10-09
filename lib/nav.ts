@@ -20,12 +20,14 @@ export const groupSectionIds = {
 
 /*
  * Навигация ведёт только на готовое. Страница появилась — её пункт добавляется сюда
- * и в словари. Пока прайс и контакты живут на главной, пункты ведут к её блокам.
+ * и в словари. Пока прайс живёт на главной, «Usługi» ведёт к её блоку.
  */
 export const servicesPath = `/#${sectionIds.services}`;
 
+export const contactPagePath = "/kontakt";
+
 export const studioPages: readonly { key: keyof Dictionary["nav"]; path: string }[] = [
-  { key: "contact", path: `/#${sectionIds.contact}` },
+  { key: "contact", path: contactPagePath },
 ];
 
 /** Страницы групп лежат под этим адресом: `/uslugi/lakier`. */

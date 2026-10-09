@@ -33,6 +33,17 @@ export type Photo = {
   ai: boolean;
 };
 
+/** Файл карты для экрана 2x: страница показывает его в половину размера. */
+export type MapFile = { src: string; width: number; height: number };
+
+/**
+ * Карта страницы Kontakt (DESIGN.md, «Страница Kontakt»): улицы «чернилами» — белым с
+ * прозрачностью; цвет им даёт тема, булавку в середине рисует страница. wide — для
+ * десктопа, narrow — его середина для телефона и планшета. Готовит scripts/map/render.py —
+ * он же печатает это поле.
+ */
+export type StudioMap = { wide: MapFile; narrow: MapFile };
+
 /**
  * До/после услуги: кадры 4:5 одного размера, «после» — тот же кадр, что «до». Готовит
  * scripts/before-after/generate.py — он же печатает пути и размеры.
@@ -161,10 +172,12 @@ export type Studio = {
   phone: string;
   messengers: Messenger[];
   /**
-   * routeUrl — маршрут в Google Maps для кнопки «Trasa»; нет ссылки — нет кнопки.
+   * routeUrl — маршрут в Google Maps для кнопки «Trasa» и нажатия на карту; нет ссылки —
+   * нет кнопки, карта не нажимается.
    * photo — вход в студию, 4:5, в контактах; нет фото — контакты без него.
+   * map — карта на странице Kontakt; нет карты — страница без неё.
    */
-  address: { street: string; area: string; routeUrl?: string; photo?: Photo };
+  address: { street: string; area: string; routeUrl?: string; photo?: Photo; map?: StudioMap };
   hours: WeekHours;
   hero: { title: Text; subtitle: Text; lead: Text; car: HeroCar };
   carClasses: Record<CarClass, Text>;

@@ -70,6 +70,12 @@ export const afterdark: Studio = {
       },
       ai: true,
     },
+    /* Адрес выдуманный: булавка на перекрёстке Prądzyńskiego и Brylowskiej, не на здании
+       (решение 09.10.2026). Карту рисует scripts/map/render.py по afterdark.json */
+    map: {
+      wide: { src: "/mapa/afterdark.webp", width: 2272, height: 960 },
+      narrow: { src: "/mapa/afterdark-narrow.webp", width: 1280, height: 960 },
+    },
   },
   hours: [
     { open: "10:00", close: "22:00" },

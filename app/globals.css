@@ -305,6 +305,45 @@
   box-shadow: 0 0 8px var(--color-accent);
 }
 
+/*
+ * Карта Kontakt: улицы цветом fg по маске из файла карты (scripts/map/render.py). Файл —
+ * для экрана 2x, показывается в половину размера, серединой в середине блока: булавка
+ * блока стоит там, где центр карты. Файлы и их размер приходят переменными --map-* из
+ * данных студии: до 1024 — узкий, дальше — широкий. Браузер без масок показывает пустую
+ * поверхность, а не залитый цветом блок.
+ */
+@utility map-ink {
+  @supports (mask-image: none) {
+    background: var(--color-fg);
+    mask: var(--map-narrow) center / var(--map-narrow-size) no-repeat;
+
+    @media (width >= 64rem) {
+      mask-image: var(--map-wide);
+      mask-size: var(--map-wide-size);
+    }
+  }
+}
+
+/* Булавка карты: точка акцента 12 px со свечением точки «Otwarte» в кольце 40 px —
+   заливка акцента 10% и кайма 50%. Кайма — контуром: вторая тень с растяжкой легла бы
+   под заливку сплошным кругом */
+@utility map-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  box-shadow:
+    0 0 8px var(--color-accent),
+    0 0 0 14px var(--color-accent-fill);
+  outline: 1px solid var(--color-accent-mark);
+  outline-offset: 14px;
+}
+
+/* Свет вокруг булавки: мягкий круг акцента 10%, как свет за машиной в hero */
+@utility map-pin-glow {
+  background: radial-gradient(closest-side, var(--color-accent-fill), transparent);
+}
+
 /* Мягкий свет акцента сверху меню */
 @utility glow-top {
   background:

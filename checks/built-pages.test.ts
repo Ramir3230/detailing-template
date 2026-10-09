@@ -6,8 +6,8 @@ import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
 import { glue, priceParts } from "@/lib/format";
-import { langs, t, type Lang } from "@/lib/i18n";
-import { groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
+import { langs, localePath, t, type Lang } from "@/lib/i18n";
+import { contactPagePath, groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
@@ -205,6 +205,58 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
 
   it("leaves the hero car to the home page", () => {
     // Ни картинкой, ни preload: путь как есть и так, как его кодирует next/image
+    const { html } = page(route);
+    expect(html).not.toContain(carFile);
+    expect(html).not.toContain(studio.hero.car.src);
+  });
+
+  it("carries no real brands from the mockup", () => {
+    expect(page(route).html).not.toMatch(/spectre|mansory/i);
+  });
+});
+
+describe.each(langs)("built contact page /%s/kontakt", (lang) => {
+  const route = `${lang}${contactPagePath}`;
+  const dict = getDictionary(lang);
+
+  it("is prerendered: `npm run build` has run", () => expectPrerendered(route));
+
+  it("names its language and keeps route changes instant", () => expectLang(route, lang));
+
+  it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
+
+  it("has one main heading and is the page the navigation leads to", () => {
+    const { html, head } = page(route);
+    const headings = tags(html, /<h1\b[^>]*>[\s\S]*?<\/h1>/g);
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toContain(escaped(dict.contact.title));
+    expect(head.match(/<title>([^<]*)<\/title>/)?.[1]).toContain(escaped(dict.contact.title));
+    // Шапка, меню и подвал главной ведут сюда, а не к блоку на главной
+    expect(page(lang).html).toContain(`href="${localePath(lang, contactPagePath)}"`);
+  });
+
+  it("draws the map from the studio data and credits its sources", () => {
+    const { map } = studio.address;
+    const visible = markup(route);
+    if (!map) {
+      expect(visible).not.toContain("openstreetmap.org");
+      return;
+    }
+    // Файлы — переменными для маски CSS: в разметке, а не скриптом после загрузки
+    for (const file of [map.wide, map.narrow]) expect(visible).toContain(`url(${file.src})`);
+    expect(visible).toContain('href="https://www.openstreetmap.org/copyright"');
+    expect(visible).toContain('href="https://openmaptiles.org/"');
+  });
+
+  it("has the contact call the floating call hides at", () => {
+    const call = tags(page(route).html, /<div\b[^>]*>/g).find((tag) => tag.includes(`id="${sectionIds.contactCall}"`));
+    expect(call, "нет кнопки звонка блока контактов").toBeDefined();
+  });
+
+  it("loads the entrance photo lazily", () =>
+    expectLazyPhotos(route, studio.address.photo ? [studio.address.photo.src] : []));
+
+  it("leaves the hero car to the home page", () => {
     const { html } = page(route);
     expect(html).not.toContain(carFile);
     expect(html).not.toContain(studio.hero.car.src);

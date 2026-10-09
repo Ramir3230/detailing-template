@@ -52,3 +52,17 @@ python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исход
 
 Первая команда кладёт лист кандидатов для выбора, вторая — кадры по сидам из JSON и
 печатает пути и размеры для файла данных студии.
+
+## Карта страницы Kontakt
+
+Карта рисуется один раз на студию, в `public/mapa/`: точка и масштаб — JSON в
+`scripts/map/`. Цвета темы в файле нет — его красит страница, поэтому при смене темы
+карту не перерисовывают; при смене адреса — да.
+
+```bash
+pip install -r scripts/map/requirements.txt
+python -m playwright install chromium
+python scripts/map/render.py scripts/map/afterdark.json --preview <папка>
+```
+
+Скрипт печатает поле `address.map` для файла данных студии.
