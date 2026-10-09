@@ -31,7 +31,8 @@ const keySteps: Record<string, (index: number, count: number) => number> = {
 
 /*
  * Раскладка; до 1024 px обе — телефонная. «section» — секция главной во всю ширину: кадр
- * до 520 слева, текст до 460 справа. «column» — основная колонка страницы группы: кадр и
+ * до 520 слева, текст до 536 справа — 520, 80 и 536 дают ровно 1136 px контейнера, правый
+ * край текста на линии прайса и контактов (решение владельца 09.10.2026). «column» — основная колонка страницы группы: кадр и
  * текст встают рядом, только когда самой колонке хватает места — 728 px: кадр 420, 48
  * между ними и 260 тексту (запрос к ширине контейнера, контейнер — родитель с
  * `@container`); иначе друг под другом, кадр и подпись под ним не шире 420.
@@ -39,7 +40,7 @@ const keySteps: Record<string, (index: number, count: number) => number> = {
 const layouts = {
   section: {
     sizes: frameSizes,
-    root: "lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,460px)] lg:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:gap-x-20",
+    root: "lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,536px)] lg:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:gap-x-20",
     heading: "lg:col-start-2 lg:row-start-2",
     tabs: "lg:col-start-2 lg:row-start-3 lg:mt-7",
     panel: "lg:col-start-1 lg:row-span-full lg:mt-0",
