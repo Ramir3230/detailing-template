@@ -7,6 +7,8 @@ export const sectionIds = {
   services: "uslugi",
   reviews: "opinie",
   contact: "kontakt",
+  /** Кнопка звонка в контактах: когда она на экране, плавающая «Zadzwoń» прячется. */
+  contactCall: "kontakt-zadzwon",
 } as const;
 
 /*

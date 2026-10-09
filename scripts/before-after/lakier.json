@@ -1,0 +1,13 @@
+{
+  "out": "przed-po/lakier-ai",
+  "po": {
+    "prompt": "close-up professional photo of the glossy black hood and front fender of a car in a brightly lit car detailing studio, long straight white LED light tubes on the ceiling reflected as sharp bright lines across the deep black paint, part of a modern headlight at the edge of the frame, flawless mirror finish after machine polishing, automotive photography, sharp focus, realistic, high detail",
+    "negative": "logo, emblem, badge, brand name, text, letters, writing, sign, watermark, license plate, number plate, people, person, hands, cartoon, illustration, 3d render, cgi, painting, deformed, distorted, blurry, lowres, oversaturated",
+    "seed": 302
+  },
+  "przed": {
+    "kind": "swirls",
+    "seed": 1,
+    "mask": "subject"
+  }
+}

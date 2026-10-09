@@ -1,4 +1,31 @@
-import type { Studio } from "@/content/types";
+import type { BeforeAfter, Studio } from "@/content/types";
+
+/** Кадр пары: подпись для диктора и сделан ли он ИИ. */
+type Frame = { alt: string; ai: boolean };
+
+/*
+ * Пары до/после в public/przed-po/<пара>/, 1040×1300. У выдуманной студии своих работ
+ * нет: кадры ИИ подписаны на странице как примеры (DESIGN.md, «Фотографии»).
+ */
+function pair(
+  slug: string,
+  label: string,
+  before: Frame,
+  after: Frame,
+): BeforeAfter {
+  const photo = (file: string, { alt, ai }: Frame) => ({
+    src: `/przed-po/${slug}/${file}.webp`,
+    width: 1040,
+    height: 1300,
+    alt: { pl: alt },
+    ai,
+  });
+  return {
+    label: { pl: label },
+    before: photo("przed", before),
+    after: photo("po", after),
+  };
+}
 
 /**
  * Выдуманная студия шаблона (BRIEF.md). Тексты и цены — с холста дизайна.
@@ -30,7 +57,20 @@ export const afterdark: Studio = {
     { kind: "telegram", phone: "+48000000000" },
     { kind: "whatsapp", phone: "+48000000000" },
   ],
-  address: { street: "[Ulica i numer]", area: "Warszawa-Wola" },
+  address: {
+    street: "[Ulica i numer]",
+    area: "Warszawa-Wola",
+    /* Кадр владельца (ИИ, вывеска Afterdark), решение 09.10.2026; вход SPECTRE не берём */
+    photo: {
+      src: "/kontakt/wejscie.webp",
+      width: 1040,
+      height: 1300,
+      alt: {
+        pl: "Wjazd do studia Afterdark wieczorem: fioletowy neon, w środku czarne auto",
+      },
+      ai: true,
+    },
+  },
   hours: [
     { open: "10:00", close: "22:00" },
     { open: "10:00", close: "22:00" },
@@ -81,6 +121,19 @@ export const afterdark: Studio = {
         {
           name: { pl: "Mycie detailingowe nadwozia" },
           price: { kind: "byClass", S: 200, M: 220, L: 250 },
+          /* Оба кадра — ИИ, scripts/before-after/mycie.json */
+          beforeAfter: pair(
+            "mycie",
+            "Mycie",
+            {
+              alt: "Koło i nadkole przed myciem: błoto na oponie, pył z hamulców na feldze, kurz na lakierze",
+              ai: true,
+            },
+            {
+              alt: "To samo koło po myciu: czysta felga i błyszczący lakier",
+              ai: true,
+            },
+          ),
         },
         {
           name: { pl: "Kompleks detailingowy" },
@@ -114,9 +167,25 @@ export const afterdark: Studio = {
             { pl: "Polerowanie jednym etapem: lekkie rysy i hologramy" },
             { pl: "Kontrola efektu w świetle studyjnym" },
           ],
+          /* Из мокапа (решение владельца 09.10.2026): «po» — фото со свободной лицензией,
+             «przed» — его правка ИИ */
+          beforeAfter: pair(
+            "lakier",
+            "Lakier",
+            {
+              alt: "Czarny lakier przed korektą: hologramy i rysy wokół reflektora",
+              ai: true,
+            },
+            {
+              alt: "Ten sam lakier po korekcie: lustrzane odbicia lamp",
+              ai: false,
+            },
+          ),
         },
         {
-          name: { pl: "Wieloetapowa korekta lakieru — 3 etapy + powłoka ceramiczna" },
+          name: {
+            pl: "Wieloetapowa korekta lakieru — 3 etapy + powłoka ceramiczna",
+          },
           brand: "GYEON",
           price: { kind: "byClass", S: 3300, M: 3600, L: 4000 },
           duration: { unit: "day", min: 3, max: 4 },
@@ -149,10 +218,25 @@ export const afterdark: Studio = {
         {
           name: { pl: "Kompleksowe czyszczenie wnętrza" },
           price: { kind: "byClass", S: 800, M: 900, L: 1000 },
+          /* Из мокапа (решение владельца 09.10.2026): «po» — фото со свободной лицензией,
+             «przed» — его правка ИИ */
+          beforeAfter: pair(
+            "wnetrze",
+            "Wnętrze",
+            {
+              alt: "Jasny skórzany fotel przed czyszczeniem: brud w szwach i na siedzisku",
+              ai: true,
+            },
+            { alt: "Ten sam fotel po czyszczeniu", ai: false },
+          ),
         },
         {
-          name: { pl: "Kompleksowe czyszczenie wnętrza z demontażem elementów" },
-          note: { pl: "Ostateczna cena zależy od stanu samochodu i zakresu prac" },
+          name: {
+            pl: "Kompleksowe czyszczenie wnętrza z demontażem elementów",
+          },
+          note: {
+            pl: "Ostateczna cena zależy od stanu samochodu i zakresu prac",
+          },
           price: { kind: "from", amount: 1500 },
         },
       ],
@@ -167,7 +251,9 @@ export const afterdark: Studio = {
         },
         {
           name: { pl: "Detailing komory silnika" },
-          note: { pl: "Ostateczna cena ustalana jest po oględzinach samochodu" },
+          note: {
+            pl: "Ostateczna cena ustalana jest po oględzinach samochodu",
+          },
           price: { kind: "from", amount: 600 },
         },
       ],

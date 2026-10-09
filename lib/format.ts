@@ -55,6 +55,16 @@ export function priceParts(
   }
 }
 
+/**
+ * Цена услуги без выбранного класса — под парой до/после: у цены по классу «od» самой
+ * низкой из классов. Остальные виды от класса не зависят.
+ */
+export function startingPriceParts(price: Price, words: Dictionary["price"]): PriceParts {
+  const shown: Price =
+    price.kind === "byClass" ? { kind: "from", amount: Math.min(price.S, price.M, price.L) } : price;
+  return priceParts(shown, "S", words);
+}
+
 /** Самая низкая цена в группе — для «od …» в меню. Нет ни одной с числом — null. */
 export function lowestAmount(services: readonly Service[]): number | null {
   const amounts = services.flatMap(({ price }) => {

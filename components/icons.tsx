@@ -87,6 +87,15 @@ export function ArrowIcon(props: IconProps) {
   );
 }
 
+/** Ручка шторки до/после: тянуть вбок. */
+export function DragSidewaysIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 7l-5 5 5 5M15 7l5 5-5 5" />
+    </Icon>
+  );
+}
+
 /** «Sprawdź cenę»: вниз, к прайсу на этой же странице. */
 export function ArrowDownIcon(props: IconProps) {
   return (

@@ -9,16 +9,15 @@ type Props = { href: string; label: string; phone: string };
 /*
  * Плавающая «Zadzwoń» (DESIGN.md): видна только между hero и контактами — у обоих свои
  * кнопки звонка. Появляется в один момент с шапкой: обе следят за hero одним хуком.
- * Контакты считаются на экране, когда дошли до верхних 60% экрана.
+ * Прячется, как только кнопка звонка контактов показалась на экране хоть краем: две
+ * кнопки звонка разом не стоят. По блоку контактов она пряталась бы раньше, пока своя
+ * кнопка ещё под фото входа или ниже колонки, которую раскладка ставит по центру фото.
  * Внешний слой выезжает и прячется (уход быстрее появления), внутренний загорается
  * ударом неона — так анимации не спорят за прозрачность.
  */
 export function FloatingCall({ href, label, phone }: Props) {
   const heroVisible = useHeroInView();
-  const contactVisible = useInView(sectionIds.contact, {
-    initial: false,
-    rootMargin: "0px 0px -40% 0px",
-  });
+  const contactVisible = useInView(sectionIds.contactCall, { initial: false });
 
   const shown = !heroVisible && !contactVisible;
 
