@@ -47,8 +47,12 @@ export function ServiceName({ name, brand, size = "row" }: { name: string; brand
 /** Цена строкой: «od» приглушённым, цифры моноширинные. */
 export function Price({ parts, size = "row" }: { parts: PriceParts; size?: PriceSize }) {
   if (parts.kind === "individual") {
+    // В строку высотой с цифры и по центру, как у цены счётчиком: соседние строки и
+    // карточки держат слово на одной высоте
     return (
-      <span className={`shrink-0 ${sizes[size].individual} leading-heading text-muted`}>{parts.text}</span>
+      <span className={`flex h-[1lh] shrink-0 items-center ${sizes[size].amount} leading-heading`}>
+        <span className={`${sizes[size].individual} text-muted`}>{parts.text}</span>
+      </span>
     );
   }
   return (
