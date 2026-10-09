@@ -5,6 +5,7 @@ import { LangSwitch } from "@/components/LangSwitch";
 import { Logo } from "@/components/Logo";
 import { Menu } from "@/components/Menu";
 import { Messengers } from "@/components/Messengers";
+import { NavLink } from "@/components/NavLink";
 import { OpenStatus } from "@/components/OpenStatus";
 import { PhoneIcon } from "@/components/icons";
 import { studio } from "@/content/studio";
@@ -12,7 +13,7 @@ import type { Dictionary } from "@/dictionaries/types";
 import { telHref } from "@/lib/contact";
 import { formatFrom, formatPhone, glue, lowestAmount } from "@/lib/format";
 import { localePath, t, type Lang } from "@/lib/i18n";
-import { groupPath, servicesPath, studioPages } from "@/lib/nav";
+import { groupPagesPath, groupPath, servicesPath, studioPages } from "@/lib/nav";
 
 type Props = { lang: Lang; dict: Dictionary };
 
@@ -35,10 +36,18 @@ export function Header({ lang, dict }: Props) {
         </Link>
 
         <nav aria-label={dict.header.mainNav} className="hidden gap-8 text-15 text-muted lg:flex">
-          {[{ key: "services" as const, path: servicesPath }, ...studioPages].map(({ key, path }) => (
-            <Link key={key} href={localePath(lang, path)} className="py-3 transition-colors hover:text-fg">
+          {[
+            { key: "services" as const, path: servicesPath, currentOn: groupPagesPath },
+            ...studioPages.map((page) => ({ ...page, currentOn: page.path })),
+          ].map(({ key, path, currentOn }) => (
+            <NavLink
+              key={key}
+              href={localePath(lang, path)}
+              currentOn={currentOn}
+              className="py-3 transition-colors hover:text-fg data-current:text-fg"
+            >
               {dict.nav[key]}
-            </Link>
+            </NavLink>
           ))}
         </nav>
 

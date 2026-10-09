@@ -2,18 +2,20 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
-import { langs, type Lang } from "@/lib/i18n";
-import { sectionIds } from "@/lib/nav";
+import { langs, t, type Lang } from "@/lib/i18n";
+import { groupPagePath, hasGroupPage, sectionIds } from "@/lib/nav";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
  * легко и незаметно. Идут в `npm run check` после `next build` — по HTML, который сборка
  * отрендерила заранее.
  */
-const built = (lang: Lang) => join(process.cwd(), ".next", "server", "app", `${lang}.html`);
 
-function page(lang: Lang): { html: string; head: string } {
-  const html = readFileSync(built(lang), "utf-8");
+/* Адрес страницы так, как сборка кладёт её HTML: `pl`, `pl/uslugi/lakier`. */
+const built = (route: string) => join(process.cwd(), ".next", "server", "app", `${route}.html`);
+
+function page(route: string): { html: string; head: string } {
+  const html = readFileSync(built(route), "utf-8");
   return { html, head: html.slice(0, html.indexOf("</head>")) };
 }
 
@@ -21,27 +23,33 @@ function page(lang: Lang): { html: string; head: string } {
 const carFile = encodeURIComponent(studio.hero.car.src);
 const tags = (html: string, pattern: RegExp) => html.match(pattern) ?? [];
 
+function expectPrerendered(route: string) {
+  expect(
+    existsSync(built(route)),
+    `${built(route)} нет — сборка не запускалась или Next изменил раскладку .next/server/app`,
+  ).toBe(true);
+}
+
+function expectLang(route: string, lang: Lang) {
+  const tag = page(route).html.match(/<html\b[^>]*>/)?.[0] ?? "";
+  expect(tag).toContain(`lang="${lang}"`);
+  expect(tag).toContain('data-scroll-behavior="smooth"');
+}
+
+function expectSearchRule(route: string, lang: Lang) {
+  const published = (studio.languages as readonly Lang[]).includes(lang);
+  const { head } = page(route);
+  // Открытый сайт: noindex нигде в <head> — ни в robots, ни в googlebot, ни в другом виде
+  if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
+  else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
+}
+
 describe.each(langs)("built home page /%s", (lang) => {
-  it("is prerendered: `npm run build` has run", () => {
-    expect(
-      existsSync(built(lang)),
-      `${built(lang)} нет — сборка не запускалась или Next изменил раскладку .next/server/app`,
-    ).toBe(true);
-  });
+  it("is prerendered: `npm run build` has run", () => expectPrerendered(lang));
 
-  it("names its language and keeps route changes instant", () => {
-    const tag = page(lang).html.match(/<html\b[^>]*>/)?.[0] ?? "";
-    expect(tag).toContain(`lang="${lang}"`);
-    expect(tag).toContain('data-scroll-behavior="smooth"');
-  });
+  it("names its language and keeps route changes instant", () => expectLang(lang, lang));
 
-  it("is closed from search exactly when the studio data says so", () => {
-    const published = (studio.languages as readonly Lang[]).includes(lang);
-    const { head } = page(lang);
-    // Открытый сайт: noindex нигде в <head> — ни в robots, ни в googlebot, ни в другом виде
-    if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
-    else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
-  });
+  it("is closed from search exactly when the studio data says so", () => expectSearchRule(lang, lang));
 
   it("preloads the hero car and never loads it lazily", () => {
     const { html, head } = page(lang);
@@ -107,5 +115,37 @@ describe.each(langs)("built home page /%s", (lang) => {
 
   it("carries no real brands from the mockup", () => {
     expect(page(lang).html).not.toMatch(/spectre|mansory/i);
+  });
+});
+
+const groupPages = studio.services
+  .filter(hasGroupPage)
+  .flatMap((group) => langs.map((lang) => ({ lang, group, route: `${lang}${groupPagePath(group.slug)}` })));
+
+describe.each(groupPages)("built group page /$route", ({ lang, group, route }) => {
+  it("is prerendered: `npm run build` has run", () => expectPrerendered(route));
+
+  it("names its language and keeps route changes instant", () => expectLang(route, lang));
+
+  it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
+
+  it("has one main heading — the group — and the group in the tab title", () => {
+    const { html, head } = page(route);
+    const name = t(group.name, lang);
+    const headings = tags(html, /<h1\b[^>]*>[\s\S]*?<\/h1>/g);
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toContain(name);
+    expect(head.match(/<title>([^<]*)<\/title>/)?.[1]).toContain(name);
+  });
+
+  it("leaves the hero car to the home page", () => {
+    // Ни картинкой, ни preload: путь как есть и так, как его кодирует next/image
+    const { html } = page(route);
+    expect(html).not.toContain(carFile);
+    expect(html).not.toContain(studio.hero.car.src);
+  });
+
+  it("carries no real brands from the mockup", () => {
+    expect(page(route).html).not.toMatch(/spectre|mansory/i);
   });
 });
