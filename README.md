@@ -37,3 +37,18 @@ python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исход
 ```
 
 Скрипт печатает поле `hero.car` для файла данных студии: размеры и центры фар.
+
+## Кадры до/после
+
+Пары до/после и фото входа выдуманной студии рисует нейросеть на видеокарте (6 ГБ хватает),
+в `public/przed-po/` и `public/kontakt/`. Параметры кадра — JSON в `scripts/before-after/`,
+окружение — в `requirements.txt` рядом (там же команды установки); модели (~7 ГБ)
+скачиваются при первом запуске.
+
+```bash
+~/.cache/sd/venv/Scripts/python scripts/before-after/generate.py scripts/before-after/mycie.json --candidates 4 --preview <папка>
+~/.cache/sd/venv/Scripts/python scripts/before-after/generate.py scripts/before-after/mycie.json
+```
+
+Первая команда кладёт лист кандидатов для выбора, вторая — кадры по сидам из JSON и
+печатает пути и размеры для файла данных студии.

@@ -80,6 +80,9 @@
   --ease-warm: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
+  /* Линия и ручка шторки до/после — белые при любой теме: читаются на любом фото */
+  --color-slider: #fff;
+
   --container-page: 1200px;
   /* Машина hero на десктопе не шире */
   --container-hero-car: 780px;

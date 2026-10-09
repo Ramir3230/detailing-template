@@ -1,0 +1,17 @@
+{
+  "out": "przed-po/mycie",
+  "po": {
+    "prompt": "close-up professional photo of the front wheel, wheel arch, side sill and lower part of the front door of a modern dark grey car inside a dark car detailing studio, freshly washed glossy paint with sharp reflections of white LED light panels, clean modern alloy wheel, shiny black tyre, polished dark epoxy floor, automotive photography, sharp focus, realistic, high detail",
+    "negative": "logo, emblem, badge, brand name, text, letters, writing, sign, watermark, license plate, number plate, people, person, hands, cartoon, illustration, 3d render, cgi, painting, deformed, distorted, blurry, lowres, oversaturated, vintage, classic car, retro, old car, rust, rusty, damaged, dents, front grille, headlight, full car",
+    "seed": 101
+  },
+  "przed": {
+    "kind": "dirt",
+    "prompt": "close-up photo of the same car part filthy before washing, the dirt is obvious at a glance: thick layer of grey road grime and dust on the paint, heavy dried brown mud splashes on the lower door, sill and wheel arch, alloy wheel caked in black brake dust, muddy tyre, dull dirty paint without reflections",
+    "negative": "logo, emblem, badge, brand name, text, letters, writing, sign, watermark, license plate, number plate, people, person, hands, cartoon, illustration, 3d render, cgi, painting, deformed, distorted, blurry, lowres, oversaturated, clean, glossy, shiny, vintage, classic car, retro, old car, rust, rusty, damaged, dents",
+    "seed": 201,
+    "strength": 0.95,
+    "control": 0.5,
+    "mask": "subject"
+  }
+}

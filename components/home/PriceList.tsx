@@ -93,10 +93,7 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
                   className="flex min-h-14 items-start gap-4 border-t border-line py-4 lg:gap-6"
                 >
                   <div className="flex flex-1 flex-col gap-1">
-                    <span className="text-15 leading-item font-medium lg:text-16">
-                      {row.name}
-                      {row.brand && <span className="text-accent"> {row.brand}</span>}
-                    </span>
+                    <ServiceName name={row.name} brand={row.brand} />
                     {row.note && (
                       <span className="text-13 leading-note text-muted lg:text-14">{row.note}</span>
                     )}
@@ -121,7 +118,18 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
   );
 }
 
-function Price({ parts }: { parts: PriceParts }) {
+/** Название услуги, марка продукта — акцентом. Его же ставит до/после под кадр. */
+export function ServiceName({ name, brand }: { name: string; brand?: string }) {
+  return (
+    <span className="text-15 leading-item font-medium lg:text-16">
+      {name}
+      {brand && <span className="text-accent"> {brand}</span>}
+    </span>
+  );
+}
+
+/** Цена строкой: «od» приглушённым, цифры моноширинные. Её же ставит до/после под кадр. */
+export function Price({ parts }: { parts: PriceParts }) {
   if (parts.kind === "individual") {
     return (
       <span className="shrink-0 text-14 leading-heading text-muted lg:text-15">{parts.text}</span>
