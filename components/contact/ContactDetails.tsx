@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { CallButton } from "@/components/CallButton";
-import { HoursList } from "@/components/home/HoursList";
+import { HoursList } from "@/components/contact/HoursList";
 import { ArrowIcon } from "@/components/icons";
 import { Messengers } from "@/components/Messengers";
 import { OpenStatus } from "@/components/OpenStatus";
@@ -103,7 +103,8 @@ export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: P
 /* Статус «otwarte / zamknięte» под заголовком контактов: на главной и на странице Kontakt. */
 export function ContactStatus({ lang, dict, className }: { lang: Lang; dict: Dictionary; className: string }) {
   return (
-    <p className={`min-h-6 ${className}`}>
+    // Статус появляется только в браузере: место — на строку своего кегля (16 / 18)
+    <p className={`min-h-lh ${className}`}>
       <OpenStatus
         hours={studio.hours}
         lang={lang}

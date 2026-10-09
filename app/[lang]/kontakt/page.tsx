@@ -24,8 +24,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/kontakt">)
 
 /*
  * Страница Kontakt (DESIGN.md, «Страница Kontakt»): заголовок со статусом, карта и под ней
- * тот же блок контактов, что на главной. Плавающая «Zadzwoń» видна сразу и прячется у
- * кнопки звонка блока.
+ * тот же блок контактов, что на главной. Плавающая «Zadzwoń» появляется сразу после
+ * загрузки и прячется у кнопки звонка блока.
  */
 export default async function ContactPage({ params }: PageProps<"/[lang]/kontakt">) {
   const { lang } = await params;
