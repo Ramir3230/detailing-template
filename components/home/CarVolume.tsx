@@ -29,8 +29,11 @@ const SCROLL_TAU = 0.12;
 const SETTLED = 0.1;
 /* Отсвет на кузове и отражение проявляются после подмены, а не появляются рывком */
 const FADE_IN_MS = 600;
-/* Устройство не тянет: медиана кадра при движении дольше 50 мс (меньше 20 кадров/с) */
-const SLOW_SAMPLES = 30;
+/* Устройство не тянет: медиана 10 тяжёлых кадров дольше 50 мс (меньше 20 кадров/с).
+   Десяти хватает: медиана не замечает пару случайных долгих кадров, а слабое устройство
+   с кадром в 100–200 мс больше десяти и не покажет — ни на зажигании, ни до первых
+   рывков машины */
+const SLOW_SAMPLES = 10;
 const SLOW_FRAME_MS = 50;
 /* Низ машины растворяется в полу с этой доли высоты — как .fade-bottom и .fade-bottom-short
    в app/globals.css: на неоне кодом машина стоит на освещённом полу */
@@ -106,8 +109,9 @@ type Props = {
  *
  * На десктопе машина поворачивается за курсором, на телефоне — от прокрутки hero. При
  * reduced motion — неподвижный кадр: неон и отражение есть, поворота нет. Без холста
- * совсем — в режиме экономии трафика, без WebGL2, на программной отрисовке и когда
- * устройство не тянет: тогда фото и неон на CSS.
+ * совсем — в режиме экономии трафика, без WebGL2, на программной отрисовке, при отказе
+ * шейдера, картинок или контекста, когда устройство не тянет и при reduced motion у
+ * машины без неона кодом: тогда фото и неон на CSS.
  */
 export function CarVolume({ map, aspect, headlights, underglow, body, rings, floor, onState }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -147,6 +151,9 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
 
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
     let still = reducedMotion.matches;
+    // При reduced motion машина остаётся фото. Без неона кодом холсту показывать нечего:
+    // он виден только с подменённой машиной или со своим неоном
+    if (still && !underglow) return off();
     const stage = element.closest("[data-ignition]");
     const ignited = new Promise<void>((resolve) => {
       if (!stage || stage.hasAttribute("data-ignited")) return resolve();
@@ -177,7 +184,11 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     let yaw = 0;
     let pitch = 0;
     let last = 0;
+    // Текстуры машины загружены, и сцена отыграла: машину пора подменять
     let carAt = 0;
+    // Программа машины собралась (на телефоне — сотни мс после carAt): от этого кадра
+    // проявляются отражение и отсвет на кузове
+    let readyAt = 0;
     let shown: VolumeState = { car: false, neon: false };
     // Размер холста, который видела эта сцена: сам холст мог остаться от прошлой
     // (StrictMode, возврат на страницу), и его размер новой сцене ничего не говорит
@@ -186,22 +197,23 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     let painted = "";
     // Программы ещё собираются — кадры повторяются, пока не соберутся
     let waiting = true;
-    // Прошлый кадр рисовал неон на полу — самый тяжёлый проход
+    // Прошлый кадр и правда рисовал тяжёлое: неон на полу или машину с отражением. Кадр,
+    // который совпал с прошлым и не рисовался, скорость устройства не показывает
     let heavy = false;
     const samples: number[] = [];
 
     const opacity = (layer: Element | null) => (layer ? Number(getComputedStyle(layer).opacity) : 1);
     /* Кадр по текущему состоянию; force — холст стёрт или сменились текстуры. Возвращает
-       проявление после подмены и силу неона; null — холста больше нет */
+       проявление после подмены и рисовал ли кадр тяжёлое; null — холста больше нет */
     const paint = (now: number, force = false) => {
       if (stopped) return null;
       const lit = Boolean(underglow);
       // При reduced motion — сразу финальный кадр, без проявления
-      const fadeIn = carAt ? (still ? 1 : Math.min(1, (now - carAt) / FADE_IN_MS)) : 0;
+      const fadeIn = readyAt ? (still ? 1 : Math.min(1, (now - readyAt) / FADE_IN_MS)) : 0;
       const neon = lit ? GLOW * opacity(floor.current) : 0;
       const car = Boolean(carAt) && !still;
       const key = [yaw, pitch, neon, fadeIn, car].join();
-      if (!force && !waiting && key === painted) return { fadeIn, neon };
+      if (!force && !waiting && key === painted) return { fadeIn, heavy: false };
       painted = key;
       let result;
       try {
@@ -221,12 +233,17 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
         return null;
       }
       waiting = result.waiting;
+      if (result.carReady && !readyAt) readyAt = now;
       const next = { car: result.car, neon: lit && result.floor };
+      // Подмена. Если пол на зажигании уже признан быстрым, скорость меряется заново — по
+      // кадрам с машиной и отражением, они тяжелее. Не набрал замеров — медленный пол
+      // тоже улика, копим дальше
+      if (next.car && !shown.car && samples.length === SLOW_SAMPLES) samples.length = 0;
       if (next.car !== shown.car || next.neon !== shown.neon) {
         shown = next;
         onState(shown);
       }
-      return { fadeIn, neon };
+      return { fadeIn, heavy: neon > 0 || result.carReady };
     };
 
     // Холст в точных пикселях устройства, где браузер их сообщает: при округлении
@@ -280,9 +297,10 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       // Остановка — ровно в цели: в покое кадр совпадает с фото
       if (!moving) [yaw, pitch] = [yawTarget, pitchTarget];
 
-      // Скорость меряем на тяжёлых кадрах: машина движется или на полу горит неон, — в
-      // том числе на зажигании. Пустые кадры до вспышки занизили бы медиану
-      if (last && (moving || heavy) && samples.length < SLOW_SAMPLES) {
+      // Скорость меряем по интервалу после тяжёлого кадра: на полу горит неон или
+      // нарисована машина с отражением, — в том числе на зажигании. Пустые кадры до
+      // вспышки и повторы того же кадра занизили бы медиану
+      if (last && heavy && samples.length < SLOW_SAMPLES) {
         samples.push(now - last);
         if (samples.length === SLOW_SAMPLES) {
           const median = [...samples].sort((a, b) => a - b)[SLOW_SAMPLES / 2];
@@ -293,7 +311,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
 
       const result = paint(now);
       if (!result) return;
-      heavy = result.neon > 0;
+      heavy = result.heavy;
       // Пока сцена не отыграла, неон следует за вспышкой CSS-слоя каждый кадр
       const igniting = stage ? !stage.hasAttribute("data-ignited") : false;
       const fading = Boolean(carAt) && result.fadeIn < 1;
@@ -353,6 +371,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     // Уменьшение движения включили при открытой странице — машина сразу встаёт в покой
     const onMotion = () => {
       still = reducedMotion.matches;
+      if (still && !underglow) return off();
       if (still) {
         unlisten();
         yaw = 0;
