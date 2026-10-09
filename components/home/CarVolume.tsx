@@ -24,14 +24,15 @@ export type VolumeSettings = {
   mirror: number;
 };
 
+/* Значения владельца из лаборатории (09.10.2026): тихий неон на зеркальном полу */
 export const defaultVolume: VolumeSettings = {
   on: true,
   angle: 5,
-  depth: 0.3,
-  light: 0.6,
+  depth: 0.2,
+  light: 0.3,
   neon: true,
-  glow: 1,
-  gloss: 0.6,
+  glow: 0.3,
+  gloss: 1,
   mirror: 0.5,
 };
 
