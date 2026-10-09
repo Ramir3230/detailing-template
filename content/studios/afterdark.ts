@@ -125,7 +125,7 @@ export const afterdark: Studio = {
       slug: "mycie-i-szyby",
       name: { pl: "Mycie i szyby" },
       intro: {
-        pl: "Ręczne mycie bez szczotek i powłoki na szyby, z których deszcz spływa sam. Cena zależy od klasy auta.",
+        pl: "Mycie ręczne, bez szczotek, oraz powłoki, dzięki którym deszcz w trasie sam spływa z szyb. Ceny większości usług zależą od klasy auta.",
       },
       advice: { pl: "Zadzwoń — podpowiemy, czy wystarczy mycie, czy lepiej wziąć kompleks." },
       services: [
@@ -163,7 +163,7 @@ export const afterdark: Studio = {
             { pl: "Odkurzanie wnętrza i bagażnika" },
             { pl: "Czyszczenie plastików kokpitu" },
             { pl: "Szyby od wewnątrz" },
-            { pl: "Szybki wosk na lakier" },
+            { pl: "Szybki wosk na lakier — pomijamy go przy powłoce ceramicznej" },
           ],
         },
         {
@@ -174,7 +174,7 @@ export const afterdark: Studio = {
           scope: [
             { pl: "Mycie i odtłuszczenie wszystkich szyb" },
             { pl: "Nałożenie powłoki hydrofobowej" },
-            { pl: "Wypolerowanie szyb bez smug" },
+            { pl: "Usunięcie nadmiaru powłoki — szyby bez smug" },
           ],
         },
         {
@@ -338,7 +338,7 @@ export const afterdark: Studio = {
           duration: { unit: "day", min: 2, max: 3 },
           scope: [
             { pl: "Wszystko z kompleksowego czyszczenia wnętrza" },
-            { pl: "Demontaż foteli" },
+            { pl: "Demontaż foteli i elementów, pod które dostał się brud" },
             { pl: "Pranie wykładziny podłogi pod fotelami" },
             { pl: "Ozonowanie na koniec" },
           ],
@@ -354,7 +354,7 @@ export const afterdark: Studio = {
         {
           question: { pl: "Czy usuniecie sierść i zapach papierosów?" },
           answer: {
-            pl: "Sierść — tak, to część kompleksowego czyszczenia. Z zapachem jest tak: czyszczenie usuwa jego źródło z tapicerki i plastików, a ozonowanie neutralizuje to, co zostało w powietrzu i klimatyzacji. Bardzo wżarty zapach dymu może wymagać czyszczenia z demontażem.",
+            pl: "Sierść — tak, to część kompleksowego czyszczenia. Z zapachem jest tak: czyszczenie usuwa jego źródło z tapicerki i plastików, a ozonowanie neutralizuje to, co zostało w powietrzu i klimatyzacji — to osobna usługa, przy czyszczeniu z demontażem jest już w cenie. Bardzo wżarty zapach dymu może wymagać czyszczenia z demontażem.",
           },
         },
         {
@@ -369,16 +369,16 @@ export const afterdark: Studio = {
       slug: "felgi-i-silnik",
       name: { pl: "Felgi i silnik" },
       intro: {
-        pl: "Felgi czyścimy z obu stron i chronimy ceramiką, komorę silnika — bez wody na elektryce. Cena felg zależy od klasy auta.",
+        pl: "Felgi czyścimy z obu stron i chronimy ceramiką, komorę silnika — bez wody na elektryce. Cena czyszczenia felg zależy od klasy auta.",
       },
-      advice: { pl: "Zadzwoń — umówimy oględziny i od razu podamy cenę silnika." },
+      advice: { pl: "Zadzwoń — umówimy oględziny i od razu podamy cenę detailingu silnika." },
       services: [
         {
           name: { pl: "Dokładne czyszczenie felg, powłoka ceramiczna" },
           price: { kind: "byClass", S: 450, M: 500, L: 550 },
           duration: { unit: "hour", min: 4, max: 5 },
           scope: [
-            { pl: "Zdjęcie kół, montaż kluczem dynamometrycznym" },
+            { pl: "Zdejmowanie kół i dokręcanie kluczem dynamometrycznym" },
             { pl: "Czyszczenie felg z obu stron i między szprychami" },
             { pl: "Usunięcie wżartego pyłu z hamulców i smoły" },
             { pl: "Powłoka ceramiczna na felgi" },
@@ -417,7 +417,7 @@ export const afterdark: Studio = {
         {
           question: { pl: "Czy zdejmujecie koła?" },
           answer: {
-            pl: "Tak. Tylko tak doczyścimy wewnętrzną stronę felgi, a powłoka obejmie ją całą. Koła wracają na miejsce dokręcone kluczem dynamometrycznym, z momentem dla Twojego auta.",
+            pl: "Tak. Tylko tak doczyścimy wewnętrzną stronę felgi, a powłoka obejmie ją całą. Koła wracają na miejsce dokręcone kluczem dynamometrycznym, z momentem, który zaleca producent Twojego auta.",
           },
         },
       ],
