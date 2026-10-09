@@ -183,6 +183,11 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
   it("serves the questions with their answers in the markup, the first one open", () => {
     const sections = tags(markup(route), /<section\b[\s\S]*?<\/section>/g);
     const faq = sections.find((section) => section.includes(`id="${groupSectionIds.faq}"`));
+    // Вопросы у группы необязательны: нет их в данных — нет и секции
+    if (!group.faq?.length) {
+      expect(faq).toBeUndefined();
+      return;
+    }
     expect(faq, "нет секции частых вопросов").toBeDefined();
     for (const { question, answer } of group.faq ?? []) {
       expect(faq).toContain(escaped(glue(t(question, lang), lang)));

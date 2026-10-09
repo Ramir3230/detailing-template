@@ -54,7 +54,7 @@ export default async function GroupPage({ params }: PageProps<"/[lang]/uslugi/[s
     <main className="flex-1">
       <GroupIntro group={group} lang={lang} dict={dict} />
       <GroupContent group={group} lang={lang} dict={dict} />
-      <section className="wrap pt-12 pb-14">
+      <section className="wrap pt-12 pb-14 lg:pb-24">
         <AdviceCard group={group} lang={lang} dict={dict} />
       </section>
       <FloatingCall

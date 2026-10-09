@@ -1,8 +1,22 @@
-import type { ComparePair, ComparePhoto } from "@/components/ComparePairs";
 import type { Photo, Service } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
-import { glue, startingPriceParts } from "@/lib/format";
+import { glue, startingPriceParts, type PriceParts } from "@/lib/format";
 import { fill, t, type Lang } from "@/lib/i18n";
+
+export type ComparePhoto = { src: string; width: number; height: number; alt: string };
+
+export type ComparePair = {
+  label: string;
+  service: string;
+  brand?: string;
+  price: PriceParts;
+  /** Подпись ползунка для диктора и клавиатуры. */
+  compare: string;
+  /** Хоть один кадр пары сделан ИИ — под парой «Zdjęcia przykładowe». */
+  examples: boolean;
+  before: ComparePhoto;
+  after: ComparePhoto;
+};
 
 /**
  * Пары до/после — у услуг в их порядке, на языке страницы, под парой услуга с ценой
