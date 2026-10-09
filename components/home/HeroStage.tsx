@@ -113,8 +113,9 @@ export function HeroStage({ id, className, children }: StageProps) {
   );
 }
 
-/* Машина на телефоне — 92% ширины экрана, на десктопе — до 780 px (--container-hero-car) */
-const sizes = "(min-width: 1024px) 780px, 92vw";
+/* Машина на телефоне — 92% ширины экрана, на планшете — 92% колонки 688 px
+   (--container-tablet), на десктопе — до 780 px (--container-hero-car) */
+const sizes = "(min-width: 1024px) 780px, (min-width: 688px) 633px, 92vw";
 
 const layer = "pointer-events-none absolute mix-blend-screen";
 
