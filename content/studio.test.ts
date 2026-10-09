@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
+import type { Photo } from "@/content/types";
 import { messengerHref, telHref } from "@/lib/contact";
 
 /*
@@ -85,7 +86,38 @@ describe("active studio data", () => {
       for (const value of [x, y, w]) expect(value > 0 && value < 100).toBe(true);
     }
   });
+
+  it("has before/after pairs: one 4:5 size for both frames, sharp on a desktop 2x screen", () => {
+    const pairs = studio.services.flatMap((group) =>
+      group.services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter] : [])),
+    );
+    // Вкладки различаются подписью: по ней React различает кадры пар
+    expect(new Set(pairs.map(({ label }) => label.pl)).size).toBe(pairs.length);
+    for (const { before, after } of pairs) {
+      // Шторка режет один кадр по другому: разный размер — сдвиг на линии
+      expect({ width: before.width, height: before.height }).toEqual({
+        width: after.width,
+        height: after.height,
+      });
+      for (const photo of [before, after]) expectFrame(photo);
+    }
+  });
 });
+
+/*
+ * Кадр 4:5 (DESIGN.md, «Фотографии»: до/после от 1040×1300 — на десктопе кадр 520 px),
+ * файл того размера, что в данных, с подписью для диктора.
+ */
+function expectFrame(photo: Photo) {
+  expect(photo.src).toMatch(/^\/[\w\-/]+\.webp$/);
+  expect(webpSize(readFileSync(join(process.cwd(), "public", photo.src)))).toEqual({
+    width: photo.width,
+    height: photo.height,
+  });
+  expect(photo.width * 5).toBe(photo.height * 4);
+  expect(photo.width).toBeGreaterThanOrEqual(1040);
+  expect(photo.alt.pl.trim()).not.toBe("");
+}
 
 /* Контраст по WCAG 2: относительная яркость двух цветов #rrggbb. */
 function contrast(a: string, b: string): number {

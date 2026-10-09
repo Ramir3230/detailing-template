@@ -85,6 +85,21 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(html).not.toMatch(/\sdata-(lit|ignited)=/);
   });
 
+  it("loads the before/after frames lazily: they never compete with the hero car", () => {
+    const { html } = page(lang);
+    const files = studio.services
+      .flatMap((group) => group.services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter] : [])))
+      .flatMap(({ before, after }) => [before.src, after.src])
+      .map((src) => encodeURIComponent(src));
+    for (const file of files) {
+      const images = tags(html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
+      expect(images, `нет <img> кадра ${decodeURIComponent(file)}`).toHaveLength(1);
+      expect(images[0]).toContain('loading="lazy"');
+      const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => tag.includes(file));
+      expect(preloads, `кадр ${decodeURIComponent(file)} в preload`).toEqual([]);
+    }
+  });
+
   it("has one main heading", () => {
     expect(page(lang).html.match(/<h1[\s>]/g)).toHaveLength(1);
   });

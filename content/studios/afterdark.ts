@@ -1,4 +1,19 @@
-import type { Studio } from "@/content/types";
+import type { BeforeAfter, Studio } from "@/content/types";
+
+/*
+ * Пары до/после сделаны ИИ (scripts/before-after/<пара>.json) и подписаны на странице
+ * как примеры: у выдуманной студии нет своих работ, а чужие брать нельзя.
+ */
+function aiPair(slug: string, label: string, before: string, after: string): BeforeAfter {
+  const frame = (file: string, alt: string) => ({
+    src: `/przed-po/${slug}/${file}.webp`,
+    width: 1040,
+    height: 1300,
+    alt: { pl: alt },
+    ai: true,
+  });
+  return { label: { pl: label }, before: frame("przed", before), after: frame("po", after) };
+}
 
 /**
  * Выдуманная студия шаблона (BRIEF.md). Тексты и цены — с холста дизайна.
@@ -81,6 +96,12 @@ export const afterdark: Studio = {
         {
           name: { pl: "Mycie detailingowe nadwozia" },
           price: { kind: "byClass", S: 200, M: 220, L: 250 },
+          beforeAfter: aiPair(
+            "mycie",
+            "Mycie",
+            "Kombi przed myciem: błoto na progach i nadkolach, kurz na lakierze",
+            "To samo kombi po myciu: czysty, błyszczący lakier",
+          ),
         },
         {
           name: { pl: "Kompleks detailingowy" },
@@ -114,6 +135,12 @@ export const afterdark: Studio = {
             { pl: "Polerowanie jednym etapem: lekkie rysy i hologramy" },
             { pl: "Kontrola efektu w świetle studyjnym" },
           ],
+          beforeAfter: aiPair(
+            "lakier",
+            "Lakier",
+            "Czarny lakier przed korektą: hologramy i rysy wokół odbić światła",
+            "Ten sam lakier po korekcie: lustrzane odbicia lamp",
+          ),
         },
         {
           name: { pl: "Wieloetapowa korekta lakieru — 3 etapy + powłoka ceramiczna" },
@@ -149,6 +176,12 @@ export const afterdark: Studio = {
         {
           name: { pl: "Kompleksowe czyszczenie wnętrza" },
           price: { kind: "byClass", S: 800, M: 900, L: 1000 },
+          beforeAfter: aiPair(
+            "wnetrze",
+            "Wnętrze",
+            "Jasny skórzany fotel przed czyszczeniem: plamy, okruchy i brud w szwach",
+            "Ten sam fotel po czyszczeniu",
+          ),
         },
         {
           name: { pl: "Kompleksowe czyszczenie wnętrza z demontażem elementów" },

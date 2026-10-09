@@ -15,6 +15,7 @@ import {
   glue,
   lowestAmount,
   priceParts,
+  startingPriceParts,
 } from "@/lib/format";
 
 describe("formatAmount", () => {
@@ -62,6 +63,28 @@ describe("priceParts", () => {
     expect(priceParts({ kind: "individual" }, "M", ru.price)).toEqual({
       kind: "individual",
       text: "индивидуально",
+    });
+  });
+});
+
+describe("startingPriceParts", () => {
+  it("gives a price by class as «od» the lowest class", () => {
+    expect(startingPriceParts({ kind: "byClass", S: 1150, M: 1000, L: 1300 }, pl.price)).toEqual({
+      kind: "amount",
+      prefix: "od ",
+      amount: "1000 zł",
+    });
+  });
+
+  it("keeps the other kinds as the price list shows them", () => {
+    expect(startingPriceParts({ kind: "fixed", amount: 300 }, pl.price)).toEqual({
+      kind: "amount",
+      amount: "300 zł",
+    });
+    expect(startingPriceParts({ kind: "from", amount: 600 }, ru.price)).toMatchObject({ prefix: "от " });
+    expect(startingPriceParts({ kind: "individual" }, pl.price)).toEqual({
+      kind: "individual",
+      text: "indywidualnie",
     });
   });
 });
