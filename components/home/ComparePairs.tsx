@@ -94,7 +94,7 @@ export function ComparePairs({
         >
           {pairs.map((item, index) => (
             <button
-              key={item.label}
+              key={item.after.src}
               ref={(button) => {
                 tabs.current[index] = button;
               }}
@@ -211,7 +211,7 @@ function Slider({
       className="relative aspect-[4/5] cursor-ew-resize touch-pan-y touch-pinch-zoom overflow-hidden rounded-tile bg-surface select-none lg:rounded-card-lg"
     >
       {pairs.map((item, index) => (
-        <div key={item.label} className={index === active ? undefined : "invisible"}>
+        <div key={item.after.src} className={index === active ? undefined : "invisible"}>
           <Image
             src={item.after.src}
             width={item.after.width}
