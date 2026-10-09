@@ -17,7 +17,8 @@
 Без --candidates кадр собирается по сидам из JSON: файлы ложатся в public/, в stdout —
 поле для файла данных студии. С --candidates N — только лист для выбора в --preview:
 N сидов подряд от сида в JSON; --vary przed держит «po» и перебирает «przed». Выбранный
-сид записывается в JSON: на той же видеокарте и тех же версиях кадр повторяется.
+сид записывается в JSON: на той же видеокарте и тех же версиях кадр повторяется — с
+точностью до мелкого шума, расчёт на видеокарте побитово не повторяется.
 
 Кадры шаблона общие для всех демо, и правка JSON шаблона перезапишет файлы, на которые
 ссылаются данные студий. Для своей студии — новый JSON с out вида
@@ -26,7 +27,9 @@ N сидов подряд от сида в JSON; --vary przed держит «po�
 Поля JSON:
     out     путь внутри public/ без расширения. Пара ложится в <out>/po.webp и
             <out>/przed.webp, одиночный кадр — в <out>.webp;
-    po      prompt, negative, seed;
+    po      prompt, negative, seed; erase (необязательно) — прямоугольники [left, top,
+            right, bottom] в пикселях кадра 1040×1300, которые затираются окружением:
+            эмблема или номер, нарисованные моделью вопреки negative;
     przed   kind, seed и mask — "subject" (BiRefNet: машина или сиденье, фон не
             трогается) или "full" (весь кадр).
             kind "dirt" — грязь рисует модель: prompt, negative; strength — насколько
@@ -113,6 +116,8 @@ GUIDANCE = 5.0
 MASK_GROW = 12
 MASK_FEATHER = 8
 QUALITY = 85
+# Радиус, с которого затирание берёт окружение, px
+ERASE_RADIUS = 5
 # Лист кандидатов: кадр в треть размера, под ним сид
 THUMB = (SIZE[0] // 3, SIZE[1] // 3)
 GAP = 16
@@ -154,7 +159,7 @@ def noise(seed: int) -> torch.Generator:
 
 
 def draw_po(draw: StableDiffusionXLPipeline, spec: dict, seed: int) -> Image.Image:
-    return draw(
+    po = draw(
         prompt=spec["prompt"],
         negative_prompt=spec["negative"],
         width=GEN_SIZE[0],
@@ -163,6 +168,21 @@ def draw_po(draw: StableDiffusionXLPipeline, spec: dict, seed: int) -> Image.Ima
         guidance_scale=GUIDANCE,
         generator=noise(seed),
     ).images[0]
+    return erase(po, spec.get("erase", []))
+
+
+def erase(image: Image.Image, boxes: list) -> Image.Image:
+    """Эмблемы, которые модель рисует вопреки negative, — заливкой от краёв прямоугольника.
+    Затирается «po» до «przed»: в паре эмблемы нет ни на одном кадре."""
+    if not boxes:
+        return image
+    rgb = np.asarray(image)
+    mask = np.zeros(rgb.shape[:2], np.uint8)
+    # Прямоугольники — в пикселях кадра 1040×1300, а «po» на 4 px выше
+    top = (GEN_SIZE[1] - SIZE[1]) // 2
+    for left, upper, right, lower in boxes:
+        mask[upper + top : lower + top, left:right] = 255
+    return Image.fromarray(cv2.inpaint(rgb, mask, ERASE_RADIUS, cv2.INPAINT_TELEA))
 
 
 @cache
@@ -373,6 +393,11 @@ def check(frame: dict, name: str) -> Path:
                 value = przed.get(field)
                 if not is_number(value) or not 0 < value <= 1:
                     raise SystemExit(f"{name}: przed.{field} — число от 0 до 1")
+    boxes = frame["po"].get("erase", [])
+    for box in boxes if isinstance(boxes, list) else [None]:
+        whole = isinstance(box, list) and len(box) == 4 and all(is_number(v, whole=True) for v in box)
+        if not whole or not (0 <= box[0] < box[2] <= SIZE[0] and 0 <= box[1] < box[3] <= SIZE[1]):
+            raise SystemExit(f"{name}: po.erase — список [left, top, right, bottom] внутри кадра {SIZE[0]}×{SIZE[1]}")
     for part, fields in need.items():
         missing = fields - frame[part].keys()
         if missing:
