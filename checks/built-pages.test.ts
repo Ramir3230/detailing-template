@@ -55,6 +55,28 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(car).not.toContain('loading="lazy"');
   });
 
+  it("leaves the volumetric car to the browser: the photo comes first", () => {
+    const { html } = page(lang);
+    // Холст рисует только браузер, после гидрации: без WebGL и до него машина — фото
+    expect(html).not.toMatch(/<canvas\b/);
+    // Карта объёма грузится после фото машины и не спорит с ним за канал. Путь — как есть
+    // и так, как его кодирует next/image
+    const { depth } = studio.hero.car;
+    if (depth) {
+      const files = [depth, encodeURIComponent(depth)];
+      const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => files.some((file) => tag.includes(file)));
+      expect(preloads, "карта объёма в preload").toEqual([]);
+    }
+    // Код WebGL — отдельный кусок после гидрации: ни в одном скрипте, который страница
+    // грузит сразу или заранее
+    const chunks = [...html.matchAll(/(?:src|href)="(\/_next\/static\/chunks\/[^"]+\.js)"/g)].map((m) => m[1]);
+    expect(chunks.length, "в HTML нет скриптов Next — раскладка .next изменилась").toBeGreaterThan(0);
+    const eager = chunks.filter((chunk) =>
+      readFileSync(join(process.cwd(), ".next", chunk.replace("/_next/", "")), "utf-8").includes("webgl2"),
+    );
+    expect(eager, "код WebGL в скриптах, которые грузятся сразу").toEqual([]);
+  });
+
   it("serves the hero unlit: ignition starts in the browser", () => {
     const { html } = page(lang);
     const hero = tags(html, /<section\b[^>]*>/g).find((tag) => tag.includes(`id="${sectionIds.hero}"`));

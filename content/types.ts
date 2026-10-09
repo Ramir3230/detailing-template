@@ -73,6 +73,20 @@ export type Review = {
 /** Фара в процентах кадра машины: центр (x слева, y сверху) и ширина её светодиодов. */
 export type Headlight = { x: number; y: number; w: number };
 
+/** Переднее колесо в процентах ширины кадра машины: центр и ширина шины. */
+export type Wheel = { x: number; w: number };
+
+/**
+ * Неоновая подсветка днища (объёмная машина): трубка под передней губой и колёса,
+ * которые заслоняют свет трубок вдоль порогов. Проценты ширины кадра машины. Задаётся
+ * в JSON кадра (scripts/hero-car/m3.json), cutout.py печатает её вместе с машиной.
+ */
+export type Underglow = {
+  /** Левый и правый концы трубки под передней губой. */
+  tube: readonly [number, number];
+  wheels: readonly [Wheel, Wheel];
+};
+
 /**
  * Машина hero (DESIGN.md, «Фотографии»): вырезка на прозрачном фоне и слой светодиодов
  * фар того же размера. Готовит scripts/hero-car/cutout.py — он же печатает это поле.
@@ -81,10 +95,15 @@ export type HeroCar = {
   /** Пути от public/: «/hero/m3/car.webp». */
   src: string;
   lights: string;
+  /** Карта объёма: глубина и её наклоны, три серые панели в кадр машины. Без неё
+   *  машина статичная. */
+  depth?: string;
   width: number;
   height: number;
   /** Левая и правая фары: по ним встаёт и растягивается ореол. */
   headlights: readonly [Headlight, Headlight];
+  /** Неон под машиной, нарисованный кодом. Без него — неон пола на CSS. */
+  underglow?: Underglow;
 };
 
 /** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */

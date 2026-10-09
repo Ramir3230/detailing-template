@@ -1,4 +1,5 @@
-"""Машина hero: вырезка на прозрачном фоне и отдельный слой светодиодов фар.
+"""Машина hero: вырезка на прозрачном фоне, отдельный слой светодиодов фар и карта
+глубины для объёма.
 
 Всё, что относится к конкретному кадру, лежит в JSON рядом со скриптом, а не в коде:
 новая машина — новый JSON. Файлы ложатся в `public/hero/<имя JSON>/`, поэтому вырезка
@@ -6,7 +7,7 @@
 поле `hero.car` для файла данных студии: пути, размеры и центры фар.
 
     python scripts/hero-car/cutout.py scripts/hero-car/m3.json --source "<исходник>"
-        [--out public/hero/m3] [--preview DIR]
+        [--out public/hero/m3] [--preview DIR] [--depth-model da3|v2] [--da3-python PATH]
 
 Поля JSON (координаты — пиксели исходника):
     sourceSize   ожидаемый размер исходника: координаты ниже сняты с него;
@@ -19,23 +20,44 @@
                  Внутри зоны в слой идут только крупные пятна светодиодов: мелкие
                  блики корпуса и капота отбрасываются;
     lightLevels  яркость, с которой пиксель начинает и заканчивает становиться
-                 светодиодом.
+                 светодиодом;
+    underglow    неон под машиной, нарисованный кодом (необязательно), в процентах
+                 ширины результата: tube — концы трубки под передней губой, wheels —
+                 передние колёса (центр x и ширина w). Скрипт проверяет и печатает его
+                 как есть: перевырезка не теряет подсветку.
 
 Маску даёт BiRefNet (rembg, модель birefnet-general, ~1 ГБ, скачивается один раз).
 На один кадр хватает процессора — около минуты.
+
+Глубину даёт Depth Anything 3 Mono Large (Apache 2.0): даёт глубину, а не обратную ей
+величину, — стекло наклонено к зрителю, губа бампера ближе всего, как у настоящей
+машины (выбор владельца 09.10.2026). Она живёт в своём окружении на видеокарте, см.
+depth_da3.py. Без него — --depth-model v2: Depth Anything V2 Small (ONNX, ~100 МБ,
+скачивается сама в ~/.cache/depth-anything, Apache 2.0) на процессоре; крыша у неё
+уходит не в ту сторону. V2 Base и Large, DA3 Large и Giant — CC BY-NC, для сайтов
+клиентов не годятся. Модель видит кадр целиком, с полом и стеной: так она вернее понимает, где
+перед машины. Карта режется по тем же границам, что и машина.
 """
 
 import argparse
+import hashlib
 import json
+import os
+import subprocess
+import sys
+import tempfile
+import urllib.request
 from pathlib import Path
 
 import numpy as np
+import onnxruntime as ort
 from PIL import Image, ImageOps
 from pymatting import estimate_foreground_ml
 from rembg import new_session, remove
 from scipy import ndimage
 
-ROOT = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
 PUBLIC = ROOT / "public"
 ALPHA_MIN = 16  # прозрачность ниже этой — фон, когда ищем границы машины
 LUMA = np.array([0.2126, 0.7152, 0.0722])
@@ -44,6 +66,35 @@ LUMA = np.array([0.2126, 0.7152, 0.0722])
 LED_MIN_SHARE = 0.1
 # Мягкий край вокруг светодиода, px результата: без него кольца обрезаны по порогу
 LED_EDGE = 3
+
+# Ревизия закреплена и сверяется по хэшу: обновление модели на Hugging Face иначе молча
+# поменяло бы карту при следующем прогоне
+DEPTH_URL = (
+    "https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/"
+    "4472b7362082ad9968fee890ca0f1e5aca36b93d/onnx/model.onnx"
+)
+DEPTH_SHA256 = "afb6a5c28f3b6bf1618c6e43f02073ef9dfdc70e937502d51603e57b0a1df10c"
+DEPTH_MODEL = Path.home() / ".cache" / "depth-anything" / "dav2-small.onnx"
+# Ширина входа модели, кратна 14. Обучена на 518, но на 1022 решётка и фары отделяются
+# от бампера, а форма кузова та же. Процессору — секунды
+DEPTH_INPUT = 1022
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406])
+IMAGENET_STD = np.array([0.229, 0.224, 0.225])
+# Ширина карты: глубина гладкая, полный размер машины ей не нужен
+DEPTH_WIDTH = 800
+# Разглаживание перед наклонами, px карты: без него свет ложится на кузов ступеньками
+DEPTH_BLUR = 2.5
+# Наклон в карте — от −DEPTH_SLOPE до DEPTH_SLOPE глубины на ширину или высоту кадра
+DEPTH_SLOPE = 8.0
+# Полоса за силуэтом, px карты, где глубина продолжает кузов: шире ячейки сетки, которой
+# страница поворачивает машину. Дальше карта ровная — так файл легче
+DEPTH_EDGE = 8
+DEPTH_FAR_BLUR = 12
+# Python окружения Depth Anything 3: из переменной DA3_PYTHON или из места по умолчанию
+DA3_PYTHON = Path(
+    os.environ.get("DA3_PYTHON")
+    or Path.home() / ".cache" / "da3" / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+)
 
 
 def car_alpha(crop: Image.Image, levels: tuple[int, int]) -> np.ndarray:
@@ -116,6 +167,69 @@ def extract_lights(car: Image.Image, zones, levels) -> tuple[Image.Image, list[d
     return Image.fromarray(out.round().astype(np.uint8), "RGBA"), centres
 
 
+def depth_v2(crop: Image.Image) -> np.ndarray:
+    """Относительная близость в размере crop от Depth Anything V2: больше — ближе."""
+    if not DEPTH_MODEL.exists():
+        # В stderr: stdout — поле для файла данных студии
+        print(f"скачиваю модель глубины в {DEPTH_MODEL}…", file=sys.stderr)
+        DEPTH_MODEL.parent.mkdir(parents=True, exist_ok=True)
+        part = DEPTH_MODEL.with_suffix(".part")
+        urllib.request.urlretrieve(DEPTH_URL, part)
+        if hashlib.sha256(part.read_bytes()).hexdigest() != DEPTH_SHA256:
+            part.unlink()
+            raise SystemExit("модель глубины скачалась не та: хэш не сходится с DEPTH_SHA256")
+        part.replace(DEPTH_MODEL)
+    session = ort.InferenceSession(str(DEPTH_MODEL), providers=["CPUExecutionProvider"])
+    height = round(DEPTH_INPUT * crop.height / crop.width / 14) * 14
+    rgb = np.asarray(crop.resize((DEPTH_INPUT, height), Image.BICUBIC), dtype=np.float32) / 255
+    pixels = ((rgb - IMAGENET_MEAN) / IMAGENET_STD).transpose(2, 0, 1)[None].astype(np.float32)
+    depth = session.run(None, {session.get_inputs()[0].name: pixels})[0][0]
+    return np.asarray(Image.fromarray(depth.astype(np.float32), "F").resize(crop.size, Image.BICUBIC))
+
+
+def depth_da3(crop: Image.Image, python: Path) -> np.ndarray:
+    """То же от Depth Anything 3 — отдельным процессом в её окружении. Она даёт
+    расстояние, поэтому знак меняется: больше — ближе, как у V2. Линейно по расстоянию,
+    без обратной величины: так и задумано."""
+    if not python.exists():
+        raise SystemExit(f"нет окружения Depth Anything 3: {python} (см. depth_da3.py)")
+    with tempfile.TemporaryDirectory() as folder:
+        image, result = Path(folder) / "crop.png", Path(folder) / "depth.npy"
+        crop.save(image)
+        # Журнал модели — в stderr: stdout — поле для файла данных студии
+        subprocess.run(
+            [str(python), str(HERE / "depth_da3.py"), str(image), str(result)],
+            check=True,
+            stdout=sys.stderr,
+        )
+        return -np.load(result)
+
+
+def depth_map(depth: np.ndarray, alpha: np.ndarray) -> Image.Image:
+    """Карта объёма для страницы: три серые панели одна под другой, каждая — кадр машины.
+    Сверху глубина кузова (светлее — ближе к зрителю), под ней наклоны глубины по ширине
+    и по высоте кадра (серый 128 — ровно): по ним страница кладёт свет на кузов. Серая, а
+    не цветная, потому что сжатие с потерями смешало бы цветовые каналы.
+    За силуэтом глубина продолжает ближайший край кузова: иначе при повороте кромка
+    машины рвалась бы о далёкую стену."""
+    inside = alpha > 0.5
+    lo, hi = np.percentile(depth[inside], [1, 99.5])
+    flat = np.clip((depth - lo) / (hi - lo), 0, 1)
+    rows, cols = ndimage.distance_transform_edt(~inside, return_indices=True)[1]
+    smooth = ndimage.gaussian_filter(flat[rows, cols], DEPTH_BLUR)
+    height, width = smooth.shape
+    slope_v, slope_u = np.gradient(smooth)
+    edge = ndimage.binary_dilation(alpha > ALPHA_MIN / 255, iterations=DEPTH_EDGE)
+    panels = [
+        np.where(edge, smooth, ndimage.gaussian_filter(smooth, DEPTH_FAR_BLUR)) * 255,
+        *(
+            np.where(edge, np.clip(128 + s / DEPTH_SLOPE * 127, 0, 255), 128)
+            for s in (slope_u * width, slope_v * height)
+        ),
+    ]
+    return Image.fromarray(np.vstack(panels).round().astype(np.uint8), "L")
+
+
 def preview(car: Image.Image, lights: Image.Image, path: Path) -> None:
     """Машина на фоне темы с горящими фарами — для проверки кромки глазами."""
     bg = Image.new("RGBA", car.size, (5, 5, 7, 255))
@@ -125,6 +239,19 @@ def preview(car: Image.Image, lights: Image.Image, path: Path) -> None:
     a = glow[..., 3:] / 255
     screen = 255 - (255 - base) * (255 - glow[..., :3] * a) / 255
     Image.fromarray(screen.round().astype(np.uint8), "RGB").save(path)
+
+
+def check_underglow(underglow: dict | None) -> dict | None:
+    """Подсветка из JSON кадра: проценты внутри кадра, левое левее правого."""
+    if underglow is None:
+        return None
+    tube, wheels = underglow["tube"], underglow["wheels"]
+    values = [*tube, *(v for wheel in wheels for v in (wheel["x"], wheel["w"]))]
+    if len(tube) != 2 or len(wheels) != 2 or not all(0 < v < 100 for v in values):
+        raise SystemExit("underglow: две точки трубки и два колеса, всё в процентах кадра 0–100")
+    if tube[0] >= tube[1] or wheels[0]["x"] >= wheels[1]["x"]:
+        raise SystemExit("underglow: левый конец трубки и левое колесо — первыми")
+    return {"tube": tube, "wheels": wheels}
 
 
 def inside(box, width: int, height: int) -> bool:
@@ -138,6 +265,8 @@ def main() -> None:
     parser.add_argument("--source", type=Path, required=True, help="исходник машины")
     parser.add_argument("--out", type=Path, help="папка внутри public/; по умолчанию public/hero/<имя JSON>")
     parser.add_argument("--preview", type=Path, help="папка для превью на тёмном фоне")
+    parser.add_argument("--depth-model", choices=["da3", "v2"], default="da3", help="модель глубины")
+    parser.add_argument("--da3-python", type=Path, default=DA3_PYTHON, help="python окружения DA3")
     args = parser.parse_args()
 
     out = (args.out or PUBLIC / "hero" / args.frame.stem).resolve()
@@ -155,6 +284,8 @@ def main() -> None:
     car, (bx, by) = cut_car(crop, car_alpha(crop, tuple(frame["maskLevels"])))
     if car.width < frame["outWidth"]:
         raise SystemExit(f"машина в исходнике {car.width} px, уже outWidth {frame['outWidth']}: исходник мал")
+    near = depth_da3(crop, args.da3_python) if args.depth_model == "da3" else depth_v2(crop)
+    depth = near[by : by + car.height, bx : bx + car.width]
     full_width = car.width
     car = resize(car, frame["outWidth"])
 
@@ -169,10 +300,18 @@ def main() -> None:
         if not inside(zone, car.width, car.height):
             raise SystemExit(f"зона фары {source_zone} вне машины")
     lights, centres = extract_lights(car, zones, frame["lightLevels"])
+    underglow = check_underglow(frame.get("underglow"))
+
+    # Карта глубины — того же кадра, что машина, в меньшем размере
+    size = (DEPTH_WIDTH, round(car.height * DEPTH_WIDTH / car.width))
+    depth = np.asarray(Image.fromarray(depth, "F").resize(size, Image.BICUBIC))
+    alpha = np.asarray(car.getchannel("A").resize(size, Image.BILINEAR), dtype=np.float64) / 255
+    relief = depth_map(depth, alpha)
 
     out.mkdir(parents=True, exist_ok=True)
     car.save(out / "car.webp", "WEBP", quality=90, method=6)
     lights.save(out / "car-lights.webp", "WEBP", lossless=True, method=6)
+    relief.save(out / "car-depth.webp", "WEBP", quality=90, method=6)
     if args.preview:
         args.preview.mkdir(parents=True, exist_ok=True)
         preview(car, lights, args.preview / "car-preview.png")
@@ -181,9 +320,11 @@ def main() -> None:
     print(json.dumps({
         "src": f"{url}/car.webp",
         "lights": f"{url}/car-lights.webp",
+        "depth": f"{url}/car-depth.webp",
         "width": car.width,
         "height": car.height,
         "headlights": centres,
+        **({"underglow": underglow} if underglow else {}),
     }, indent=2))
 
 

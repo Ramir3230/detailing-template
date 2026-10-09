@@ -50,12 +50,21 @@ export const afterdark: Studio = {
     car: {
       src: "/hero/m3/car.webp",
       lights: "/hero/m3/car-lights.webp",
+      depth: "/hero/m3/car-depth.webp",
       width: 2000,
       height: 1501,
       headlights: [
         { x: 16.4, y: 55.7, w: 16.4 },
         { x: 83.7, y: 55.3, w: 16.2 },
       ],
+      /* Трубка — по ширине передней губы; колёса почти спрятаны за расширенными крыльями */
+      underglow: {
+        tube: [15, 85],
+        wheels: [
+          { x: 7, w: 9 },
+          { x: 93, w: 9 },
+        ],
+      },
     },
   },
   carClasses: {
