@@ -246,6 +246,11 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
     for (const file of [map.wide, map.narrow]) expect(visible).toContain(`url(${file.src})`);
     expect(visible).toContain('href="https://www.openstreetmap.org/copyright"');
     expect(visible).toContain('href="https://openmaptiles.org/"');
+    // Карта нажимается ровно тогда, когда есть маршрут, — и ведёт на него
+    const link = visible.match(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*?role="img"/)?.[0];
+    const { routeUrl } = studio.address;
+    if (routeUrl) expect(link, "карта не ведёт на маршрут").toContain(`href="${escaped(routeUrl)}"`);
+    else expect(link, "карта — ссылка без маршрута в данных").toBeUndefined();
   });
 
   it("has the contact call the floating call hides at", () => {
@@ -253,8 +258,14 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
     expect(call, "нет кнопки звонка блока контактов").toBeDefined();
   });
 
-  it("loads the entrance photo lazily", () =>
-    expectLazyPhotos(route, studio.address.photo ? [studio.address.photo.src] : []));
+  it("loads the entrance photo right away: on a phone it is on the first screen", () => {
+    const { photo } = studio.address;
+    if (!photo) return;
+    const file = encodeURIComponent(photo.src);
+    const images = tags(page(route).html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
+    expect(images, "нет <img> фото входа").toHaveLength(1);
+    expect(images[0]).not.toContain('loading="lazy"');
+  });
 
   it("leaves the hero car to the home page", () => {
     const { html } = page(route);

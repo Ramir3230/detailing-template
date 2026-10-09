@@ -49,7 +49,7 @@ export default async function ContactPage({ params }: PageProps<"/[lang]/kontakt
         )}
       </section>
       <div className="pt-12 pb-14 lg:pt-16 lg:pb-24">
-        <ContactDetails lang={lang} dict={dict} />
+        <ContactDetails lang={lang} dict={dict} photoLoading="eager" />
       </div>
       <FloatingCall
         href={telHref(studio.phone)}
