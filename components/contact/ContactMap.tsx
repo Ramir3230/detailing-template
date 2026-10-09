@@ -60,6 +60,7 @@ export function ContactMap({ map, label, routeUrl, dict, className }: Props) {
       ) : (
         picture
       )}
+      {/* Поле нажатия ссылок (46 px) заходит на карту: relative ставит их поверх неё */}
       <figcaption className="mt-2 text-12 leading-body text-muted">
         {dict.contactPage.mapData}:{" "}
         {credits.map(({ name, href }, i) => (
@@ -69,7 +70,7 @@ export function ContactMap({ map, label, routeUrl, dict, className }: Props) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="-my-3.5 inline-block py-3.5 underline underline-offset-2 transition-colors hover:text-fg"
+              className="relative -my-3.5 inline-block py-3.5 underline underline-offset-2 transition-colors hover:text-fg"
             >
               {name}
               <span className="sr-only"> ({dict.newTab})</span>

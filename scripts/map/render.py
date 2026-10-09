@@ -101,7 +101,9 @@ STYLE = {
     ],
 }
 
-PAGE = """<!doctype html><html><head><script src="{maplibre}"></script>
+PAGE = """<!doctype html><html><head>
+<script>window.onerror = (m) => {{ window.failed = String(m); }};</script>
+<script src="{maplibre}" onerror="window.failed = 'MapLibre не загрузился с unpkg'"></script>
 <style>html,body{{margin:0;background:#000}}#m{{width:{w}px;height:{h}px}}</style>
 </head><body><div id="m"></div><script>
 const map = new maplibregl.Map({{
@@ -172,6 +174,10 @@ def main() -> None:
     parser.add_argument("--preview", type=Path, help="папка для превью на тёмном фоне")
     args = parser.parse_args()
 
+    out = args.out.resolve()
+    if not out.is_relative_to(ROOT / "public"):
+        raise SystemExit("--out — папка внутри public/: из неё строится адрес файла")
+
     params = json.loads(args.params.read_text(encoding="utf-8"))
     center, zoom = params["center"], params["zoom"]
     if not (len(center) == 2 and -90 <= center[0] <= 90 and -180 <= center[1] <= 180):
@@ -182,7 +188,6 @@ def main() -> None:
     left, top = (level.width - w) // 2, (level.height - h) // 2
     narrow = level.crop((left, top, left + w, top + h))
 
-    out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     stem = args.params.stem
     files = {"wide": save(level, out / f"{stem}.webp"),

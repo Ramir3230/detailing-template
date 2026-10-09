@@ -19,6 +19,11 @@ type Props = {
   dict: Dictionary;
   /** Заголовок со статусом внутри блока — на главной; на странице Kontakt они над картой. */
   heading?: ReactNode;
+  /**
+   * На главной фото входа далеко внизу и грузится лениво; на странице Kontakt оно на
+   * первом экране телефона — самый крупный кадр, ждать прокрутки ему незачем.
+   */
+  photoLoading?: "lazy" | "eager";
 };
 
 /*
@@ -27,7 +32,7 @@ type Props = {
  * по центру его высоты. Без фото две колонки: слева заголовок и адрес, справа часы,
  * звонок и мессенджеры.
  */
-export function ContactDetails({ lang, dict, heading }: Props) {
+export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: Props) {
   const { address } = studio;
   const rows = groupHours(studio.hours).map(({ from, to, hours }) => ({
     from,
@@ -76,6 +81,7 @@ export function ContactDetails({ lang, dict, heading }: Props) {
         photo={address.photo}
         lang={lang}
         caption={dict.contact.photoExample}
+        loading={photoLoading}
         className={`${after} lg:col-start-1 lg:row-span-full lg:mt-0 lg:self-center`}
       />
       <div className={`mt-4 lg:col-start-2 lg:row-start-3 ${heading ? "lg:mt-7" : "lg:mt-0"}`}>
@@ -114,11 +120,13 @@ function EntrancePhoto({
   photo,
   lang,
   caption,
+  loading,
   className,
 }: {
   photo: Photo;
   lang: Lang;
   caption: string;
+  loading: "lazy" | "eager";
   className: string;
 }) {
   return (
@@ -129,6 +137,7 @@ function EntrancePhoto({
         height={photo.height}
         alt={t(photo.alt, lang)}
         sizes={frameSizes}
+        loading={loading}
         className="aspect-[4/5] w-full rounded-card bg-surface object-cover lg:rounded-card-lg"
       />
       {photo.ai && <figcaption className="mt-2 text-12 leading-body text-muted">{caption}</figcaption>}
