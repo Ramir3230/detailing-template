@@ -129,6 +129,36 @@ export function PhoneIcon(props: IconProps) {
   );
 }
 
+/** Длительность услуги. */
+export function ClockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </Icon>
+  );
+}
+
+/** Пункт «W zakresie». Своя сетка 16 и линия толще: при 16 px галочка читается, как на холсте. */
+export function CheckIcon({ size = 16 }: IconProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+    >
+      <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+    </svg>
+  );
+}
+
 function TelegramIcon(props: IconProps) {
   return (
     <Icon {...props}>

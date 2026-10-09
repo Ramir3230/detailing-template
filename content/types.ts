@@ -61,10 +61,13 @@ export type Service = {
 export type Faq = { question: Text; answer: Text };
 
 export type ServiceGroup = {
-  /** Часть адреса будущей страницы группы. */
+  /** Адрес страницы группы (`/uslugi/<slug>`) и её якорь в прайсе главной. */
   slug: string;
   name: Text;
+  /** Вводный абзац страницы группы. Есть он — у группы есть страница. */
   intro?: Text;
+  /** Строка под «Nie wiesz, którą wybrać?» на странице группы: «Zadzwoń — doradzimy…». */
+  advice?: Text;
   services: Service[];
   faq?: Faq[];
 };

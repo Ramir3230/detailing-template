@@ -48,6 +48,7 @@
   --text-28: 28px;
   --text-30: 30px;
   --text-40: 40px;
+  --text-44: 44px;
   --text-64: 64px;
   --text-72: 72px;
   --text-hero: clamp(32px, 3.6vw, 52px);
