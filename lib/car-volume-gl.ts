@@ -162,6 +162,9 @@ const float SLOPE = 8.0;
 // Сдвиг мип-уровня к резкости: браузер уменьшает картинку чётче, чем смесь мип-уровней,
 // и без сдвига машина при подмене заметно смягчалась
 const float SHARPEN = -0.75;
+// Отсвет неона на низе кузова: высота, на которой он слабеет в e раз, и сила
+const float RIM_HEIGHT = 0.04;
+const float RIM = 0.9;
 
 float slope(float panel) {
   vec2 uv = vec2(vUv.x, (clamp(vUv.y, uPanel, 1.0 - uPanel) + panel) / 3.0);
@@ -211,6 +214,9 @@ void main() {
     // Светлая краска отражает больше тёмного стекла и шин
     float albedo = dot(color.rgb / color.a, vec3(0.2126, 0.7152, 0.0722));
     color = screen(color, vec4(uAccent * (uLight * lit * (0.4 + 0.6 * albedo) * color.a), 0.0));
+    // Низ кузова у самого пола освещён снизу: губа, воздухозаборники, края колёс
+    float rim = exp(-max(vHeight, 0.0) / RIM_HEIGHT);
+    color = screen(color, vec4(uAccent * (uLight * RIM * rim * (0.5 + 0.5 * albedo) * color.a), 0.0));
   }
 
   // Ореол светодиодов, как .lights-bloom: размытие, затем яркость 1,5
@@ -277,6 +283,8 @@ const float PI = 3.14159265;
 const int SHADOW_SAMPLES = 8;
 // Щель под передней губой, в высотах кадра (~5 см)
 const float GAP = 0.035;
+// Как глубоко под машину виден освещённый пол — через щель под бампером
+const float UNDER_DEPTH = 0.55;
 // Свет из-под машины: высота над полом, ширина в долях кузова, сила
 const vec3 BOUNCE[3] = vec3[3](vec3(0.035, 0.9, 0.8), vec3(0.14, 1.0, 0.5), vec3(0.34, 1.12, 0.3));
 // Пол тёмный, как бетон или эпоксидка
@@ -419,9 +427,9 @@ void main() {
       diffuse += lineDiffuse(p, sill0, sill1) * seen;
       glint += lineGlint(p, view, sill0, sill1, alpha, 0.05) * seen;
     }
-    // Пол под машиной не виден: сквозь растворённый низ кузова светился бы пол за губой.
-    // Свет — только впереди губы и сбоку от кузова
-    float under = (1.0 - smoothstep(uBody.y - 0.25, uBody.y + 0.02, p.z))
+    // Под машиной пол виден только в щели под бампером — сквозь растворённый срез кадра.
+    // Там и самое яркое: трубка прямо над ним. Глубже под машину взгляд не достаёт
+    float under = (1.0 - smoothstep(uBody.y - UNDER_DEPTH - 0.3, uBody.y - UNDER_DEPTH, p.z))
       * (1.0 - smoothstep(uBody.x - 0.05, uBody.x, abs(p.x)));
     diffuse *= 1.0 - under;
     glint *= 1.0 - under;
