@@ -72,6 +72,12 @@ export const pl: Dictionary = {
     examples: "Zdjęcia przykładowe",
   },
   contact: { title: "Kontakt", route: "Trasa", photoExample: "Zdjęcie przykładowe" },
+  contactPage: {
+    metaTitle: "Kontakt — {studio}",
+    metaDescription: "{studio}: adres, godziny otwarcia i telefon. {address}.",
+    map: "Mapa dojazdu: {address}",
+    mapData: "Mapa",
+  },
   group: {
     metaTitle: "{group} — {studio}",
     breadcrumbs: "Ścieżka",

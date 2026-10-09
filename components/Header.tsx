@@ -30,7 +30,7 @@ export function Header({ lang, dict }: Props) {
   return (
     <HeaderReveal>
       {/* Справа поле 12 px, а не 24: у круглой кнопки меню своё поле внутри */}
-      <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-header lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-tablet items-center justify-between gap-10 pr-3 pl-6 lg:h-auto lg:min-h-header lg:max-w-page lg:px-8">
         <Link href={localePath(lang, "/")} className="flex min-h-11 items-center text-17 lg:text-20">
           <Logo />
         </Link>
@@ -89,13 +89,14 @@ export function Header({ lang, dict }: Props) {
             })}
             <p className="caps-label mt-6 mb-1">{dict.menu.studio}</p>
             {studioPages.map(({ key, path }) => (
-              <Link
+              <NavLink
                 key={key}
                 href={localePath(lang, path)}
+                currentOn={path}
                 className="flex min-h-12 items-center border-t border-line text-20 font-medium"
               >
                 {dict.nav[key]}
-              </Link>
+              </NavLink>
             ))}
           </nav>
 

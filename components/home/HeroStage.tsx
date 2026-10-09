@@ -9,10 +9,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import type { VolumeState } from "@/components/home/CarVolume";
 import type { HeroCar as HeroCarData } from "@/content/types";
+import { heroCarSizes } from "@/lib/frame";
 
 /* Код WebGL — отдельным куском и только у машины с картой объёма. Грузится после
    гидрации: фото машины и зажигание его не ждут */
@@ -113,9 +115,6 @@ export function HeroStage({ id, className, children }: StageProps) {
   );
 }
 
-/* Машина на телефоне — 92% ширины экрана, на десктопе — до 780 px (--container-hero-car) */
-const sizes = "(min-width: 1024px) 780px, 92vw";
-
 const layer = "pointer-events-none absolute mix-blend-screen";
 
 /*
@@ -140,7 +139,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
       data-volume={shown.car ? "" : undefined}
       data-neon={shown.neon ? "" : undefined}
       className={`relative ${className}`}
-      style={{ aspectRatio: `${width} / ${height}` }}
+      style={{ aspectRatio: `${width} / ${height}`, "--car-aspect": width / height } as CSSProperties}
     >
       {/* Неон на CSS прячется, а не убирается: по его вспышке зажигается неон холста */}
       <div
@@ -165,7 +164,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         src={src}
         width={width}
         height={height}
-        sizes={sizes}
+        sizes={heroCarSizes}
         alt=""
         preload
         onLoad={ready.car}
@@ -176,7 +175,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         src={lights}
         width={width}
         height={height}
-        sizes={sizes}
+        sizes={heroCarSizes}
         alt=""
         loading="eager"
         className={`${layer} lights-bloom ignite-bloom inset-0 size-full in-data-volume:invisible`}
@@ -186,7 +185,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         src={lights}
         width={width}
         height={height}
-        sizes={sizes}
+        sizes={heroCarSizes}
         alt=""
         loading="eager"
         onLoad={ready.lights}

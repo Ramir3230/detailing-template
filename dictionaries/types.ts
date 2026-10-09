@@ -88,6 +88,16 @@ export type Dictionary = {
   };
   /** photoExample — подпись под фото входа, сделанным ИИ. */
   contact: { title: string; route: string; photoExample: string };
+  contactPage: {
+    /** Подставляется {studio}: заголовок вкладки страницы Kontakt. */
+    metaTitle: string;
+    /** Подставляются {studio} и {address}: описание страницы для поиска. */
+    metaDescription: string;
+    /** Подставляется {address}: карта для диктора. */
+    map: string;
+    /** Перед источниками под картой. */
+    mapData: string;
+  };
   group: {
     /** Подставляются {group} и {studio}: заголовок вкладки страницы группы. */
     metaTitle: string;

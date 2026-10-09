@@ -1,5 +1,4 @@
 import { cacheLife } from "next/cache";
-import Link from "next/link";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Logo } from "@/components/Logo";
 import { NavLink } from "@/components/NavLink";
@@ -57,9 +56,14 @@ export async function Footer({ lang, dict }: Props) {
           <nav aria-label={dict.footer.studio}>
             <p className="caps-label mb-1">{dict.footer.studio}</p>
             {studioPages.map(({ key, path }) => (
-              <Link key={key} href={localePath(lang, path)} className={linkClass}>
+              <NavLink
+                key={key}
+                href={localePath(lang, path)}
+                currentOn={path}
+                className={`${linkClass} data-current:text-accent`}
+              >
                 {dict.nav[key]}
-              </Link>
+              </NavLink>
             ))}
           </nav>
 
