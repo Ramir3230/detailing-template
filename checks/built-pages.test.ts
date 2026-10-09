@@ -2,11 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
+import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
 import { glue, priceParts } from "@/lib/format";
 import { langs, t, type Lang } from "@/lib/i18n";
-import { groupPagePath, hasGroupPage, sectionIds } from "@/lib/nav";
+import { groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
@@ -50,6 +51,25 @@ function expectSearchRule(route: string, lang: Lang) {
   if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
   else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
 }
+
+/* Кадры до/после у этих услуг */
+const pairPhotos = (services: readonly Service[]) =>
+  services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter.before.src, beforeAfter.after.src] : []));
+
+/* Каждый кадр — одной картинкой, лениво и без preload: не спорит с тем, что наверху */
+function expectLazyPhotos(route: string, srcs: readonly string[]) {
+  const { html } = page(route);
+  for (const file of srcs.map((src) => encodeURIComponent(src))) {
+    const images = tags(html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
+    expect(images, `нет <img> кадра ${decodeURIComponent(file)}`).toHaveLength(1);
+    expect(images[0]).toContain('loading="lazy"');
+    const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => tag.includes(file));
+    expect(preloads, `кадр ${decodeURIComponent(file)} в preload`).toEqual([]);
+  }
+}
+
+/* Разметка без скриптов: в данных для гидрации те же тексты лежат пропсами */
+const markup = (route: string) => page(route).html.replace(/<script\b[\s\S]*?<\/script>/g, "");
 
 describe.each(langs)("built home page /%s", (lang) => {
   it("is prerendered: `npm run build` has run", () => expectPrerendered(lang));
@@ -101,19 +121,8 @@ describe.each(langs)("built home page /%s", (lang) => {
   });
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
-    const { html } = page(lang);
-    const files = studio.services
-      .flatMap((group) => group.services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter] : [])))
-      .flatMap(({ before, after }) => [before.src, after.src])
-      .concat(studio.address.photo ? [studio.address.photo.src] : [])
-      .map((src) => encodeURIComponent(src));
-    for (const file of files) {
-      const images = tags(html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
-      expect(images, `нет <img> кадра ${decodeURIComponent(file)}`).toHaveLength(1);
-      expect(images[0]).toContain('loading="lazy"');
-      const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => tag.includes(file));
-      expect(preloads, `кадр ${decodeURIComponent(file)} в preload`).toEqual([]);
-    }
+    const services = studio.services.flatMap((group) => group.services);
+    expectLazyPhotos(lang, [...pairPhotos(services), ...(studio.address.photo ? [studio.address.photo.src] : [])]);
   });
 
   it("has one main heading", () => {
@@ -158,9 +167,8 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
   });
 
   it("serves every service of the group with its scope and the default class price", () => {
-    // Сервер рисует класс по умолчанию: без JS и до гидрации цена уже на месте. Ищем в
-    // разметке без скриптов: в данных для гидрации те же тексты и цены лежат пропсами
-    const visible = page(route).html.replace(/<script\b[\s\S]*?<\/script>/g, "");
+    // Сервер рисует класс по умолчанию: без JS и до гидрации цена уже на месте
+    const visible = markup(route);
     const dict = getDictionary(lang);
     for (const service of group.services) {
       expect(visible).toContain(escaped(glue(t(service.name, lang), lang)));
@@ -168,6 +176,26 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
       const parts = priceParts(service.price, defaultCarClass, dict.price);
       expect(visible).toContain(escaped(parts.kind === "amount" ? parts.amount : parts.text));
     }
+  });
+
+  it("loads the group's before/after photos lazily", () => expectLazyPhotos(route, pairPhotos(group.services)));
+
+  it("serves the questions with their answers in the markup, the first one open", () => {
+    const sections = tags(markup(route), /<section\b[\s\S]*?<\/section>/g);
+    const faq = sections.find((section) => section.includes(`id="${groupSectionIds.faq}"`));
+    expect(faq, "нет секции частых вопросов").toBeDefined();
+    for (const { question, answer } of group.faq ?? []) {
+      expect(faq).toContain(escaped(glue(t(question, lang), lang)));
+      expect(faq).toContain(escaped(glue(t(answer, lang), lang)));
+    }
+    const details = tags(faq ?? "", /<details\b[^>]*>/g);
+    expect(details).toHaveLength(group.faq?.length ?? 0);
+    expect(details.map((tag) => /\sopen[\s=>]/.test(tag))).toEqual(details.map((_, i) => i === 0));
+  });
+
+  it("has the advice card call the floating call hides at", () => {
+    const call = tags(page(route).html, /<a\b[^>]*>/g).find((tag) => tag.includes(`id="${groupSectionIds.adviceCall}"`));
+    expect(call, "нет кнопки звонка карточки «Nie wiesz…»").toContain('href="tel:');
   });
 
   it("leaves the hero car to the home page", () => {

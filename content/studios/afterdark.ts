@@ -156,6 +156,7 @@ export const afterdark: Studio = {
       intro: {
         pl: "Korekta usuwa rysy i hologramy, ceramika utrwala efekt. Cena zależy od klasy auta i liczby etapów.",
       },
+      advice: { pl: "Zadzwoń — doradzimy, gdy zobaczymy lakier." },
       services: [
         {
           name: { pl: "Jednoetapowa korekta lakieru" },

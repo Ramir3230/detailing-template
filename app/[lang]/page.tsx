@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { BeforeAfter } from "@/components/home/BeforeAfter";
 import { Contact } from "@/components/home/Contact";
-import { FloatingCall } from "@/components/home/FloatingCall";
+import { FloatingCall } from "@/components/FloatingCall";
 import { Hero } from "@/components/home/Hero";
 import { Prices } from "@/components/home/Prices";
 import { Reviews } from "@/components/home/Reviews";
@@ -10,6 +10,7 @@ import { getDictionary } from "@/dictionaries";
 import { telHref } from "@/lib/contact";
 import { formatPhone } from "@/lib/format";
 import { isLang } from "@/lib/i18n";
+import { sectionIds } from "@/lib/nav";
 
 /* Главная: hero, прайс, до/после, отзывы, контакты и плавающий звонок между hero и контактами. */
 export default async function Home({ params }: PageProps<"/[lang]">) {
@@ -28,6 +29,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         href={telHref(studio.phone)}
         label={dict.call.label}
         phone={formatPhone(studio.phone)}
+        afterHero
+        hideAt={sectionIds.contactCall}
       />
     </main>
   );

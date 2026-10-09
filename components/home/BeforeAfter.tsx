@@ -1,10 +1,10 @@
-import { ComparePairs, type ComparePair, type ComparePhoto } from "@/components/home/ComparePairs";
+import { ComparePairs } from "@/components/ComparePairs";
 import { SectionTitle } from "@/components/home/SectionTitle";
 import { studio } from "@/content/studio";
-import type { Photo } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
-import { glue, startingPriceParts } from "@/lib/format";
-import { fill, t, type Lang } from "@/lib/i18n";
+import { comparePairs, compareWords } from "@/lib/compare";
+import { glue } from "@/lib/format";
+import type { Lang } from "@/lib/i18n";
 
 /*
  * До/после сразу после цен (BRIEF.md): сначала «сколько», потом «а вдруг плохо». Пары
@@ -12,30 +12,10 @@ import { fill, t, type Lang } from "@/lib/i18n";
  */
 export function BeforeAfter({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   const words = dict.beforeAfter;
-  const photo = ({ src, width, height, alt }: Photo): ComparePhoto => ({
-    src,
-    width,
-    height,
-    alt: t(alt, lang),
-  });
-  const pairs: ComparePair[] = studio.services.flatMap((group) =>
-    group.services.flatMap((service) => {
-      const { beforeAfter } = service;
-      if (!beforeAfter) return [];
-      const name = t(service.name, lang);
-      return [
-        {
-          label: t(beforeAfter.label, lang),
-          service: glue(name, lang),
-          brand: service.brand,
-          price: startingPriceParts(service.price, dict.price),
-          compare: fill(words.compare, { service: name }),
-          examples: beforeAfter.before.ai || beforeAfter.after.ai,
-          before: photo(beforeAfter.before),
-          after: photo(beforeAfter.after),
-        },
-      ];
-    }),
+  const pairs = comparePairs(
+    studio.services.flatMap((group) => group.services),
+    lang,
+    dict,
   );
   if (!pairs.length) return null;
 
@@ -51,12 +31,7 @@ export function BeforeAfter({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             </>
           }
           pairs={pairs}
-          words={{
-            before: words.before,
-            after: words.after,
-            pairs: words.pairs,
-            examples: words.examples,
-          }}
+          words={compareWords(dict)}
         />
       </div>
     </section>

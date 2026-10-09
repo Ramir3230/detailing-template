@@ -97,6 +97,10 @@ export type Dictionary = {
     whatsIncluded: string;
     /** Метка над составом услуги в карточке. */
     scope: string;
+    /** Заголовок частых вопросов. */
+    faq: string;
+    /** Карточка со звонком в конце страницы группы. */
+    adviceTitle: string;
   };
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
   newTab: string;
