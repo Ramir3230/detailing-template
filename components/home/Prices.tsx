@@ -37,6 +37,7 @@ export function Prices({ lang, dict }: { lang: Lang; dict: Dictionary }) {
           classLabel: dict.prices.classLabel,
           individualQuote: dict.prices.individualQuote,
           call: dict.call.label,
+          whatsIncluded: dict.group.whatsIncluded,
         }}
         telHref={telHref(studio.phone)}
       />

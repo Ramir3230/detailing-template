@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { ClassSwitch, useCarClass } from "@/components/ClassSwitch";
 import { PhoneIcon } from "@/components/icons";
@@ -24,7 +25,7 @@ type Props = {
   heading: ReactNode;
   groups: PriceGroup[];
   descriptions: Record<CarClass, string>;
-  words: { classLabel: string; individualQuote: string; call: string };
+  words: { classLabel: string; individualQuote: string; call: string; whatsIncluded: string };
   telHref: string;
 };
 
@@ -85,7 +86,18 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
             // под шапку и липкий переключатель, при XL — ещё под плашку
             className={`${selected === "XL" ? "scroll-mt-50" : "scroll-mt-36"} lg:scroll-mt-6`}
           >
-            <h3 className="caps-label pb-2">{group.name}</h3>
+            <div className="flex items-baseline justify-between gap-3 pb-2">
+              <h3 className="caps-label">{group.name}</h3>
+              {/* Главная отвечает «сколько», страница группы — «что за эти деньги» */}
+              {group.page && (
+                <Link
+                  href={group.page}
+                  className="-my-3 inline-block py-3 text-13 text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg lg:text-14"
+                >
+                  {words.whatsIncluded}
+                </Link>
+              )}
+            </div>
             <ul>
               {group.rows.map((row, rowIndex) => (
                 <li

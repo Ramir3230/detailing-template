@@ -72,6 +72,11 @@ export const ru: Dictionary = {
     examples: "Фото для примера",
   },
   contact: { title: "Контакты", route: "Маршрут", photoExample: "Фото для примера" },
+  group: {
+    metaTitle: "{group} — {studio}",
+    breadcrumbs: "Путь по сайту",
+    whatsIncluded: "Что входит",
+  },
   newTab: "открывается в новой вкладке",
   footer: { services: "Услуги", studio: "Студия" },
   language: { label: "Язык", names: { pl: "PL", ru: "RU" } },

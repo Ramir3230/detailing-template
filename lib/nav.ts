@@ -1,4 +1,4 @@
-import type { ServiceGroup } from "@/content/types";
+import type { ServiceGroup, Text } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 
 /** Якоря секций главной: на них ведут навигация и плавающая «Zadzwoń». */
@@ -21,7 +21,25 @@ export const studioPages: readonly { key: keyof Dictionary["nav"]; path: string 
   { key: "contact", path: `/#${sectionIds.contact}` },
 ];
 
-/** Страниц групп ещё нет (блок 4) — группа ведёт к своему месту в прайсе на главной. */
+/** Страницы групп лежат под этим адресом: `/uslugi/lakier`. */
+export const groupPagesPath = "/uslugi";
+
+export type GroupWithPage = ServiceGroup & { intro: Text };
+
+/**
+ * Страница есть у группы с вводным абзацем в данных. Что у такой группы заполнено и
+ * остальное для страницы — состав и длительность каждой услуги, — проверяет
+ * content/studio.test.ts.
+ */
+export function hasGroupPage(group: ServiceGroup): group is GroupWithPage {
+  return group.intro !== undefined;
+}
+
+export function groupPagePath(slug: string): string {
+  return `${groupPagesPath}/${slug}`;
+}
+
+/** Группа ведёт на свою страницу, а пока её нет — к своему месту в прайсе на главной. */
 export function groupPath(group: ServiceGroup): string {
-  return `/#${group.slug}`;
+  return hasGroupPage(group) ? groupPagePath(group.slug) : `/#${group.slug}`;
 }

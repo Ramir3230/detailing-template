@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Photo } from "@/content/types";
 import { messengerHref, telHref } from "@/lib/contact";
+import { hasGroupPage } from "@/lib/nav";
 
 /*
  * Из этих полей строятся ссылки и статус «Otwarte» на каждой странице. Ошибка в них
@@ -29,6 +30,25 @@ describe("active studio data", () => {
         const amounts =
           price.kind === "byClass" ? [price.S, price.M, price.L] : "amount" in price ? [price.amount] : [];
         for (const amount of amounts) expect(Number.isInteger(amount) && amount > 0).toBe(true);
+      }
+    }
+  });
+
+  it("has unique group slugs fit for an address and an anchor", () => {
+    const slugs = studio.services.map(({ slug }) => slug);
+    for (const slug of slugs) expect(slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("has at least one group page: the group route does not build without one", () => {
+    expect(studio.services.filter(hasGroupPage).length).toBeGreaterThan(0);
+  });
+
+  it("gives every service of a group page its duration and scope", () => {
+    for (const group of studio.services.filter(hasGroupPage)) {
+      for (const service of group.services) {
+        expect(service.duration, `${group.slug}: ${service.name.pl} без длительности`).toBeDefined();
+        expect(service.scope?.length, `${group.slug}: ${service.name.pl} без состава`).toBeGreaterThan(0);
       }
     }
   });
