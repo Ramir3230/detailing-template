@@ -12,6 +12,7 @@ import {
 } from "react";
 import { Price, ServiceName } from "@/components/home/PriceList";
 import { DragSidewaysIcon } from "@/components/icons";
+import { frameSizes } from "@/lib/frame";
 import type { PriceParts } from "@/lib/format";
 
 export type ComparePhoto = { src: string; width: number; height: number; alt: string };
@@ -30,9 +31,6 @@ export type ComparePair = {
 };
 
 type Words = { before: string; after: string; pairs: string; examples: string };
-
-/* Кадр до 520 px на десктопе, на телефоне — экран без полей */
-const sizes = "(min-width: 1024px) 520px, calc(100vw - 48px)";
 
 const tagClass =
   "glass-float pointer-events-none absolute top-3 rounded-full px-3 py-1 text-13 leading-body font-medium";
@@ -219,7 +217,7 @@ function Slider({
             width={item.after.width}
             height={item.after.height}
             alt={item.after.alt}
-            sizes={sizes}
+            sizes={frameSizes}
             draggable={false}
             className="pointer-events-none absolute inset-0 size-full object-cover"
           />
@@ -236,7 +234,7 @@ function Slider({
               width={item.before.width}
               height={item.before.height}
               alt={item.before.alt}
-              sizes={sizes}
+              sizes={frameSizes}
               draggable={false}
               className="absolute inset-0 size-full object-cover"
             />
