@@ -86,7 +86,8 @@ export type Dictionary = {
     /** Подпись под парами, где хоть один кадр сделан ИИ. */
     examples: string;
   };
-  contact: { title: string; route: string };
+  /** photoExample — подпись под фото входа, сделанным ИИ. */
+  contact: { title: string; route: string; photoExample: string };
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
   newTab: string;
   footer: { services: string; studio: string };

@@ -71,7 +71,7 @@ export const ru: Dictionary = {
     compare: "{service}: сравнение до и после",
     examples: "Фото для примера",
   },
-  contact: { title: "Контакты", route: "Маршрут" },
+  contact: { title: "Контакты", route: "Маршрут", photoExample: "Фото для примера" },
   newTab: "открывается в новой вкладке",
   footer: { services: "Услуги", studio: "Студия" },
   language: { label: "Язык", names: { pl: "PL", ru: "RU" } },
