@@ -501,9 +501,12 @@ function startLink(
   });
   gl.linkProgram(program);
   let done = false;
+  // Несобранная программа отвечает исключением на каждый вопрос, а не «готова» со второго
+  let failed: Error | null = null;
   return {
     program,
     ready() {
+      if (failed) throw failed;
       if (done) return true;
       if (parallel && !gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)) return false;
       const linked = Boolean(gl.getProgramParameter(program, gl.LINK_STATUS));
@@ -515,8 +518,11 @@ function startLink(
         gl.detachShader(program, shader);
         gl.deleteShader(shader);
       }
+      if (!linked) {
+        failed = new Error(log || "linkProgram");
+        throw failed;
+      }
       done = true;
-      if (!linked) throw new Error(log || "linkProgram");
       return true;
     },
   };

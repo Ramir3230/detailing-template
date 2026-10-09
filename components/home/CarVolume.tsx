@@ -192,8 +192,9 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
 
     const opacity = (layer: Element | null) => (layer ? Number(getComputedStyle(layer).opacity) : 1);
     /* Кадр по текущему состоянию; force — холст стёрт или сменились текстуры. Возвращает
-       проявление после подмены и силу неона; null — шейдер не собрался, холста больше нет */
+       проявление после подмены и силу неона; null — холста больше нет */
     const paint = (now: number, force = false) => {
+      if (stopped) return null;
       const lit = Boolean(underglow);
       // При reduced motion — сразу финальный кадр, без проявления
       const fadeIn = carAt ? (still ? 1 : Math.min(1, (now - carAt) / FADE_IN_MS)) : 0;
@@ -305,6 +306,9 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     };
 
     size();
+    // Первый же кадр отказал (шейдер не собрался без фоновой сборки) — холста уже нет,
+    // слушать нечего
+    if (stopped) return;
     const resized = new ResizeObserver(([entry]) => {
       size(entry);
       awake();
