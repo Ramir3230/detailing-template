@@ -9,13 +9,14 @@ type Props = { href: string; label: string; phone: string };
 /*
  * Плавающая «Zadzwoń» (DESIGN.md): видна только между hero и контактами — у обоих свои
  * кнопки звонка. Появляется в один момент с шапкой: обе следят за hero одним хуком.
- * Контакты считаются на экране, когда дошли до верхних 60% экрана.
+ * Контакты считаются на экране, когда их часы и звонок дошли до верхних 60% экрана: по
+ * верху секции плавающая пряталась бы, пока своя кнопка ещё под фото входа, за экраном.
  * Внешний слой выезжает и прячется (уход быстрее появления), внутренний загорается
  * ударом неона — так анимации не спорят за прозрачность.
  */
 export function FloatingCall({ href, label, phone }: Props) {
   const heroVisible = useHeroInView();
-  const contactVisible = useInView(sectionIds.contact, {
+  const contactVisible = useInView(sectionIds.contactCall, {
     initial: false,
     rootMargin: "0px 0px -40% 0px",
   });

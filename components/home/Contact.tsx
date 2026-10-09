@@ -9,6 +9,7 @@ import { studio } from "@/content/studio";
 import type { Photo } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { formatDayRange, formatTimeRange } from "@/lib/format";
+import { frameSizes } from "@/lib/frame";
 import { groupHours } from "@/lib/hours";
 import { t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
@@ -84,7 +85,9 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             className="mt-6 lg:col-start-1 lg:row-span-full lg:mt-0 lg:self-center"
           />
           <div className="mt-4 lg:col-start-2 lg:row-start-3 lg:mt-7">{place}</div>
-          <div className="mt-6 lg:col-start-2 lg:row-start-4 lg:mt-7">{reach}</div>
+          <div id={sectionIds.contactCall} className="mt-6 lg:col-start-2 lg:row-start-4 lg:mt-7">
+            {reach}
+          </div>
         </div>
       ) : (
         <div className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12">
@@ -92,7 +95,9 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             {heading}
             <div className="mt-6 lg:mt-7">{place}</div>
           </div>
-          <div className="mt-6 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px]">{reach}</div>
+          <div id={sectionIds.contactCall} className="mt-6 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px]">
+            {reach}
+          </div>
         </div>
       )}
     </section>
@@ -118,7 +123,7 @@ function EntrancePhoto({
         width={photo.width}
         height={photo.height}
         alt={t(photo.alt, lang)}
-        sizes="(min-width: 1024px) 520px, calc(100vw - 48px)"
+        sizes={frameSizes}
         className="aspect-[4/5] w-full rounded-card bg-surface object-cover lg:rounded-card-lg"
       />
       {photo.ai && <figcaption className="mt-2 text-12 leading-body text-muted">{caption}</figcaption>}
