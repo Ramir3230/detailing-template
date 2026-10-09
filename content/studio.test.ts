@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Photo } from "@/content/types";
 import { messengerHref, telHref } from "@/lib/contact";
-import { hasGroupPage } from "@/lib/nav";
+import { hasGroupPage, sectionIds } from "@/lib/nav";
 
 /*
  * Из этих полей строятся ссылки и статус «Otwarte» на каждой странице. Ошибка в них
@@ -38,6 +38,8 @@ describe("active studio data", () => {
     const slugs = studio.services.map(({ slug }) => slug);
     for (const slug of slugs) expect(slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
     expect(new Set(slugs).size).toBe(slugs.length);
+    // slug — ещё и id группы в прайсе главной: не должен совпасть с якорем её секций
+    for (const slug of slugs) expect(Object.values(sectionIds)).not.toContain(slug);
   });
 
   it("has at least one group page: the group route does not build without one", () => {
