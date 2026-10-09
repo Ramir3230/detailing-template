@@ -167,7 +167,9 @@ def save(level: Image.Image, path: Path) -> dict:
 
 
 def main() -> None:
+    # Консоль Windows по умолчанию не в UTF-8: и вывод, и ошибки — по-русски
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("params", type=Path)
     parser.add_argument("--out", type=Path, default=ROOT / "public" / "mapa")
