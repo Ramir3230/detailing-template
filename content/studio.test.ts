@@ -108,6 +108,10 @@ describe("active studio data", () => {
       for (const photo of [before, after]) expectFrame(photo);
     }
   });
+
+  it("has the entrance photo in 4:5, if there is one", () => {
+    if (studio.address.photo) expectFrame(studio.address.photo);
+  });
 });
 
 /*

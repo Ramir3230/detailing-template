@@ -45,7 +45,18 @@ export const afterdark: Studio = {
     { kind: "telegram", phone: "+48000000000" },
     { kind: "whatsapp", phone: "+48000000000" },
   ],
-  address: { street: "[Ulica i numer]", area: "Warszawa-Wola" },
+  address: {
+    street: "[Ulica i numer]",
+    area: "Warszawa-Wola",
+    /* Сделано ИИ, scripts/before-after/wejscie.json: вход SPECTRE с вывеской не берём */
+    photo: {
+      src: "/kontakt/wejscie.webp",
+      width: 1040,
+      height: 1300,
+      alt: { pl: "Wjazd do studia wieczorem: otwarta brama, światło w środku" },
+      ai: true,
+    },
+  },
   hours: [
     { open: "10:00", close: "22:00" },
     { open: "10:00", close: "22:00" },

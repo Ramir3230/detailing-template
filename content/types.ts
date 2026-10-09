@@ -157,8 +157,11 @@ export type Studio = {
   /** Международный формат без пробелов: +48123456789. */
   phone: string;
   messengers: Messenger[];
-  /** routeUrl — маршрут в Google Maps для кнопки «Trasa»; нет ссылки — нет кнопки. */
-  address: { street: string; area: string; routeUrl?: string };
+  /**
+   * routeUrl — маршрут в Google Maps для кнопки «Trasa»; нет ссылки — нет кнопки.
+   * photo — вход в студию, 4:5, в контактах; нет фото — контакты без него.
+   */
+  address: { street: string; area: string; routeUrl?: string; photo?: Photo };
   hours: WeekHours;
   hero: { title: Text; subtitle: Text; lead: Text; car: HeroCar };
   carClasses: Record<CarClass, Text>;
