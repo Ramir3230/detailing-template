@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Photo } from "@/content/types";
-import { maxPairs } from "@/lib/compare";
+import { homePairServices, maxPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
 
@@ -66,6 +66,16 @@ describe("active studio data", () => {
     if (!studio.indexed) return;
     expect(studio.rating.url).toBeTruthy();
     expect(studio.reviews.every((review) => review.source === "google")).toBe(true);
+    // Заглушка до фото — одинаковые «до» и «после»: открытый сайт с ней не выходит
+    for (const group of studio.services) {
+      for (const { beforeAfter } of group.services) {
+        if (!beforeAfter) continue;
+        const [before, after] = [beforeAfter.before, beforeAfter.after].map(({ src }) =>
+          readFileSync(join(process.cwd(), "public", src)),
+        );
+        expect(before.equals(after), `${beforeAfter.label.pl}: заглушка вместо фото`).toBe(false);
+      }
+    }
   });
 
   it("has a readable theme: hex colors, text and accent at 4.5:1 to the background", () => {
@@ -125,6 +135,14 @@ describe("active studio data", () => {
     for (const group of studio.services) {
       const count = group.services.filter(({ beforeAfter }) => beforeAfter).length;
       expect(count, `${group.slug}: пар больше, чем вкладок`).toBeLessThanOrEqual(maxPairs);
+    }
+    // Пара, которой нет на главной, видна только на странице группы — значит, страница нужна
+    const home = new Set(homePairServices(studio.services));
+    for (const group of studio.services.filter((item) => !hasGroupPage(item))) {
+      for (const service of group.services) {
+        if (!service.beforeAfter) continue;
+        expect(home.has(service), `${group.slug}: пару ${service.beforeAfter.label.pl} не видно нигде`).toBe(true);
+      }
     }
     for (const { label } of pairs) {
       for (const text of [label.pl, label.ru ?? ""]) expect(text.length).toBeLessThanOrEqual(9);
