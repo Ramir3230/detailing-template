@@ -53,7 +53,7 @@ export const afterdark: Studio = {
       src: "/kontakt/wejscie.webp",
       width: 1040,
       height: 1300,
-      alt: { pl: "Wjazd do studia wieczorem: otwarta brama, światło w środku" },
+      alt: { pl: "Wjazd do studia wieczorem: otwarta brama, w środku auto w świetle lamp" },
       ai: true,
     },
   },
@@ -110,8 +110,8 @@ export const afterdark: Studio = {
           beforeAfter: aiPair(
             "mycie",
             "Mycie",
-            "Kombi przed myciem: błoto na progach i nadkolach, kurz na lakierze",
-            "To samo kombi po myciu: czysty, błyszczący lakier",
+            "Koło i nadkole przed myciem: błoto na oponie, pył z hamulców na feldze, kurz na lakierze",
+            "To samo koło po myciu: czysta felga i błyszczący lakier",
           ),
         },
         {

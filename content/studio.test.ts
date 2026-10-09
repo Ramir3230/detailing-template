@@ -94,6 +94,8 @@ describe("active studio data", () => {
     // По кадру «po» React различает пары; у вкладок разные подписи
     expect(new Set(pairs.map(({ after }) => after.src)).size).toBe(pairs.length);
     expect(new Set(pairs.map(({ label }) => label.pl)).size).toBe(pairs.length);
+    const ru = pairs.flatMap(({ label }) => (label.ru ? [label.ru] : []));
+    expect(new Set(ru).size).toBe(ru.length);
     // Вкладки делят ширину телефона поровну: на 375 px помещаются четыре по 9 знаков
     // (DESIGN.md, «До/после»)
     expect(pairs.length).toBeLessThanOrEqual(4);
