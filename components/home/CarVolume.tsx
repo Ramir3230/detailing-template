@@ -243,7 +243,8 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
         shown = next;
         onState(shown);
       }
-      return { fadeIn, heavy: neon > 0 || result.carReady };
+      // Пол ещё собирается — неон на CSS горит, а холст не нарисовал ничего
+      return { fadeIn, heavy: (result.floor && neon > 0) || result.carReady };
     };
 
     // Холст в точных пикселях устройства, где браузер их сообщает: при округлении
