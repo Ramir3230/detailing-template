@@ -20,8 +20,7 @@ import { classDescriptions } from "@/lib/price-list";
  */
 export function GroupContent({ group, lang, dict }: { group: GroupWithPage; lang: Lang; dict: Dictionary }) {
   return (
-    // Телефон: фокус с клавиатуры не прячется под шапку с липким переключателем
-    <ClassScope className="wrap max-lg:[&_:is(a,button,input,summary)]:scroll-mt-36 lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12 lg:pt-12 lg:pb-24">
+    <ClassScope className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12 lg:pt-12 lg:pb-24">
       <div className="contents lg:sticky lg:top-6 lg:block lg:max-w-95 lg:flex-[1_1_300px]">
         {/* Подпись над переключателем — для глаз: у радиогруппы та же подпись для диктора */}
         <p aria-hidden="true" className="caps-label hidden lg:block">
@@ -37,7 +36,10 @@ export function GroupContent({ group, lang, dict }: { group: GroupWithPage; lang
         </div>
       </div>
 
-      <div className="contents lg:block lg:min-w-0 lg:flex-[999_1_560px]">
+      {/* Телефон: фокус с клавиатуры в основной колонке не прячется под шапку с липким
+          переключателем. Не на всей рамке: сам переключатель уже на виду, и запас
+          прокрутки дёргал бы страницу при каждой стрелке */}
+      <div className="contents max-lg:[&_:is(a,button,input,summary)]:scroll-mt-36 lg:block lg:min-w-0 lg:flex-[999_1_560px]">
         <div className="mt-2 lg:mt-0">
           <ServiceCards group={group} lang={lang} dict={dict} />
         </div>

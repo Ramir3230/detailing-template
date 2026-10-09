@@ -12,7 +12,7 @@ import {
 } from "react";
 import { Price, ServiceName } from "@/components/Price";
 import { DragSidewaysIcon } from "@/components/icons";
-import type { ComparePair, ComparePhoto } from "@/lib/compare";
+import type { ComparePair } from "@/lib/compare";
 import { columnFrameSizes, frameSizes } from "@/lib/frame";
 
 type Words = { before: string; after: string; pairs: string; examples: string };

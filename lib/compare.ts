@@ -3,7 +3,7 @@ import type { Dictionary } from "@/dictionaries/types";
 import { glue, startingPriceParts, type PriceParts } from "@/lib/format";
 import { fill, t, type Lang } from "@/lib/i18n";
 
-export type ComparePhoto = { src: string; width: number; height: number; alt: string };
+type ComparePhoto = { src: string; width: number; height: number; alt: string };
 
 export type ComparePair = {
   label: string;
