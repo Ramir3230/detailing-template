@@ -7,8 +7,9 @@ import type { Lang } from "@/lib/i18n";
 import type { GroupWithPage } from "@/lib/nav";
 
 /*
- * До/после группы — те же пары, что на главной, только услуг этой группы: пара живёт у
- * услуги в данных. Ни у одной услуги группы пары нет — секции нет.
+ * До/после группы — все пары услуг этой группы, не больше maxPairs: пара живёт у услуги в
+ * данных. Главная берёт из группы только первую (homePairServices). Ни у одной услуги
+ * группы пары нет — секции нет.
  */
 export function GroupBeforeAfter({ group, lang, dict }: { group: GroupWithPage; lang: Lang; dict: Dictionary }) {
   const words = dict.beforeAfter;
