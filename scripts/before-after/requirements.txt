@@ -1,7 +1,8 @@
 # Окружение генерации кадров (generate.py), отдельное от вырезки машины: PyTorch с CUDA
-# тянет свои версии numpy. RTX 2060 и драйвер 546 — CUDA 12.1.
+# и diffusers весят несколько гигабайт, вырезке они не нужны. Python 3.10–3.12: колёса
+# torch 2.5.1+cu121 под Windows есть только для них. RTX 2060 и драйвер 546 — CUDA 12.1.
 #
-#     python -m venv ~/.cache/sd/venv
+#     python -m venv $HOME/.cache/sd/venv
 #     ~/.cache/sd/venv/Scripts/python -m pip install -r scripts/before-after/requirements.txt
 --extra-index-url https://download.pytorch.org/whl/cu121
 torch==2.5.1+cu121
@@ -10,7 +11,9 @@ transformers==4.56.2
 accelerate==1.10.1
 safetensors
 pillow==12.3.0
-numpy<2.3
+# Закреплена: россыпь голограмм идёт из генератора numpy, и сид повторяет кадр только на
+# той же версии
+numpy==2.2.6
 rembg==2.0.69
 onnxruntime==1.23.2
 opencv-python-headless==4.12.0.88
