@@ -1,6 +1,7 @@
 "use client";
 
 import { PhoneIcon } from "@/components/icons";
+import { useDesktop } from "@/lib/use-desktop";
 import { useHeroInView, useInView } from "@/lib/use-in-view";
 
 type Props = {
@@ -29,7 +30,11 @@ type Props = {
  */
 export function FloatingCall({ href, label, phone, afterHero, hideAt, phoneOnly = false }: Props) {
   const heroVisible = useHeroInView();
-  const ownCallVisible = useInView(hideAt, { initial: false });
+  // Своя кнопка может быть скрыта на одной ширине и видна на другой (карточка «Nie wiesz…»
+  // на телефоне — в конце страницы, на десктопе — нет): поворот планшета или сужение
+  // окна через 1024 px перезапускает наблюдение
+  const desktop = useDesktop();
+  const ownCallVisible = useInView(hideAt, { initial: false, restartOn: desktop ? "desktop" : "phone" });
 
   const shown = !(afterHero && heroVisible) && !ownCallVisible;
 
