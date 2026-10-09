@@ -91,7 +91,8 @@ describe("active studio data", () => {
     const pairs = studio.services.flatMap((group) =>
       group.services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter] : [])),
     );
-    // Вкладки различаются подписью: по ней React различает кадры пар
+    // По кадру «po» React различает пары; у вкладок разные подписи
+    expect(new Set(pairs.map(({ after }) => after.src)).size).toBe(pairs.length);
     expect(new Set(pairs.map(({ label }) => label.pl)).size).toBe(pairs.length);
     // Вкладки делят ширину телефона поровну: на 375 px помещаются четыре по 9 знаков
     // (DESIGN.md, «До/после»)

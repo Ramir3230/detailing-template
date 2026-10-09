@@ -65,7 +65,9 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   const reach = (
     <>
       <HoursList rows={rows} todayLabel={dict.hours.today} />
-      <CallButton dict={dict} className="mt-6 lg:inline-flex lg:w-auto lg:px-7" />
+      <div id={sectionIds.contactCall} className="mt-6">
+        <CallButton dict={dict} className="lg:inline-flex lg:w-auto lg:px-7" />
+      </div>
       <Messengers dict={dict} variant="contact" className="mt-3" />
     </>
   );
@@ -85,9 +87,7 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             className="mt-6 lg:col-start-1 lg:row-span-full lg:mt-0 lg:self-center"
           />
           <div className="mt-4 lg:col-start-2 lg:row-start-3 lg:mt-7">{place}</div>
-          <div id={sectionIds.contactCall} className="mt-6 lg:col-start-2 lg:row-start-4 lg:mt-7">
-            {reach}
-          </div>
+          <div className="mt-6 lg:col-start-2 lg:row-start-4 lg:mt-7">{reach}</div>
         </div>
       ) : (
         <div className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12">
@@ -95,9 +95,7 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             {heading}
             <div className="mt-6 lg:mt-7">{place}</div>
           </div>
-          <div id={sectionIds.contactCall} className="mt-6 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px]">
-            {reach}
-          </div>
+          <div className="mt-6 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px]">{reach}</div>
         </div>
       )}
     </section>

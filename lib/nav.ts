@@ -7,7 +7,7 @@ export const sectionIds = {
   services: "uslugi",
   reviews: "opinie",
   contact: "kontakt",
-  /** Часы, звонок и мессенджеры в контактах: у них прячется плавающая «Zadzwoń». */
+  /** Кнопка звонка в контактах: когда она на экране, плавающая «Zadzwoń» прячется. */
   contactCall: "kontakt-zadzwon",
 } as const;
 
