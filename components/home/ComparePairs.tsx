@@ -6,10 +6,11 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Price } from "@/components/home/PriceList";
+import { Price, ServiceName } from "@/components/home/PriceList";
 import { DragSidewaysIcon } from "@/components/icons";
 import type { PriceParts } from "@/lib/format";
 
@@ -34,7 +35,7 @@ type Words = { before: string; after: string; pairs: string; examples: string };
 const sizes = "(min-width: 1024px) 520px, calc(100vw - 48px)";
 
 const tagClass =
-  "pointer-events-none absolute top-3 rounded-full bg-bg/55 px-3 py-1 text-13 leading-body font-medium";
+  "glass-float pointer-events-none absolute top-3 rounded-full px-3 py-1 text-13 leading-body font-medium";
 
 const clamp = (value: number) => Math.min(100, Math.max(0, value));
 
@@ -130,10 +131,7 @@ export function ComparePairs({
       </div>
 
       <div className="mt-4 flex items-baseline justify-between gap-3 lg:col-start-2 lg:row-start-4 lg:mt-6 lg:border-t lg:border-line lg:pt-4">
-        <span className="text-15 leading-item font-medium lg:text-16">
-          {pair.service}
-          {pair.brand && <span className="text-accent"> {pair.brand}</span>}
-        </span>
+        <ServiceName name={pair.service} brand={pair.brand} />
         <Price parts={pair.price} />
       </div>
       {pairs.some((item) => item.examples) && (
@@ -168,6 +166,15 @@ function Slider({
 }) {
   // Палец ведёт шторку один: второй (щипок) не перехватывает
   const drag = useRef<{ id: number; x: number; from: number } | null>(null);
+  const range = useRef<HTMLInputElement>(null);
+
+  // Щелчок мышью по кадру отдаёт фокус ползунку: иначе фокус уходит на страницу, и
+  // стрелки, обещанные подсказкой, листают её, а не двигают шторку. Кольцо фокуса после
+  // мыши не нужно: focusVisible пока не знают типы DOM в TypeScript, отсюда приведение
+  function onMouseDown(event: MouseEvent<HTMLDivElement>) {
+    event.preventDefault();
+    range.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+  }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!event.isPrimary || event.button !== 0) return;
@@ -202,7 +209,8 @@ function Slider({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
       onPointerCancel={onPointerEnd}
-      className="relative aspect-[4/5] cursor-ew-resize touch-pan-y touch-pinch-zoom overflow-hidden rounded-tile bg-surface select-none lg:rounded-card"
+      onMouseDown={onMouseDown}
+      className="relative aspect-[4/5] cursor-ew-resize touch-pan-y touch-pinch-zoom overflow-hidden rounded-tile bg-surface select-none lg:rounded-card-lg"
     >
       {pairs.map((item, index) => (
         <div key={item.label} className={index === active ? undefined : "invisible"}>
@@ -241,6 +249,7 @@ function Slider({
 
       {/* Клавиатура и диктор двигают ту же шторку обычным ползунком */}
       <input
+        ref={range}
         type="range"
         min={0}
         max={100}
@@ -251,12 +260,12 @@ function Slider({
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white"
+        className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-slider"
         style={{ left: `${position}%` }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 grid size-11 -translate-1/2 place-items-center rounded-full border-2 border-white bg-bg/55 text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent lg:size-12"
+        className="glass-float pointer-events-none absolute top-1/2 grid size-11 -translate-1/2 place-items-center rounded-full border-2 border-slider text-slider peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent lg:size-12"
         style={{ left: `${position}%` }}
       >
         <DragSidewaysIcon size={22} />
