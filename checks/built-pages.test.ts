@@ -129,7 +129,7 @@ describe.each(langs)("built home page /%s", (lang) => {
   it("leaves the pairs beyond the first of each group to their group pages", () => {
     const home = new Set(homePairServices(studio.services));
     const rest = studio.services.flatMap((group) => group.services).filter((service) => !home.has(service));
-    // Файл, общий с парой главной (одна заглушка на несколько пар), на главной законно
+    // Кадр «przed», общий с парой главной, на главной законно: «po» у пар уникальны
     const shown = new Set(pairPhotos([...home]));
     const { html } = page(lang);
     // И в адресе оптимизатора картинок, и в данных клиентского компонента

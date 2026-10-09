@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Photo } from "@/content/types";
-import { homePairServices, maxPairs } from "@/lib/compare";
+import { homePairServices, maxGroupPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
 
@@ -129,12 +129,12 @@ describe("active studio data", () => {
     expect(new Set(pairs.map(({ label }) => label.pl)).size).toBe(pairs.length);
     const ru = pairs.flatMap(({ label }) => (label.ru ? [label.ru] : []));
     expect(new Set(ru).size).toBe(ru.length);
-    // Вкладки делят ширину телефона поровну: на 375 px помещаются четыре по 9 знаков
-    // (DESIGN.md, «До/после»). Главная сама берёт не больше четырёх, страница группы —
-    // все пары группы
+    // Вкладки делят ширину поровну: на телефоне 375 px помещаются четыре по 9 знаков, в
+    // колонке текста страницы группы на десктопе — три (DESIGN.md, «До/после»). Главная
+    // сама берёт не больше четырёх, страница группы — все пары группы
     for (const group of studio.services) {
       const count = group.services.filter(({ beforeAfter }) => beforeAfter).length;
-      expect(count, `${group.slug}: пар больше, чем вкладок`).toBeLessThanOrEqual(maxPairs);
+      expect(count, `${group.slug}: пар больше, чем вкладок`).toBeLessThanOrEqual(maxGroupPairs);
     }
     // Пара, которой нет на главной, видна только на странице группы — значит, страница нужна
     const home = new Set(homePairServices(studio.services));
