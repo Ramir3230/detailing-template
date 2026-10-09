@@ -13,7 +13,7 @@ import {
 import { Price, ServiceName } from "@/components/Price";
 import { DragSidewaysIcon } from "@/components/icons";
 import type { ComparePair, ComparePhoto } from "@/lib/compare";
-import { frameSizes } from "@/lib/frame";
+import { columnFrameSizes, frameSizes } from "@/lib/frame";
 
 type Words = { before: string; after: string; pairs: string; examples: string };
 
@@ -30,14 +30,15 @@ const keySteps: Record<string, (index: number, count: number) => number> = {
 };
 
 /*
- * Раскладка. «section» — секция главной во всю ширину: от 1024 px кадр до 520 слева,
- * текст до 460 справа. «column» — основная колонка страницы группы: кадр и текст встают
- * рядом, только когда самой колонке хватает места — 728 px: кадр 420, 48 между ними и
- * 260 тексту (запрос к ширине контейнера, контейнер — родитель с `@container`); иначе
- * друг под другом, как на телефоне, кадр и подпись под ним не шире 420.
+ * Раскладка; до 1024 px обе — телефонная. «section» — секция главной во всю ширину: кадр
+ * до 520 слева, текст до 460 справа. «column» — основная колонка страницы группы: кадр и
+ * текст встают рядом, только когда самой колонке хватает места — 728 px: кадр 420, 48
+ * между ними и 260 тексту (запрос к ширине контейнера, контейнер — родитель с
+ * `@container`); иначе друг под другом, кадр и подпись под ним не шире 420.
  */
 const layouts = {
   section: {
+    sizes: frameSizes,
     root: "lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,460px)] lg:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:gap-x-20",
     heading: "lg:col-start-2 lg:row-start-2",
     tabs: "lg:col-start-2 lg:row-start-3 lg:mt-7",
@@ -46,13 +47,14 @@ const layouts = {
     examples: "lg:col-start-2 lg:row-start-5",
   },
   column: {
-    root: "@min-[728px]:grid @min-[728px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] @min-[728px]:grid-rows-[1fr_auto_auto_auto_auto_1fr] @min-[728px]:gap-x-12",
-    heading: "@min-[728px]:col-start-2 @min-[728px]:row-start-2",
-    tabs: "max-w-105 @min-[728px]:col-start-2 @min-[728px]:row-start-3 @min-[728px]:max-w-none",
-    panel: "max-w-105 @min-[728px]:col-start-1 @min-[728px]:row-span-full @min-[728px]:mt-0",
+    sizes: columnFrameSizes,
+    root: "lg:@min-[728px]:grid lg:@min-[728px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:@min-[728px]:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:@min-[728px]:gap-x-12",
+    heading: "lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-2",
+    tabs: "lg:max-w-105 lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-3 lg:@min-[728px]:max-w-none",
+    panel: "lg:max-w-105 lg:@min-[728px]:col-start-1 lg:@min-[728px]:row-span-full lg:@min-[728px]:mt-0",
     caption:
-      "max-w-105 @min-[728px]:col-start-2 @min-[728px]:row-start-4 @min-[728px]:mt-6 @min-[728px]:max-w-none @min-[728px]:border-t @min-[728px]:border-line @min-[728px]:pt-4",
-    examples: "@min-[728px]:col-start-2 @min-[728px]:row-start-5",
+      "lg:max-w-105 lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-4 lg:@min-[728px]:mt-6 lg:@min-[728px]:max-w-none lg:@min-[728px]:border-t lg:@min-[728px]:border-line lg:@min-[728px]:pt-4",
+    examples: "lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-5",
   },
 } as const;
 
@@ -140,6 +142,7 @@ export function ComparePairs({
           position={position}
           onMove={setPosition}
           words={words}
+          sizes={place.sizes}
         />
       </div>
 
@@ -170,12 +173,15 @@ function Slider({
   position,
   onMove,
   words,
+  sizes,
 }: {
   pairs: ComparePair[];
   active: number;
   position: number;
   onMove: (position: number) => void;
   words: Words;
+  /** Ширина кадра на экране для next/image — у каждой раскладки своя. */
+  sizes: string;
 }) {
   // Палец ведёт шторку один: второй (щипок) не перехватывает
   const drag = useRef<{ id: number; x: number; from: number } | null>(null);
@@ -232,7 +238,7 @@ function Slider({
             width={item.after.width}
             height={item.after.height}
             alt={item.after.alt}
-            sizes={frameSizes}
+            sizes={sizes}
             draggable={false}
             className="pointer-events-none absolute inset-0 size-full object-cover"
           />
@@ -249,7 +255,7 @@ function Slider({
               width={item.before.width}
               height={item.before.height}
               alt={item.before.alt}
-              sizes={frameSizes}
+              sizes={sizes}
               draggable={false}
               className="absolute inset-0 size-full object-cover"
             />
