@@ -156,6 +156,7 @@ export const afterdark: Studio = {
       intro: {
         pl: "Korekta usuwa rysy i hologramy, ceramika utrwala efekt. Cena zależy od klasy auta i liczby etapów.",
       },
+      advice: { pl: "Zadzwoń — doradzimy, gdy zobaczymy lakier." },
       services: [
         {
           name: { pl: "Jednoetapowa korekta lakieru" },
@@ -202,6 +203,24 @@ export const afterdark: Studio = {
           question: { pl: "Ile trwa korekta lakieru?" },
           answer: {
             pl: "Jednoetapowa — jeden dzień. Wieloetapowa z ceramiką — 3–4 dni: powłoka musi utwardzić się w studiu, zanim auto wyjedzie na deszcz.",
+          },
+        },
+        {
+          question: { pl: "Czy korekta usunie wszystkie rysy?" },
+          answer: {
+            pl: "Nie wszystkie. Polerowanie zbiera cienką warstwę lakieru bezbarwnego, więc znikają rysy, które nie sięgają głębiej: hologramy, zmatowienia, ślady po myjni. Prosty test: przeciągnij paznokciem w poprzek rysy. Nie zaczepia — zwykle zniknie po polerowaniu. Zaczepia — rysa doszła do koloru lub głębiej: złagodzimy ją, ale zniknie dopiero po lakierowaniu.",
+          },
+        },
+        {
+          question: { pl: "Jak myć auto po powłoce ceramicznej?" },
+          answer: {
+            pl: "Pierwsze mycie — po 14 dniach: tyle powłoka dojrzewa po utwardzeniu w studiu. Potem ręcznie, metodą dwóch wiader i szamponem o neutralnym pH, bez wosku i nabłyszczaczy. Myjnię szczotkową omijaj; na bezdotykowej — bez szczotki i bez programów z woskiem. Wycieraj miękkim ręcznikiem z mikrofibry, bez tarcia, a ptasie odchody zmywaj od razu.",
+          },
+        },
+        {
+          question: { pl: "Czy mogę zostawić auto na noc?" },
+          answer: {
+            pl: "Tak. Możesz przywieźć auto wieczorem dzień wcześniej albo odebrać je następnego dnia — nocuje w studiu, pod dachem. Przy korekcie z ceramiką i tak zostaje u nas kilka nocy.",
           },
         },
       ],

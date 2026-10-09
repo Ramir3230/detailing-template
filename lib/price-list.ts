@@ -1,8 +1,9 @@
-import type { CarClass, Price, ServiceGroup } from "@/content/types";
+import type { CarClass, Price, ServiceGroup, Text } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { carClasses } from "@/lib/car-class";
 import { glue, priceParts, type PriceParts } from "@/lib/format";
-import { t, type Lang } from "@/lib/i18n";
+import { localePath, t, type Lang } from "@/lib/i18n";
+import { groupPagePath, hasGroupPage } from "@/lib/nav";
 import { rollColumns, splitAmount, type RollColumn } from "@/lib/odometer";
 
 /** Цена по классу лентами счётчика: колонки и позиции лент для S, M и L. */
@@ -21,7 +22,13 @@ export type PriceRow = {
   rolling?: Rolling;
 };
 
-export type PriceGroup = { slug: string; name: string; rows: PriceRow[] };
+export type PriceGroup = {
+  slug: string;
+  name: string;
+  /** Адрес страницы группы на языке страницы — если она есть: туда ведёт «Co wchodzi». */
+  page?: string;
+  rows: PriceRow[];
+};
 
 /*
  * Прайс для переключателя в браузере: тексты уже на языке страницы, цены всех четырёх
@@ -36,6 +43,7 @@ export function priceList(
   return groups.map((group) => ({
     slug: group.slug,
     name: glue(t(group.name, lang), lang),
+    page: hasGroupPage(group) ? localePath(lang, groupPagePath(group.slug)) : undefined,
     rows: group.services.map((service) => ({
       name: glue(t(service.name, lang), lang),
       brand: service.brand,
@@ -46,6 +54,13 @@ export function priceList(
       rolling: service.price.kind === "byClass" ? rolling(service.price, words) : undefined,
     })),
   }));
+}
+
+/** Описания классов под переключателем — на языке страницы, с приклеенными предлогами. */
+export function classDescriptions(texts: Record<CarClass, Text>, lang: Lang): Record<CarClass, string> {
+  return Object.fromEntries(
+    carClasses.map((carClass) => [carClass, glue(t(texts[carClass], lang), lang)]),
+  ) as Record<CarClass, string>;
 }
 
 function rolling(

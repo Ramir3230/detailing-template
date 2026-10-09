@@ -2,18 +2,24 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
-import { langs, type Lang } from "@/lib/i18n";
-import { sectionIds } from "@/lib/nav";
+import type { Service } from "@/content/types";
+import { getDictionary } from "@/dictionaries";
+import { defaultCarClass } from "@/lib/car-class";
+import { glue, priceParts } from "@/lib/format";
+import { langs, t, type Lang } from "@/lib/i18n";
+import { groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
  * легко и незаметно. Идут в `npm run check` после `next build` — по HTML, который сборка
  * отрендерила заранее.
  */
-const built = (lang: Lang) => join(process.cwd(), ".next", "server", "app", `${lang}.html`);
 
-function page(lang: Lang): { html: string; head: string } {
-  const html = readFileSync(built(lang), "utf-8");
+/* Адрес страницы так, как сборка кладёт её HTML: `pl`, `pl/uslugi/lakier`. */
+const built = (route: string) => join(process.cwd(), ".next", "server", "app", `${route}.html`);
+
+function page(route: string): { html: string; head: string } {
+  const html = readFileSync(built(route), "utf-8");
   return { html, head: html.slice(0, html.indexOf("</head>")) };
 }
 
@@ -21,27 +27,56 @@ function page(lang: Lang): { html: string; head: string } {
 const carFile = encodeURIComponent(studio.hero.car.src);
 const tags = (html: string, pattern: RegExp) => html.match(pattern) ?? [];
 
+/* Текст так, как React кладёт его в HTML */
+const escaped = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+
+function expectPrerendered(route: string) {
+  expect(
+    existsSync(built(route)),
+    `${built(route)} нет — сборка не запускалась или Next изменил раскладку .next/server/app`,
+  ).toBe(true);
+}
+
+function expectLang(route: string, lang: Lang) {
+  const tag = page(route).html.match(/<html\b[^>]*>/)?.[0] ?? "";
+  expect(tag).toContain(`lang="${lang}"`);
+  expect(tag).toContain('data-scroll-behavior="smooth"');
+}
+
+function expectSearchRule(route: string, lang: Lang) {
+  const published = (studio.languages as readonly Lang[]).includes(lang);
+  const { head } = page(route);
+  // Открытый сайт: noindex нигде в <head> — ни в robots, ни в googlebot, ни в другом виде
+  if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
+  else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
+}
+
+/* Кадры до/после у этих услуг */
+const pairPhotos = (services: readonly Service[]) =>
+  services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter.before.src, beforeAfter.after.src] : []));
+
+/* Каждый кадр — одной картинкой, лениво и без preload: не спорит с тем, что наверху */
+function expectLazyPhotos(route: string, srcs: readonly string[]) {
+  const { html } = page(route);
+  for (const file of srcs.map((src) => encodeURIComponent(src))) {
+    const images = tags(html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
+    expect(images, `нет <img> кадра ${decodeURIComponent(file)}`).toHaveLength(1);
+    expect(images[0]).toContain('loading="lazy"');
+    const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => tag.includes(file));
+    expect(preloads, `кадр ${decodeURIComponent(file)} в preload`).toEqual([]);
+  }
+}
+
+/* Разметка без скриптов: в данных для гидрации те же тексты лежат пропсами */
+const markup = (route: string) => page(route).html.replace(/<script\b[\s\S]*?<\/script>/g, "");
+
 describe.each(langs)("built home page /%s", (lang) => {
-  it("is prerendered: `npm run build` has run", () => {
-    expect(
-      existsSync(built(lang)),
-      `${built(lang)} нет — сборка не запускалась или Next изменил раскладку .next/server/app`,
-    ).toBe(true);
-  });
+  it("is prerendered: `npm run build` has run", () => expectPrerendered(lang));
 
-  it("names its language and keeps route changes instant", () => {
-    const tag = page(lang).html.match(/<html\b[^>]*>/)?.[0] ?? "";
-    expect(tag).toContain(`lang="${lang}"`);
-    expect(tag).toContain('data-scroll-behavior="smooth"');
-  });
+  it("names its language and keeps route changes instant", () => expectLang(lang, lang));
 
-  it("is closed from search exactly when the studio data says so", () => {
-    const published = (studio.languages as readonly Lang[]).includes(lang);
-    const { head } = page(lang);
-    // Открытый сайт: noindex нигде в <head> — ни в robots, ни в googlebot, ни в другом виде
-    if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
-    else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
-  });
+  it("is closed from search exactly when the studio data says so", () => expectSearchRule(lang, lang));
 
   it("preloads the hero car and never loads it lazily", () => {
     const { html, head } = page(lang);
@@ -86,19 +121,8 @@ describe.each(langs)("built home page /%s", (lang) => {
   });
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
-    const { html } = page(lang);
-    const files = studio.services
-      .flatMap((group) => group.services.flatMap(({ beforeAfter }) => (beforeAfter ? [beforeAfter] : [])))
-      .flatMap(({ before, after }) => [before.src, after.src])
-      .concat(studio.address.photo ? [studio.address.photo.src] : [])
-      .map((src) => encodeURIComponent(src));
-    for (const file of files) {
-      const images = tags(html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
-      expect(images, `нет <img> кадра ${decodeURIComponent(file)}`).toHaveLength(1);
-      expect(images[0]).toContain('loading="lazy"');
-      const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => tag.includes(file));
-      expect(preloads, `кадр ${decodeURIComponent(file)} в preload`).toEqual([]);
-    }
+    const services = studio.services.flatMap((group) => group.services);
+    expectLazyPhotos(lang, [...pairPhotos(services), ...(studio.address.photo ? [studio.address.photo.src] : [])]);
   });
 
   it("has one main heading", () => {
@@ -107,5 +131,86 @@ describe.each(langs)("built home page /%s", (lang) => {
 
   it("carries no real brands from the mockup", () => {
     expect(page(lang).html).not.toMatch(/spectre|mansory/i);
+  });
+});
+
+const groupPages = studio.services
+  .filter(hasGroupPage)
+  .flatMap((group) => langs.map((lang) => ({ lang, group, route: `${lang}${groupPagePath(group.slug)}` })));
+
+describe("built group route", () => {
+  it("renders an unknown address in full before answering: its 404 goes out as 404", () => {
+    // ensureStatic = "navigation" в маршруте. Без неё шапка незнакомого адреса ушла бы
+    // раньше страницы, и 404 приходил бы со статусом 200
+    const manifest = JSON.parse(readFileSync(join(process.cwd(), ".next", "prerender-manifest.json"), "utf-8"));
+    const route = manifest.dynamicRoutes?.["/[lang]/uslugi/[slug]"];
+    expect(route, "маршрута групп нет в prerender-manifest — Next мог сменить формат").toBeDefined();
+    expect(route.compute, "маршрут групп отвечает до конца отрисовки — или Next сменил формат").toBe("blocking");
+  });
+});
+
+describe.each(groupPages)("built group page /$route", ({ lang, group, route }) => {
+  it("is prerendered: `npm run build` has run", () => expectPrerendered(route));
+
+  it("names its language and keeps route changes instant", () => expectLang(route, lang));
+
+  it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
+
+  it("has one main heading — the group — and the group in the tab title", () => {
+    const { html, head } = page(route);
+    const name = t(group.name, lang);
+    const headings = tags(html, /<h1\b[^>]*>[\s\S]*?<\/h1>/g);
+    expect(headings).toHaveLength(1);
+    // В заголовке страницы однобуквенные слова приклеены неразрывным пробелом, во вкладке — нет
+    expect(headings[0]).toContain(glue(name, lang));
+    expect(head.match(/<title>([^<]*)<\/title>/)?.[1]).toContain(name);
+  });
+
+  it("serves every service of the group with its scope and the default class price", () => {
+    // Сервер рисует класс по умолчанию: без JS и до гидрации цена уже на месте
+    const visible = markup(route);
+    const dict = getDictionary(lang);
+    for (const service of group.services) {
+      expect(visible).toContain(escaped(glue(t(service.name, lang), lang)));
+      for (const line of service.scope ?? []) expect(visible).toContain(escaped(glue(t(line, lang), lang)));
+      const parts = priceParts(service.price, defaultCarClass, dict.price);
+      expect(visible).toContain(escaped(parts.kind === "amount" ? parts.amount : parts.text));
+    }
+  });
+
+  it("loads the group's before/after photos lazily", () => expectLazyPhotos(route, pairPhotos(group.services)));
+
+  it("serves the questions with their answers in the markup, the first one open", () => {
+    const sections = tags(markup(route), /<section\b[\s\S]*?<\/section>/g);
+    const faq = sections.find((section) => section.includes(`id="${groupSectionIds.faq}"`));
+    // Вопросы у группы необязательны: нет их в данных — нет и секции
+    if (!group.faq?.length) {
+      expect(faq).toBeUndefined();
+      return;
+    }
+    expect(faq, "нет секции частых вопросов").toBeDefined();
+    for (const { question, answer } of group.faq ?? []) {
+      expect(faq).toContain(escaped(glue(t(question, lang), lang)));
+      expect(faq).toContain(escaped(glue(t(answer, lang), lang)));
+    }
+    const details = tags(faq ?? "", /<details\b[^>]*>/g);
+    expect(details).toHaveLength(group.faq?.length ?? 0);
+    expect(details.map((tag) => /\sopen[\s=>]/.test(tag))).toEqual(details.map((_, i) => i === 0));
+  });
+
+  it("has the advice card call the floating call hides at", () => {
+    const call = tags(page(route).html, /<a\b[^>]*>/g).find((tag) => tag.includes(`id="${groupSectionIds.adviceCall}"`));
+    expect(call, "нет кнопки звонка карточки «Nie wiesz…»").toContain('href="tel:');
+  });
+
+  it("leaves the hero car to the home page", () => {
+    // Ни картинкой, ни preload: путь как есть и так, как его кодирует next/image
+    const { html } = page(route);
+    expect(html).not.toContain(carFile);
+    expect(html).not.toContain(studio.hero.car.src);
+  });
+
+  it("carries no real brands from the mockup", () => {
+    expect(page(route).html).not.toMatch(/spectre|mansory/i);
   });
 });

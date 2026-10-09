@@ -88,6 +88,20 @@ export type Dictionary = {
   };
   /** photoExample — подпись под фото входа, сделанным ИИ. */
   contact: { title: string; route: string; photoExample: string };
+  group: {
+    /** Подставляются {group} и {studio}: заголовок вкладки страницы группы. */
+    metaTitle: string;
+    /** Хлебные крошки — для диктора. */
+    breadcrumbs: string;
+    /** Ссылка над группой в прайсе главной — на страницу группы. */
+    whatsIncluded: string;
+    /** Метка над составом услуги в карточке. */
+    scope: string;
+    /** Заголовок частых вопросов. */
+    faq: string;
+    /** Карточка со звонком в конце страницы группы. */
+    adviceTitle: string;
+  };
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
   newTab: string;
   footer: { services: string; studio: string };

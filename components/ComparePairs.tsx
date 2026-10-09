@@ -10,25 +10,10 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Price, ServiceName } from "@/components/home/PriceList";
+import { Price, ServiceName } from "@/components/Price";
 import { DragSidewaysIcon } from "@/components/icons";
-import { frameSizes } from "@/lib/frame";
-import type { PriceParts } from "@/lib/format";
-
-export type ComparePhoto = { src: string; width: number; height: number; alt: string };
-
-export type ComparePair = {
-  label: string;
-  service: string;
-  brand?: string;
-  price: PriceParts;
-  /** Подпись ползунка для диктора и клавиатуры. */
-  compare: string;
-  /** Хоть один кадр пары сделан ИИ — под парой «Zdjęcia przykładowe». */
-  examples: boolean;
-  before: ComparePhoto;
-  after: ComparePhoto;
-};
+import type { ComparePair } from "@/lib/compare";
+import { columnFrameSizes, frameSizes } from "@/lib/frame";
 
 type Words = { before: string; after: string; pairs: string; examples: string };
 
@@ -44,20 +29,52 @@ const keySteps: Record<string, (index: number, count: number) => number> = {
   End: (_, count) => count - 1,
 };
 
+/*
+ * Раскладка; до 1024 px обе — телефонная. «section» — секция главной во всю ширину: кадр
+ * до 520 слева, текст до 460 справа. «column» — основная колонка страницы группы: кадр и
+ * текст встают рядом, только когда самой колонке хватает места — 728 px: кадр 420, 48
+ * между ними и 260 тексту (запрос к ширине контейнера, контейнер — родитель с
+ * `@container`); иначе друг под другом, кадр и подпись под ним не шире 420.
+ */
+const layouts = {
+  section: {
+    sizes: frameSizes,
+    root: "lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,460px)] lg:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:gap-x-20",
+    heading: "lg:col-start-2 lg:row-start-2",
+    tabs: "lg:col-start-2 lg:row-start-3 lg:mt-7",
+    panel: "lg:col-start-1 lg:row-span-full lg:mt-0",
+    caption: "lg:col-start-2 lg:row-start-4 lg:mt-6 lg:border-t lg:border-line lg:pt-4",
+    examples: "lg:col-start-2 lg:row-start-5",
+  },
+  column: {
+    sizes: columnFrameSizes,
+    root: "lg:@min-[728px]:grid lg:@min-[728px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:@min-[728px]:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:@min-[728px]:gap-x-12",
+    heading: "lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-2",
+    tabs: "lg:max-w-105 lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-3 lg:@min-[728px]:max-w-none",
+    panel: "lg:max-w-105 lg:@min-[728px]:col-start-1 lg:@min-[728px]:row-span-full lg:@min-[728px]:mt-0",
+    caption:
+      "lg:max-w-105 lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-4 lg:@min-[728px]:mt-6 lg:@min-[728px]:max-w-none lg:@min-[728px]:border-t lg:@min-[728px]:border-line lg:@min-[728px]:pt-4",
+    examples: "lg:@min-[728px]:col-start-2 lg:@min-[728px]:row-start-5",
+  },
+} as const;
+
 /**
- * До/после главной: вкладки пар, шторка, услуга с ценой «od …». Телефон — одной
- * колонкой, как на холсте; десктоп — кадр слева, заголовок, вкладки и услуга справа,
- * по центру высоты кадра.
+ * До/после главной и страницы группы: вкладки пар, шторка, услуга с ценой «od …».
+ * Телефон — одной колонкой, как на холсте; десктоп — кадр слева, заголовок, вкладки и
+ * услуга справа, по центру высоты кадра.
  */
 export function ComparePairs({
   heading,
   pairs,
   words,
+  layout = "section",
 }: {
   heading: ReactNode;
   pairs: ComparePair[];
   words: Words;
+  layout?: keyof typeof layouts;
 }) {
+  const place = layouts[layout];
   const [active, setActive] = useState(0);
   const [position, setPosition] = useState(50);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -82,15 +99,15 @@ export function ComparePairs({
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,460px)] lg:grid-rows-[1fr_auto_auto_auto_auto_1fr] lg:gap-x-20">
-      <div className="lg:col-start-2 lg:row-start-2">{heading}</div>
+    <div className={place.root}>
+      <div className={place.heading}>{heading}</div>
 
       {withTabs && (
         <div
           role="tablist"
           aria-label={words.pairs}
           onKeyDown={onTabKey}
-          className="mt-6 grid auto-cols-fr grid-flow-col gap-1 rounded-switch border border-line p-1 lg:col-start-2 lg:row-start-3 lg:mt-7"
+          className={`mt-6 grid auto-cols-fr grid-flow-col gap-1 rounded-switch border border-line p-1 ${place.tabs}`}
         >
           {pairs.map((item, index) => (
             <button
@@ -117,7 +134,7 @@ export function ComparePairs({
         id={`${id}-panel`}
         role={withTabs ? "tabpanel" : undefined}
         aria-labelledby={withTabs ? `${id}-tab-${active}` : undefined}
-        className="mt-4 lg:col-start-1 lg:row-span-full lg:mt-0"
+        className={`mt-4 ${place.panel}`}
       >
         <Slider
           pairs={pairs}
@@ -125,17 +142,18 @@ export function ComparePairs({
           position={position}
           onMove={setPosition}
           words={words}
+          sizes={place.sizes}
         />
       </div>
 
-      <div className="mt-4 flex items-baseline justify-between gap-3 lg:col-start-2 lg:row-start-4 lg:mt-6 lg:border-t lg:border-line lg:pt-4">
+      <div className={`mt-4 flex items-baseline justify-between gap-3 ${place.caption}`}>
         <ServiceName name={pair.service} brand={pair.brand} />
         <Price parts={pair.price} />
       </div>
       {pairs.some((item) => item.examples) && (
         // Место держится и под парой без ИИ: строка не прыгает при смене вкладки
         <p
-          className={`mt-2 text-12 leading-body text-muted lg:col-start-2 lg:row-start-5 ${pair.examples ? "" : "invisible"}`}
+          className={`mt-2 text-12 leading-body text-muted ${place.examples} ${pair.examples ? "" : "invisible"}`}
         >
           {words.examples}
         </p>
@@ -155,12 +173,15 @@ function Slider({
   position,
   onMove,
   words,
+  sizes,
 }: {
   pairs: ComparePair[];
   active: number;
   position: number;
   onMove: (position: number) => void;
   words: Words;
+  /** Ширина кадра на экране для next/image — у каждой раскладки своя. */
+  sizes: string;
 }) {
   // Палец ведёт шторку один: второй (щипок) не перехватывает
   const drag = useRef<{ id: number; x: number; from: number } | null>(null);
@@ -217,7 +238,7 @@ function Slider({
             width={item.after.width}
             height={item.after.height}
             alt={item.after.alt}
-            sizes={frameSizes}
+            sizes={sizes}
             draggable={false}
             className="pointer-events-none absolute inset-0 size-full object-cover"
           />
@@ -234,7 +255,7 @@ function Slider({
               width={item.before.width}
               height={item.before.height}
               alt={item.before.alt}
-              sizes={frameSizes}
+              sizes={sizes}
               draggable={false}
               className="absolute inset-0 size-full object-cover"
             />

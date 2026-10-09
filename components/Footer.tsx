@@ -2,6 +2,7 @@ import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Logo } from "@/components/Logo";
+import { NavLink } from "@/components/NavLink";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
 import { formatDayRange, formatTimeRange, glue } from "@/lib/format";
@@ -42,9 +43,14 @@ export async function Footer({ lang, dict }: Props) {
           <nav aria-label={dict.footer.services}>
             <p className="caps-label mb-1">{dict.footer.services}</p>
             {studio.services.map((group) => (
-              <Link key={group.slug} href={localePath(lang, groupPath(group))} className={linkClass}>
+              <NavLink
+                key={group.slug}
+                href={localePath(lang, groupPath(group))}
+                currentOn={groupPath(group)}
+                className={`${linkClass} data-current:text-accent`}
+              >
                 {glue(t(group.name, lang), lang)}
-              </Link>
+              </NavLink>
             ))}
           </nav>
 
