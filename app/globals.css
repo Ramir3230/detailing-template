@@ -3,6 +3,10 @@
 /* Телефон ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается */
 @custom-variant short (@media (height < 600px) and (width < 64rem));
 
+/* Десктоп ниже 800 px высотой — ноутбук с панелями браузера: hero сжимается, чтобы
+   строки рейтинга и статуса и неон под машиной остались на первом экране */
+@custom-variant low (@media (height < 800px) and (width >= 64rem));
+
 /* Страница с hero, то есть главная: на ней сцена зажигания. Скрытая ушедшая страница
    (data-hidden, см. HeroStage) не в счёт. :where — без веса: состояние data-shown у
    шапки должно перебивать спрятанное */
@@ -52,6 +56,9 @@
   --text-64: 64px;
   --text-72: 72px;
   --text-hero: clamp(32px, 3.6vw, 52px);
+  /* На низком окне десктопа — ещё и по высоте экрана: четыре строки заголовка уступают
+     место строкам рейтинга и статуса */
+  --text-hero-low: clamp(32px, min(3.6vw, 5.6svh), 52px);
 
   --leading-logo: 1.1;
   --leading-heading: 1.3;
@@ -342,6 +349,15 @@
 /* Свет вокруг булавки: мягкий круг акцента 10%, как свет за машиной в hero */
 @utility map-pin-glow {
   background: radial-gradient(closest-side, var(--color-accent-fill), transparent);
+}
+
+/* Машина hero на низком окне десктопа — по высоте экрана: не выше 70% hero (экран без
+   шапки), чтобы под ней был виден неон пола. --car-aspect ставит HeroCar из данных */
+@utility hero-car-low {
+  max-width: min(
+    var(--container-hero-car),
+    calc((100svh - var(--spacing-header) - 1px) * 0.7 * var(--car-aspect))
+  );
 }
 
 /* Мягкий свет акцента сверху меню */

@@ -9,6 +9,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import type { VolumeState } from "@/components/home/CarVolume";
@@ -138,7 +139,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
       data-volume={shown.car ? "" : undefined}
       data-neon={shown.neon ? "" : undefined}
       className={`relative ${className}`}
-      style={{ aspectRatio: `${width} / ${height}` }}
+      style={{ aspectRatio: `${width} / ${height}`, "--car-aspect": width / height } as CSSProperties}
     >
       {/* Неон на CSS прячется, а не убирается: по его вспышке зажигается неон холста */}
       <div
