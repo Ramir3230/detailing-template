@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
   createContext,
@@ -10,7 +11,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { VolumeState } from "@/components/home/CarVolume";
 import type { HeroCar as HeroCarData } from "@/content/types";
+
+/* Код WebGL — отдельным куском и только у машины с картой объёма. Грузится после
+   гидрации: фото машины и зажигание его не ждут */
+const CarVolume = dynamic(() => import("@/components/home/CarVolume").then((m) => m.CarVolume), {
+  ssr: false,
+});
 
 /*
  * Фото загружено и раскодировано: машина и слой фар — каждый своим сигналом. Не
@@ -114,18 +122,46 @@ const layer = "pointer-events-none absolute mix-blend-screen";
  * Машина: вырезка, под ней неон пола, поверх — светодиоды фар двумя слоями (резкий и
  * размытый ореолом) и ореол каждой фары. Слои фар того же размера, что машина, поэтому
  * совпадают при любой ширине. Картинки декоративные: смысл несёт заголовок.
+ * У машины с картой объёма (depth в данных) под фото лежит холст CarVolume: рисует
+ * неон на полу вместо CSS-слоя (data-neon, если в данных есть underglow) и, когда
+ * сцена отыграла, машину со всем светом фар вместо фото (data-volume). Пока он не готов
+ * или если холста не будет, остаются эти слои.
  */
 export function HeroCar({ car, className = "" }: { car: HeroCarData; className?: string }) {
   const ready = use(Ready);
-  const { src, lights, width, height, headlights } = car;
+  const { src, lights, depth, width, height, headlights, underglow } = car;
+  const body = useRef<HTMLImageElement>(null);
+  const rings = useRef<HTMLImageElement>(null);
+  const floor = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState<VolumeState>({ car: false, neon: false });
 
   return (
-    <div className={`relative ${className}`} style={{ aspectRatio: `${width} / ${height}` }}>
+    <div
+      data-volume={shown.car ? "" : undefined}
+      data-neon={shown.neon ? "" : undefined}
+      className={`relative ${className}`}
+      style={{ aspectRatio: `${width} / ${height}` }}
+    >
+      {/* Неон на CSS прячется, а не убирается: по его вспышке зажигается неон холста */}
       <div
+        ref={floor}
         aria-hidden="true"
-        className="glow-floor ignite-floor pointer-events-none absolute inset-x-[-4%] top-[96%] h-[38%]"
+        className="glow-floor ignite-floor pointer-events-none absolute top-[96%] h-[38%] in-data-neon:invisible"
       />
+      {depth && (
+        <CarVolume
+          map={depth}
+          aspect={width / height}
+          headlights={headlights}
+          underglow={underglow}
+          body={body}
+          rings={rings}
+          floor={floor}
+          onState={setShown}
+        />
+      )}
       <Image
+        ref={body}
         src={src}
         width={width}
         height={height}
@@ -134,7 +170,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         preload
         onLoad={ready.car}
         onError={ready.car}
-        className="fade-bottom ignite-body relative block size-full"
+        className="fade-bottom ignite-body relative block size-full in-data-neon:fade-bottom-short in-data-volume:invisible"
       />
       <Image
         src={lights}
@@ -143,9 +179,10 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         sizes={sizes}
         alt=""
         loading="eager"
-        className={`${layer} lights-bloom ignite-bloom inset-0 size-full`}
+        className={`${layer} lights-bloom ignite-bloom inset-0 size-full in-data-volume:invisible`}
       />
       <Image
+        ref={rings}
         src={lights}
         width={width}
         height={height}
@@ -154,7 +191,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
         loading="eager"
         onLoad={ready.lights}
         onError={ready.lights}
-        className={`${layer} ignite-rings inset-0 size-full`}
+        className={`${layer} ignite-rings inset-0 size-full in-data-volume:invisible`}
       />
       {/* Ореол вдвое шире светодиодов фары: ложится на фару и край крыла */}
       {headlights.map(({ x, y, w }) => (
@@ -162,7 +199,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
           key={`${x}-${y}`}
           aria-hidden="true"
           style={{ left: `${x}%`, top: `${y}%`, width: `${w * 2}%` }}
-          className={`${layer} glow-headlight ignite-headlight aspect-[2/1] -translate-x-1/2 -translate-y-1/2`}
+          className={`${layer} glow-headlight ignite-headlight aspect-[2/1] -translate-x-1/2 -translate-y-1/2 in-data-volume:invisible`}
         />
       ))}
     </div>
