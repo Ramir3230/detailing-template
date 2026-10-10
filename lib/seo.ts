@@ -16,11 +16,11 @@ export function isPublished(lang: Lang): boolean {
 
 /**
  * Адрес сайта, от которого считаются canonical и hreflang: в них Google ждёт полный
- * адрес. На Vercel — домен продакшена проекта, у клиента — его собственный (Vercel берёт
- * самый короткий из привязанных); на превью тоже он: копия не перетягивает поиск на
- * себя. Локально — localhost.
+ * адрес. У клиента — `url` из данных студии, у демо — домен продакшена проекта на Vercel;
+ * на превью тоже они: копия не перетягивает поиск на себя. Локально — localhost.
  */
 export function siteUrl(): URL {
+  if (studio.url) return new URL(studio.url);
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   return new URL(host ? `https://${host}` : `http://localhost:${process.env.PORT || 3000}`);
 }

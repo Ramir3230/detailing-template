@@ -143,7 +143,7 @@ export const afterdark: Studio = {
       name: { pl: "Mycie i szyby", ru: "Мойка и стёкла" },
       intro: {
         pl: "Mycie ręczne, bez szczotek, oraz powłoki, dzięki którym deszcz w trasie sam spływa z szyb. Ceny większości usług zależą od klasy auta.",
-        ru: "Ручная мойка без щёток и покрытия, с которыми дождь в дороге сам сходит со стёкол. Цены большинства услуг зависят от класса машины.",
+        ru: "Ручная мойка без щёток — и покрытия, с которыми дождь в дороге сам сходит со стёкол. Цены большинства услуг зависят от класса машины.",
       },
       advice: {
         pl: "Zadzwoń — podpowiemy, czy wystarczy mycie, czy lepiej wziąć kompleks.",
@@ -288,7 +288,7 @@ export const afterdark: Studio = {
           duration: { unit: "day", min: 1 },
           scope: [
             { pl: "Mycie i dekontaminacja lakieru", ru: "Мойка и деконтаминация кузова" },
-            { pl: "Pomiar grubości lakieru przed pracą", ru: "Замер толщины покрытия перед работой" },
+            { pl: "Pomiar grubości lakieru przed pracą", ru: "Замер толщины лака перед работой" },
             {
               pl: "Polerowanie jednym etapem: lekkie rysy i hologramy",
               ru: "Полировка в один этап: лёгкие царапины и голограммы",
@@ -353,7 +353,7 @@ export const afterdark: Studio = {
           },
           answer: {
             pl: "Nie wszystkie. Polerowanie zbiera cienką warstwę lakieru bezbarwnego, więc znikają rysy, które nie sięgają głębiej: hologramy, zmatowienia, ślady po myjni. Prosty test: przeciągnij paznokciem w poprzek rysy. Nie zaczepia — zwykle zniknie po polerowaniu. Zaczepia — rysa doszła do koloru lub głębiej: złagodzimy ją, ale zniknie dopiero po lakierowaniu.",
-            ru: "Не все. Полировка снимает тонкий слой бесцветного лака, поэтому уходят царапины, которые не глубже него: голограммы, помутнения, следы от мойки. Простой тест: проведите ногтем поперёк царапины. Не цепляется — обычно уходит после полировки. Цепляется — царапина дошла до цвета или глубже: сделаем её менее заметной, но исчезнет она только после покраски.",
+            ru: "Не все. Полировка снимает тонкий слой бесцветного лака, поэтому уходят царапины, которые не глубже него: голограммы, помутнения, следы от мойки. Простой тест: проведите ногтем поперёк царапины. Не цепляется — обычно уходит после полировки. Цепляется — царапина дошла до цветного слоя или глубже: сделаем её менее заметной, но исчезнет она только после покраски.",
           },
         },
         {
@@ -642,7 +642,7 @@ export const afterdark: Studio = {
       author: "Tomasz W.",
       text: {
         pl: "Powłoka ceramiczna na nowym kombi. Przed pracą zmierzyli lakier i wytłumaczyli, czym różni się korekta jednoetapowa od wieloetapowej. Po deszczu woda sama spływa, a auto myję dwa razy rzadziej.",
-        ru: "Керамика на новый универсал. Перед работой замерили лак и объяснили, чем одноэтапная полировка отличается от многоэтапной. После дождя вода сама стекает, а мою машину вдвое реже.",
+        ru: "Керамика на новый универсал. Перед работой замерили толщину лака и объяснили, чем одноэтапная полировка отличается от многоэтапной. После дождя вода сама стекает, а мыть машину приходится вдвое реже.",
       },
       source: "example",
     },
@@ -698,7 +698,7 @@ export const afterdark: Studio = {
         paragraphs: [
           {
             pl: "Zanim zaczniemy, mierzymy grubość lakieru i robimy próbę na małym fragmencie. Widzisz efekt, zanim zdecydujesz o całym aucie.",
-            ru: "Перед началом замеряем толщину покрытия и делаем пробу на небольшом участке. Вы видите результат до того, как решите насчёт всей машины.",
+            ru: "Перед началом замеряем толщину лака и делаем пробу на небольшом участке. Вы видите результат до того, как решите насчёт всей машины.",
           },
           {
             pl: "Cenę ustalamy przed rozpoczęciem prac i się jej trzymamy. Na stanowisku stoi tylko Twoje auto, więc pracujemy bez pośpiechu.",

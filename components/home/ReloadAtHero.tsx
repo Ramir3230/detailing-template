@@ -31,7 +31,9 @@ export function ReloadAtHero() {
     // обновление: на нём восстановление не трогаем. Обновление события navigate не даёт.
     // Иначе «Назад» на эту страницу открыл бы hero, а WebKit, уходя «Назад», выключил бы
     // восстановление уже у шага, куда идёт. tel: и мессенджеры страницу не уводят. Без
-    // Navigation API (Safari до 26.2) так остаётся только без кэша вкладки
+    // Navigation API (Safari до 26.2) так остаётся только без кэша вкладки. Прерванный
+    // переход (Stop) страницу не уводит, а сообщить о нём браузеры не дают: обновление
+    // после него откроет прежнее место
     const navigate = (event: Event) => {
       const { destination } = event as NavigateEvent;
       if (!destination.sameDocument && /^https?:$/.test(new URL(destination.url).protocol)) {
@@ -39,9 +41,11 @@ export function ReloadAtHero() {
       }
     };
     // В кэш вкладки (bfcache) страница уходит вместе с прокруткой: при возврате она та же,
-    // а обновление туда не попадает никогда
+    // а обновление туда не попадает никогда. Флаг ухода гасим здесь же: из кэша страница
+    // вернётся с ним, и следующее обновление открыло бы прежнее место вместо hero
     const leave = (event: PageTransitionEvent) => {
       if (!location.hash && !event.persisted && !leavingByNavigation) history.scrollRestoration = "manual";
+      leavingByNavigation = false;
     };
     const { navigation } = window as WithNavigation;
     if (document.readyState === "complete") restore();
