@@ -410,12 +410,16 @@ export const afterdark: Studio = {
             { pl: "Osuszanie sprężonym powietrzem" },
             { pl: "Matowy dressing na plastiki i gumy" },
           ],
-          /* Заглушки до фото владельца (решение 09.10.2026): тёмный кадр с контуром мотора */
+          /* Пара владельца (10.10.2026), как у Felgi: «po» — фото, «przed» — его правка ИИ;
+             «po» совмещён с «przed» по ключевым точкам, оба обрезаны до 4:5 по кожуху */
           beforeAfter: pair(
             "silnik",
             "Silnik",
-            { alt: "Miejsce na zdjęcie komory silnika przed detailingiem", ai: false },
-            { alt: "Miejsce na zdjęcie komory silnika po detailingu", ai: false },
+            {
+              alt: "Komora silnika przed detailingiem: kurz i zacieki na osłonie silnika i przewodach",
+              ai: true,
+            },
+            { alt: "Ta sama komora po detailingu: czysta, matowa osłona silnika", ai: false },
           ),
         },
       ],
