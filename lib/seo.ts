@@ -19,8 +19,8 @@ export function isPublished(lang: Lang): boolean {
  * адрес. У клиента — `url` из данных студии, у демо — домен продакшена проекта на Vercel;
  * на превью тоже они: копия не перетягивает поиск на себя. Локально — localhost.
  */
-export function siteUrl(): URL {
-  if (studio.url) return new URL(studio.url);
+export function siteUrl(url: string | undefined = studio.url): URL {
+  if (url) return new URL(url);
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   return new URL(host ? `https://${host}` : `http://localhost:${process.env.PORT || 3000}`);
 }
