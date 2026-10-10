@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ClassPicker, ClassPrice, ClassScope } from "@/components/ClassScope";
 import { useCarClass } from "@/components/ClassSwitch";
 import { ServiceName } from "@/components/Price";
-import { PhoneIcon } from "@/components/icons";
+import { ClockIcon, PhoneIcon } from "@/components/icons";
 import type { CarClass } from "@/content/types";
 import type { PriceGroup } from "@/lib/price-list";
 
@@ -13,6 +13,8 @@ type Props = {
   /** Заголовок и подсказка секции — рисует сервер. */
   heading: ReactNode;
   groups: PriceGroup[];
+  /** Строка под списком: как студия считает цену. */
+  footnote: string;
   descriptions: Record<CarClass, string>;
   words: { classLabel: string; individualQuote: string; call: string; whatsIncluded: string };
   telHref: string;
@@ -24,7 +26,7 @@ type Props = {
  * в липкой боковой колонке слева, список справа. На телефоне колонка «растворяется»
  * (display: contents), чтобы липкий блок жил в границах всей секции.
  */
-export function PriceList({ heading, groups, descriptions, words, telHref }: Props) {
+export function PriceList({ heading, groups, footnote, descriptions, words, telHref }: Props) {
   const selected = useCarClass();
   // Номер строки во всём прайсе: счётчики трогаются лёгкой волной сверху вниз.
   const firstRow = groups.map((_, i) =>
@@ -87,6 +89,12 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
                     {row.note && (
                       <span className="text-13 leading-note text-muted lg:text-14">{row.note}</span>
                     )}
+                    {row.duration && (
+                      <span className="flex items-center gap-2 text-13 leading-note text-muted lg:text-14">
+                        <ClockIcon size={14} />
+                        {row.duration}
+                      </span>
+                    )}
                   </div>
                   <ClassPrice
                     prices={row.prices}
@@ -98,6 +106,7 @@ export function PriceList({ heading, groups, descriptions, words, telHref }: Pro
             </ul>
           </div>
         ))}
+        <p className="text-13 leading-note text-muted lg:text-14">{footnote}</p>
       </div>
     </ClassScope>
   );

@@ -4,7 +4,7 @@ import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
 import { telHref } from "@/lib/contact";
 import { glue } from "@/lib/format";
-import type { Lang } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 import { classDescriptions, priceList } from "@/lib/price-list";
 
@@ -25,7 +25,8 @@ export function Prices({ lang, dict }: { lang: Lang; dict: Dictionary }) {
             <p className="mt-3 hidden text-muted lg:block">{glue(dict.prices.pickLong, lang)}</p>
           </>
         }
-        groups={priceList(studio.services, lang, dict.price)}
+        groups={priceList(studio.services, lang, dict)}
+        footnote={glue(t(studio.priceNote, lang), lang)}
         descriptions={classDescriptions(studio.carClasses, lang)}
         words={{
           classLabel: dict.prices.classLabel,

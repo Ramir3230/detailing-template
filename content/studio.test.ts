@@ -56,6 +56,10 @@ describe("active studio data", () => {
     }
   });
 
+  it("explains how the studio sets its prices: the line under the price list", () => {
+    expect(studio.priceNote.pl.trim()).not.toBe("");
+  });
+
   it("has https links for the route and the Google reviews", () => {
     for (const url of [studio.address.routeUrl, studio.rating.url]) {
       if (url) expect(new URL(url).protocol).toBe("https:");
