@@ -19,7 +19,7 @@ export function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
 }
 
-/** Адрес страницы на языке: `/#kontakt` → `/ru#kontakt`, `/cennik` → `/ru/cennik`. */
+/** Адрес страницы на языке: `/#kontakt` → `/ru#kontakt`, `/kontakt` → `/ru/kontakt`. */
 export function localePath(lang: Lang, path: string): string {
   if (lang === defaultLang) return path;
   const hashAt = path.indexOf("#");
@@ -28,7 +28,7 @@ export function localePath(lang: Lang, path: string): string {
   return `/${lang}${pathname === "/" ? "" : pathname}${hash}`;
 }
 
-/** Обратное к localePath для адреса из браузера: `/ru/cennik` → `/cennik`. */
+/** Обратное к localePath для адреса из браузера: `/ru/kontakt` → `/kontakt`. */
 export function stripLang(pathname: string): string {
   for (const lang of langs) {
     if (pathname === `/${lang}`) return "/";

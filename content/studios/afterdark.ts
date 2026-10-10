@@ -445,6 +445,9 @@ export const afterdark: Studio = {
       ],
     },
   ],
+  priceNote: {
+    pl: "Przy cenach „od” ostateczną kwotę podajemy po oględzinach — zawsze przed rozpoczęciem prac.",
+  },
   rating: { value: 5, count: 24 },
   reviews: [
     {

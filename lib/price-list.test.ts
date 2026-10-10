@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ServiceGroup } from "@/content/types";
 import { pl } from "@/dictionaries/pl";
+import { ru } from "@/dictionaries/ru";
 import { parseCarClass } from "@/lib/car-class";
 import { priceList } from "@/lib/price-list";
 import { storyDuration } from "@/lib/stories";
@@ -10,7 +11,11 @@ const groups: ServiceGroup[] = [
     slug: "mycie-i-szyby",
     name: { pl: "Mycie i szyby", ru: "Мойка и стёкла" },
     services: [
-      { name: { pl: "Mycie nadwozia" }, price: { kind: "byClass", S: 200, M: 220, L: 250 } },
+      {
+        name: { pl: "Mycie nadwozia" },
+        price: { kind: "byClass", S: 200, M: 220, L: 250 },
+        duration: { unit: "hour", min: 2, max: 3 },
+      },
       {
         name: { pl: "Powłoka" },
         brand: "GYEON",
@@ -23,7 +28,7 @@ const groups: ServiceGroup[] = [
 
 describe("priceList", () => {
   it("formats every class in advance", () => {
-    const [group] = priceList(groups, "pl", pl.price);
+    const [group] = priceList(groups, "pl", pl);
     expect(group.rows[0].prices).toEqual({
       S: { kind: "amount", amount: "200\u00A0zł" },
       M: { kind: "amount", amount: "220\u00A0zł" },
@@ -35,25 +40,32 @@ describe("priceList", () => {
 
   it("links a group to its page in the page language, once it has one", () => {
     const withPage: ServiceGroup[] = [{ ...groups[0], slug: "lakier", intro: { pl: "Korekta usuwa rysy." } }];
-    expect(priceList(withPage, "pl", pl.price)[0].page).toBe("/uslugi/lakier");
-    expect(priceList(withPage, "ru", pl.price)[0].page).toBe("/ru/uslugi/lakier");
-    expect(priceList(groups, "pl", pl.price)[0].page).toBeUndefined();
+    expect(priceList(withPage, "pl", pl)[0].page).toBe("/uslugi/lakier");
+    expect(priceList(withPage, "ru", pl)[0].page).toBe("/ru/uslugi/lakier");
+    expect(priceList(groups, "pl", pl)[0].page).toBeUndefined();
   });
 
   it("puts texts in the page language and glues short words", () => {
-    expect(priceList(groups, "pl", pl.price)[0].name).toBe("Mycie i\u00A0szyby");
-    expect(priceList(groups, "ru", pl.price)[0].name).toBe("Мойка и\u00A0стёкла");
+    expect(priceList(groups, "pl", pl)[0].name).toBe("Mycie i\u00A0szyby");
+    expect(priceList(groups, "ru", pl)[0].name).toBe("Мойка и\u00A0стёкла");
   });
 
   it("prepares counter strips only for prices by class", () => {
-    const [group] = priceList(groups, "pl", pl.price);
+    const [group] = priceList(groups, "pl", pl);
     expect(group.rows[0].rolling?.positions).toEqual({ S: [2, 0, 0], M: [2, 2, 0], L: [2, 5, 0] });
     expect(group.rows[0].rolling?.suffix).toBe("\u00A0zł");
     expect(group.rows[1].rolling).toBeUndefined();
   });
 
+  it("formats the duration in the page language, one for all classes", () => {
+    const [group] = priceList(groups, "pl", pl);
+    expect(group.rows[0].duration).toBe("2–3\u00A0godziny");
+    expect(priceList(groups, "ru", ru)[0].rows[0].duration).toBe("2–3\u00A0часа");
+    expect(group.rows[1].duration).toBeUndefined();
+  });
+
   it("keeps brand and note only where they exist", () => {
-    const [group] = priceList(groups, "pl", pl.price);
+    const [group] = priceList(groups, "pl", pl);
     expect(group.rows[0]).not.toHaveProperty("brand", expect.anything());
     expect(group.rows[1]).toMatchObject({ brand: "GYEON", note: "Wszystkie klasy" });
   });

@@ -4,7 +4,8 @@ import type { Dictionary } from "@/dictionaries/types";
 /** Якоря секций главной: на них ведут навигация и плавающая «Zadzwoń». */
 export const sectionIds = {
   hero: "top",
-  services: "uslugi",
+  /** Прайс. Сюда ведут ссылки из Instagram и Maps студии — не переименовывать. */
+  services: "cennik",
   reviews: "opinie",
   contact: "kontakt",
   /** Кнопка звонка в контактах: когда она на экране, плавающая «Zadzwoń» прячется. */
@@ -20,7 +21,8 @@ export const groupSectionIds = {
 
 /*
  * Навигация ведёт только на готовое. Страница появилась — её пункт добавляется сюда
- * и в словари. Пока прайс живёт на главной, «Usługi» ведёт к её блоку.
+ * и в словари. Прайс живёт на главной, отдельной страницы у него нет (решение
+ * 10.10.2026), — «Usługi» ведёт к его блоку.
  */
 export const servicesPath = `/#${sectionIds.services}`;
 
