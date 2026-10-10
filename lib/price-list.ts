@@ -1,7 +1,7 @@
 import type { CarClass, Price, ServiceGroup, Text } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { carClasses } from "@/lib/car-class";
-import { glue, priceParts, type PriceParts } from "@/lib/format";
+import { formatDuration, glue, priceParts, type PriceParts } from "@/lib/format";
 import { localePath, t, type Lang } from "@/lib/i18n";
 import { groupPagePath, hasGroupPage } from "@/lib/nav";
 import { rollColumns, splitAmount, type RollColumn } from "@/lib/odometer";
@@ -17,6 +17,8 @@ export type PriceRow = {
   name: string;
   brand?: string;
   note?: string;
+  /** «2–3 godziny»: одна для всех классов. */
+  duration?: string;
   prices: Record<CarClass, PriceParts>;
   /** Есть только у цены по классу, которую можно показать лентами. */
   rolling?: Rolling;
@@ -32,13 +34,13 @@ export type PriceGroup = {
 
 /*
  * Прайс для переключателя в браузере: тексты уже на языке страницы, цены всех четырёх
- * классов уже отформатированы. Браузер только выбирает класс, форматирование остаётся
- * в lib/format.ts.
+ * классов и длительность уже отформатированы. Браузер только выбирает класс,
+ * форматирование остаётся в lib/format.ts.
  */
 export function priceList(
   groups: readonly ServiceGroup[],
   lang: Lang,
-  words: Dictionary["price"],
+  dict: Pick<Dictionary, "price" | "units">,
 ): PriceGroup[] {
   return groups.map((group) => ({
     slug: group.slug,
@@ -48,10 +50,11 @@ export function priceList(
       name: glue(t(service.name, lang), lang),
       brand: service.brand,
       note: service.note && glue(t(service.note, lang), lang),
+      duration: service.duration && formatDuration(service.duration, lang, dict.units),
       prices: Object.fromEntries(
-        carClasses.map((carClass) => [carClass, priceParts(service.price, carClass, words)]),
+        carClasses.map((carClass) => [carClass, priceParts(service.price, carClass, dict.price)]),
       ) as Record<CarClass, PriceParts>,
-      rolling: service.price.kind === "byClass" ? rolling(service.price, words) : undefined,
+      rolling: service.price.kind === "byClass" ? rolling(service.price, dict.price) : undefined,
     })),
   }));
 }

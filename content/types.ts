@@ -182,6 +182,11 @@ export type Studio = {
   hero: { title: Text; subtitle: Text; lead: Text; car: HeroCar };
   carClasses: Record<CarClass, Text>;
   services: ServiceGroup[];
+  /**
+   * Строка под прайсом главной: как студия считает цену — когда называет окончательную
+   * у «od», что с XL. Условия у каждой студии свои, поэтому в данных, а не в словаре.
+   */
+  priceNote: Text;
   /** url — страница отзывов в Google; нет ссылки — строка рейтинга открывает плашку демо. */
   rating: { value: number; count: number; url?: string };
   reviews: Review[];
