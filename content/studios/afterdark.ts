@@ -384,12 +384,16 @@ export const afterdark: Studio = {
             { pl: "Powłoka ceramiczna na felgi" },
             { pl: "Dressing opon" },
           ],
-          /* Заглушки до фото владельца (решение 09.10.2026): тёмный кадр с контуром диска */
+          /* Пара владельца (10.10.2026), как у Lakier: «po» — фото, «przed» — его правка ИИ;
+             «przed» совмещён с «po» по ключевым точкам, оба обрезаны до 4:5 */
           beforeAfter: pair(
             "felgi",
             "Felgi",
-            { alt: "Miejsce na zdjęcie felgi przed czyszczeniem", ai: false },
-            { alt: "Miejsce na zdjęcie felgi po czyszczeniu i powłoce", ai: false },
+            {
+              alt: "Czarna felga przed czyszczeniem: rdza i pył z hamulców na tarczy, zabrudzona opona",
+              ai: true,
+            },
+            { alt: "Ta sama felga po czyszczeniu: czysta tarcza i opona", ai: false },
           ),
         },
         {
