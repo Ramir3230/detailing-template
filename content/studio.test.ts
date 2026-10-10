@@ -183,6 +183,32 @@ describe("active studio data", () => {
     if (studio.address.photo) expectFrame(studio.address.photo);
   });
 
+  it("has the about page filled in, if there is one", () => {
+    const { about } = studio;
+    if (!about) return;
+    expect(about.intro.pl.trim()).not.toBe("");
+    // DESIGN.md, «Страница O nas»: цифры встают в ряд по три и на телефоне 375 px — до
+    // четырёх знаков широким шрифтом: «2019» занимает колонку почти целиком
+    expect(about.facts.length).toBeLessThanOrEqual(3);
+    for (const { value, label } of about.facts) {
+      expect(value.trim().length).toBeGreaterThan(0);
+      expect(value.length).toBeLessThanOrEqual(4);
+      expect(label.pl.trim()).not.toBe("");
+    }
+    expect(about.chapters.length).toBeGreaterThan(0);
+    for (const { title, paragraphs, photo } of about.chapters) {
+      expect(title.pl.trim()).not.toBe("");
+      expect(paragraphs.length, `${title.pl}: без текста`).toBeGreaterThan(0);
+      for (const paragraph of paragraphs) expect(paragraph.pl.trim()).not.toBe("");
+      expectFrame(photo);
+    }
+    // По этим строкам React различает главы, абзацы и цифры
+    const unique = (items: string[]) => expect(new Set(items).size).toBe(items.length);
+    unique(about.chapters.map(({ photo }) => photo.src));
+    unique(about.facts.map(({ label }) => label.pl));
+    for (const { paragraphs } of about.chapters) unique(paragraphs.map(({ pl }) => pl));
+  });
+
   it("has the map files in the size the data claims, enough for the map block on 2x", () => {
     const { map } = studio.address;
     if (!map) return;

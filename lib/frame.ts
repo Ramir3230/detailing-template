@@ -12,7 +12,7 @@ const phoneWidth = "(min-width: 688px) 640px, calc(100vw - 48px)";
 export const heroCarSizes = "(min-width: 1024px) 780px, (min-width: 688px) 633px, 92vw";
 
 /**
- * Ширина кадра 4:5 на экране — для `sizes` у next/image: до/после и фото входа. На
+ * Ширина кадра 4:5 на экране — для `sizes` у next/image: до/после, фото входа, кадры O nas. На
  * десктопе кадр до 520 px (DESIGN.md, «Фотографии»).
  */
 export const frameSizes = `(min-width: 1024px) 520px, ${phoneWidth}`;

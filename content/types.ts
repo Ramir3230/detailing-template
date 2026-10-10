@@ -83,6 +83,23 @@ export type ServiceGroup = {
   faq?: Faq[];
 };
 
+/** Цифра в ряду под вводным абзацем O nas: «2019» — «rok otwarcia studia». */
+export type AboutFact = { value: string; label: Text };
+
+/** Глава O nas: заголовок, абзацы и кадр 4:5 рядом. */
+export type AboutChapter = { title: Text; paragraphs: Text[]; photo: Photo };
+
+/**
+ * Страница O nas (DESIGN.md, «Страница O nas»): с чего студия начинала, как работает, на
+ * чём. Оферта просит у клиента пару абзацев о себе и фото — из них и собирается.
+ */
+export type About = {
+  /** Вводный абзац под заголовком; он же описание страницы для поиска. */
+  intro: Text;
+  facts: AboutFact[];
+  chapters: AboutChapter[];
+};
+
 /** Время «ЧЧ:ММ». Закрытие в тот же день, позже открытия; null — выходной. */
 export type DayHours = { open: string; close: string } | null;
 
@@ -190,4 +207,6 @@ export type Studio = {
   /** url — страница отзывов в Google; нет ссылки — строка рейтинга открывает плашку демо. */
   rating: { value: number; count: number; url?: string };
   reviews: Review[];
+  /** Страница O nas. Нет поля — нет страницы, и навигация на неё не ведёт. */
+  about?: About;
 };

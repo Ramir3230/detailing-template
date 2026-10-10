@@ -55,7 +55,7 @@ export async function Footer({ lang, dict }: Props) {
 
           <nav aria-label={dict.footer.studio}>
             <p className="caps-label mb-1">{dict.footer.studio}</p>
-            {studioPages.map(({ key, path }) => (
+            {studioPages(studio).map(({ key, path }) => (
               <NavLink
                 key={key}
                 href={localePath(lang, path)}

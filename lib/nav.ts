@@ -1,4 +1,4 @@
-import type { ServiceGroup, Text } from "@/content/types";
+import type { ServiceGroup, Studio, Text } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 
 /** Якоря секций главной: на них ведут навигация и плавающая «Zadzwoń». */
@@ -28,9 +28,22 @@ export const servicesPath = `/#${sectionIds.services}`;
 
 export const contactPagePath = "/kontakt";
 
-export const studioPages: readonly { key: keyof Dictionary["nav"]; path: string }[] = [
-  { key: "contact", path: contactPagePath },
-];
+export const aboutPagePath = "/o-nas";
+
+/** Кнопка звонка карточки в конце O nas: когда она на экране, плавающая «Zadzwoń» прячется. */
+export const aboutCallId = "o-nas-zadzwon";
+
+/**
+ * Страницы студии в шапке, меню и подвале. O nas — когда она есть в данных студии.
+ * Данные приходят аргументом: этот файл читают и клиентские компоненты, и импорт
+ * студии отсюда утащил бы её целиком в скрипты страницы.
+ */
+export function studioPages(studio: Pick<Studio, "about">): readonly { key: keyof Dictionary["nav"]; path: string }[] {
+  return [
+    ...(studio.about ? [{ key: "about" as const, path: aboutPagePath }] : []),
+    { key: "contact", path: contactPagePath },
+  ];
+}
 
 /** Страницы групп лежат под этим адресом: `/uslugi/lakier`. */
 export const groupPagesPath = "/uslugi";
