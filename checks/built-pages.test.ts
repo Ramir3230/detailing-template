@@ -129,12 +129,18 @@ describe.each(langs)("built home page /%s", (lang) => {
   });
 
   it("serves the price list with durations and the line on how prices are set", () => {
-    const visible = markup(lang);
+    const prices = markup(lang).match(/<section\b[^>]*id="cennik"[\s\S]*?<\/section>/)?.[0] ?? "";
     const { units } = getDictionary(lang);
+    // Счётом, а не наличием: у разных услуг одна длительность («1 dzień» дважды), и
+    // пропажа её у одной строки иначе прошла бы незамеченной
+    const expected = new Map<string, number>();
     for (const { duration } of studio.services.flatMap((group) => group.services)) {
-      if (duration) expect(visible).toContain(escaped(formatDuration(duration, lang, units)));
+      if (!duration) continue;
+      const text = escaped(formatDuration(duration, lang, units));
+      expected.set(text, (expected.get(text) ?? 0) + 1);
     }
-    expect(visible).toContain(escaped(glue(t(studio.priceNote, lang), lang)));
+    for (const [text, count] of expected) expect(prices.split(text).length - 1, text).toBe(count);
+    expect(prices).toContain(escaped(glue(t(studio.priceNote, lang), lang)));
   });
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
