@@ -38,7 +38,7 @@ export default async function AboutPage({ params }: PageProps<"/[lang]/o-nas">) 
         <h1 className="display text-28 leading-heading tracking-display lg:text-44">{glue(dict.nav.about, lang)}</h1>
         <p className="mt-3 text-muted lg:mt-4 lg:max-w-160 lg:text-18">{glue(t(about.intro, lang), lang)}</p>
         {about.facts.length > 0 && (
-          <ul className="mt-8 grid grid-cols-3 gap-4 border-t border-line pt-6 lg:mt-12 lg:gap-10 lg:pt-8">
+          <ul className="mt-8 grid auto-cols-fr grid-flow-col gap-4 border-t border-line pt-6 lg:mt-12 lg:gap-10 lg:pt-8">
             {about.facts.map(({ value, label }) => (
               <li key={label.pl}>
                 <span className="display block text-24 leading-none tracking-display lg:text-40">{value}</span>

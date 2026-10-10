@@ -332,6 +332,12 @@ describe.each(langs)("built about page /%s/o-nas", (lang) => {
     it("is not linked from the home page: the studio has no about page", () => {
       expect(page(lang).html).not.toContain(link);
     });
+
+    it("answers 404 when the studio has no about page", () => {
+      // Статус предотрисованной страницы Next кладёт рядом с её HTML
+      const meta = JSON.parse(readFileSync(built(route).replace(/\.html$/, ".meta"), "utf-8"));
+      expect(meta.status, "адрес O nas без данных отвечает не 404 — или Next сменил формат").toBe(404);
+    });
     return;
   }
 
@@ -359,7 +365,8 @@ describe.each(langs)("built about page /%s/o-nas", (lang) => {
       ...about.chapters.flatMap(({ title, paragraphs }) => [title, ...paragraphs]),
     ];
     for (const text of texts) expect(visible).toContain(escaped(glue(t(text, lang), lang)));
-    for (const { value } of about.facts) expect(visible).toContain(escaped(value));
+    // Цифра — целым содержимым тега: «1» и «2019» есть и в классах, и в тексте глав
+    for (const { value } of about.facts) expect(visible).toContain(`>${escaped(value)}</span>`);
   });
 
   it("loads the first chapter photo right away and the rest lazily", () => {
