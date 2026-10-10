@@ -4,6 +4,7 @@ import { Contact } from "@/components/home/Contact";
 import { FloatingCall } from "@/components/FloatingCall";
 import { Hero } from "@/components/home/Hero";
 import { Prices } from "@/components/home/Prices";
+import { ReloadAtHero } from "@/components/home/ReloadAtHero";
 import { Reviews } from "@/components/home/Reviews";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
@@ -32,6 +33,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         afterHero
         hideAt={sectionIds.contactCall}
       />
+      <ReloadAtHero />
     </main>
   );
 }

@@ -30,9 +30,9 @@ export type Dictionary = {
     opensOn: string;
   };
   days: {
-    /** Для часов в подвале: «Pn–pt». */
+    /** Для часов в подвале и в контактах на телефоне: «Pn–pt», «Pn – pt». */
     short: Week;
-    /** Для часов в контактах: «Poniedziałek – piątek». */
+    /** Для часов в контактах от 640 px и для диктора: «Poniedziałek – piątek». */
     long: Week;
     /** Для «otwieramy w poniedziałek». */
     on: Week;
