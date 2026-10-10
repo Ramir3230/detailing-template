@@ -36,7 +36,10 @@ export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: P
   const rows = groupHours(studio.hours).map(({ from, to, hours }) => ({
     from,
     to,
-    days: formatDayRange(from, to, dict.days.long, lang, " – "),
+    days: {
+      long: formatDayRange(from, to, dict.days.long, lang, " – "),
+      short: formatDayRange(from, to, dict.days.short, lang, " – "),
+    },
     time: hours ? formatTimeRange(hours) : dict.hours.closed,
   }));
 
