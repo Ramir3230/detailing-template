@@ -6,7 +6,8 @@ import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
-import { formatDuration, glue, priceParts } from "@/lib/format";
+import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
+import { groupHours } from "@/lib/hours";
 import { langs, localePath, t, type Lang } from "@/lib/i18n";
 import {
   aboutCallId,
@@ -299,6 +300,24 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
   it("has the contact call the floating call hides at", () => {
     const call = tags(page(route).html, /<div\b[^>]*>/g).find((tag) => tag.includes(`id="${sectionIds.contactCall}"`));
     expect(call, "нет кнопки звонка блока контактов").toBeDefined();
+  });
+
+  it("names the days in full for screen readers and short on a phone", () => {
+    // DESIGN.md, «Контакты»: полные с меткой «сегодня» не помещаются в строку телефона
+    const spans = tags(markup(route), /<span\b[^>]*>[^<]*<\/span>/g);
+    // Классы списком: подстрока «sm:hidden» совпала бы и с «max-sm:hidden»
+    const classes = (tag?: string) => tag?.match(/class="([^"]*)"/)?.[1].split(" ") ?? [];
+    for (const { from, to } of groupHours(studio.hours)) {
+      const long = escaped(formatDayRange(from, to, dict.days.long, lang, " – "));
+      const short = escaped(formatDayRange(from, to, dict.days.short, lang, " – "));
+      // Полная — диктору всегда, глазу с 640 px; короткая — только глазу, до 640
+      const full = spans.find((span) => span.endsWith(`>${long}</span>`));
+      expect(full, long).not.toContain("aria-hidden");
+      expect(classes(full), long).toContain("max-sm:sr-only");
+      const brief = spans.find((span) => span.endsWith(`>${short}</span>`));
+      expect(brief, short).toContain('aria-hidden="true"');
+      expect(classes(brief), short).toContain("sm:hidden");
+    }
   });
 
   it("loads the entrance photo right away: on a phone it is on the first screen", () => {
