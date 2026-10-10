@@ -1,7 +1,27 @@
-import type { Photo, Service } from "@/content/types";
+import type { Photo, Service, ServiceGroup } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { glue, startingPriceParts, type PriceParts } from "@/lib/format";
 import { fill, t, type Lang } from "@/lib/i18n";
+
+/** Вкладок пар не больше четырёх: на 375 px они делят ширину поровну (DESIGN.md, «До/после»). */
+export const maxPairs = 4;
+
+/**
+ * На странице группы — не больше трёх: на десктопе текст рядом с кадром получает 260 px
+ * (раскладка `column` в ComparePairs), а четыре вкладки по 9 знаков требуют от 318.
+ * Следит content/studio.test.ts.
+ */
+export const maxGroupPairs = 3;
+
+/**
+ * Услуги, чьи пары показывает главная: первая пара каждой группы в порядке прайса, не
+ * больше maxPairs. Остальные пары группы — только на её странице.
+ */
+export function homePairServices(groups: readonly ServiceGroup[]): Service[] {
+  return groups
+    .flatMap((group) => group.services.find((service) => service.beforeAfter) ?? [])
+    .slice(0, maxPairs);
+}
 
 type ComparePhoto = { src: string; width: number; height: number; alt: string };
 
@@ -20,7 +40,7 @@ export type ComparePair = {
 
 /**
  * Пары до/после — у услуг в их порядке, на языке страницы, под парой услуга с ценой
- * «od …». Главная берёт услуги всего прайса, страница группы — свои.
+ * «od …». Главная берёт homePairServices, страница группы — свои услуги.
  */
 export function comparePairs(services: readonly Service[], lang: Lang, dict: Dictionary): ComparePair[] {
   const photo = ({ src, width, height, alt }: Photo): ComparePhoto => ({ src, width, height, alt: t(alt, lang) });
