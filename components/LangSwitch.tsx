@@ -2,10 +2,17 @@
 
 import { usePathname } from "next/navigation";
 import type { Dictionary } from "@/dictionaries/types";
-import { langs, localePath, stripLang, type Lang } from "@/lib/i18n";
+import { localePath, stripLang, type Lang } from "@/lib/i18n";
+
+type Props = {
+  lang: Lang;
+  /** Языки, на которых готовы тексты студии: на неготовый переключатель не ведёт. */
+  langs: readonly Lang[];
+  words: Dictionary["language"];
+};
 
 /** «PL · RU»: текущий язык текстом, остальные — ссылками на ту же страницу. */
-export function LangSwitch({ lang, words }: { lang: Lang; words: Dictionary["language"] }) {
+export function LangSwitch({ lang, langs, words }: Props) {
   // На сервере путь приходит с /pl после внутренней перезаписи, в браузере — без него.
   const path = stripLang(usePathname());
 

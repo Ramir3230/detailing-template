@@ -8,7 +8,8 @@ import { getDictionary } from "@/dictionaries";
 import { telHref } from "@/lib/contact";
 import { formatPhone, glue } from "@/lib/format";
 import { fill, isLang, t } from "@/lib/i18n";
-import { aboutCallId } from "@/lib/nav";
+import { aboutCallId, aboutPagePath } from "@/lib/nav";
+import { alternates } from "@/lib/seo";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/o-nas">): Promise<Metadata> {
   const { lang } = await params;
@@ -18,6 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/o-nas">): 
   return {
     title: fill(dict.aboutPage.metaTitle, { studio: studio.name }),
     description: t(about.intro, lang),
+    alternates: alternates(lang, aboutPagePath),
   };
 }
 

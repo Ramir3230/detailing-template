@@ -8,6 +8,7 @@ import { formatDayRange, formatTimeRange, glue } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
 import { localePath, t, type Lang } from "@/lib/i18n";
 import { groupPath, studioPages } from "@/lib/nav";
+import { publishedLangs } from "@/lib/seo";
 
 type Props = { lang: Lang; dict: Dictionary };
 
@@ -84,7 +85,9 @@ export async function Footer({ lang, dict }: Props) {
           <span>
             © {year} {studio.name}
           </span>
-          {studio.languages.length > 1 && <LangSwitch lang={lang} words={dict.language} />}
+          {publishedLangs.length > 1 && (
+            <LangSwitch lang={lang} langs={publishedLangs} words={dict.language} />
+          )}
         </div>
       </div>
     </footer>

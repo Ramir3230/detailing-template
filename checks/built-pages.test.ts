@@ -8,7 +8,7 @@ import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
 import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
-import { langs, localePath, t, type Lang } from "@/lib/i18n";
+import { defaultLang, langs, localePath, t, type Lang } from "@/lib/i18n";
 import {
   aboutCallId,
   aboutPagePath,
@@ -18,6 +18,7 @@ import {
   hasGroupPage,
   sectionIds,
 } from "@/lib/nav";
+import { isPublished, publishedLangs } from "@/lib/seo";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
@@ -55,11 +56,39 @@ function expectLang(route: string, lang: Lang) {
 }
 
 function expectSearchRule(route: string, lang: Lang) {
-  const published = (studio.languages as readonly Lang[]).includes(lang);
   const { head } = page(route);
   // Открытый сайт: noindex нигде в <head> — ни в robots, ни в googlebot, ни в другом виде
-  if (studio.indexed && published) expect(head).not.toMatch(/noindex/i);
+  if (studio.indexed && isPublished(lang)) expect(head).not.toMatch(/noindex/i);
   else expect(head.match(/<meta name="robots" content="([^"]*)"/)?.[1]).toContain("noindex");
+}
+
+/* Адрес из href ссылки: полный у <link>, от корня у <a> */
+const hrefPath = (tag: string) => new URL(tag.match(/href="([^"]*)"/)?.[1] ?? "", "http://site").pathname;
+const hreflang = (tag: string) => tag.match(/hreflang="([^"]*)"/i)?.[1];
+const sorted = (pairs: (string | undefined)[][]) => pairs.map((pair) => pair.join(" ")).sort();
+
+/*
+ * Поиск и переключатель ведут на эту же страницу: canonical — она сама, hreflang и
+ * ссылки переключателя — она же на остальных опубликованных языках. path — без языка.
+ */
+function expectLanguageLinks(route: string, lang: Lang, path: string) {
+  const links = tags(page(route).head, /<link\b[^>]*>/g);
+  const canonical = links.filter((tag) => tag.includes('rel="canonical"'));
+  expect(canonical.map(hrefPath)).toEqual([localePath(lang, path)]);
+
+  const alternate = links.filter((tag) => tag.includes('rel="alternate"') && hreflang(tag));
+  const several = publishedLangs.length > 1;
+  const expected = several ? [...publishedLangs.map((code) => [code, code]), ["x-default", defaultLang]] : [];
+  expect(sorted(alternate.map((tag) => [hreflang(tag), hrefPath(tag)]))).toEqual(
+    sorted(expected.map(([code, target]) => [code, localePath(target as Lang, path)])),
+  );
+
+  // Переключатель — в меню и подвале
+  const switchLinks = tags(markup(route), /<a\b[^>]*hreflang="[^"]*"[^>]*>/gi);
+  const others = several ? publishedLangs.filter((code) => code !== lang) : [];
+  expect(new Set(sorted(switchLinks.map((tag) => [hreflang(tag), hrefPath(tag)])))).toEqual(
+    new Set(sorted(others.map((code) => [code, localePath(code, path)]))),
+  );
 }
 
 /* Кадры до/после у этих услуг */
@@ -87,6 +116,8 @@ describe.each(langs)("built home page /%s", (lang) => {
   it("names its language and keeps route changes instant", () => expectLang(lang, lang));
 
   it("is closed from search exactly when the studio data says so", () => expectSearchRule(lang, lang));
+
+  it("leads search and the language switch to this page", () => expectLanguageLinks(lang, lang, "/"));
 
   it("preloads the hero car and never loads it lazily", () => {
     const { html, head } = page(lang);
@@ -200,6 +231,9 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
 
   it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
 
+  it("leads search and the language switch to this page", () =>
+    expectLanguageLinks(route, lang, groupPagePath(group.slug)));
+
   it("has one main heading — the group — and the group in the tab title", () => {
     const { html, head } = page(route);
     const name = t(group.name, lang);
@@ -268,6 +302,8 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
   it("names its language and keeps route changes instant", () => expectLang(route, lang));
 
   it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
+
+  it("leads search and the language switch to this page", () => expectLanguageLinks(route, lang, contactPagePath));
 
   it("has one main heading and is the page the navigation leads to", () => {
     const { html, head } = page(route);
@@ -365,6 +401,8 @@ describe.each(langs)("built about page /%s/o-nas", (lang) => {
   it("names its language and keeps route changes instant", () => expectLang(route, lang));
 
   it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
+
+  it("leads search and the language switch to this page", () => expectLanguageLinks(route, lang, aboutPagePath));
 
   it("has one main heading and is the page the navigation leads to", () => {
     const { html, head } = page(route);
