@@ -305,16 +305,18 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
   it("names the days in full for screen readers and short on a phone", () => {
     // DESIGN.md, «Контакты»: полные с меткой «сегодня» не помещаются в строку телефона
     const spans = tags(markup(route), /<span\b[^>]*>[^<]*<\/span>/g);
+    // Классы списком: подстрока «sm:hidden» совпала бы и с «max-sm:hidden»
+    const classes = (tag?: string) => tag?.match(/class="([^"]*)"/)?.[1].split(" ") ?? [];
     for (const { from, to } of groupHours(studio.hours)) {
       const long = escaped(formatDayRange(from, to, dict.days.long, lang, " – "));
       const short = escaped(formatDayRange(from, to, dict.days.short, lang, " – "));
       // Полная — диктору всегда, глазу с 640 px; короткая — только глазу, до 640
       const full = spans.find((span) => span.endsWith(`>${long}</span>`));
       expect(full, long).not.toContain("aria-hidden");
-      expect(full, long).toContain("max-sm:sr-only");
+      expect(classes(full), long).toContain("max-sm:sr-only");
       const brief = spans.find((span) => span.endsWith(`>${short}</span>`));
       expect(brief, short).toContain('aria-hidden="true"');
-      expect(brief, short).toContain("sm:hidden");
+      expect(classes(brief), short).toContain("sm:hidden");
     }
   });
 
