@@ -308,8 +308,13 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
     for (const { from, to } of groupHours(studio.hours)) {
       const long = escaped(formatDayRange(from, to, dict.days.long, lang, " – "));
       const short = escaped(formatDayRange(from, to, dict.days.short, lang, " – "));
-      expect(spans.find((span) => span.endsWith(`>${long}</span>`)), long).not.toContain("aria-hidden");
-      expect(spans.find((span) => span.endsWith(`>${short}</span>`)), short).toContain('aria-hidden="true"');
+      // Полная — диктору всегда, глазу с 640 px; короткая — только глазу, до 640
+      const full = spans.find((span) => span.endsWith(`>${long}</span>`));
+      expect(full, long).not.toContain("aria-hidden");
+      expect(full, long).toContain("max-sm:sr-only");
+      const brief = spans.find((span) => span.endsWith(`>${short}</span>`));
+      expect(brief, short).toContain('aria-hidden="true"');
+      expect(brief, short).toContain("sm:hidden");
     }
   });
 
