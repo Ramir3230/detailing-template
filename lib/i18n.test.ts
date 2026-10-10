@@ -9,7 +9,7 @@ describe("localePath", () => {
 
   it("prefixes Russian addresses", () => {
     expect(localePath("ru", "/")).toBe("/ru");
-    expect(localePath("ru", "/cennik")).toBe("/ru/cennik");
+    expect(localePath("ru", "/kontakt")).toBe("/ru/kontakt");
     expect(localePath("ru", "/#kontakt")).toBe("/ru#kontakt");
     expect(localePath("ru", "/uslugi/lakier#faq")).toBe("/ru/uslugi/lakier#faq");
   });
@@ -18,9 +18,9 @@ describe("localePath", () => {
 describe("stripLang", () => {
   it("removes a language prefix and nothing else", () => {
     expect(stripLang("/ru")).toBe("/");
-    expect(stripLang("/ru/cennik")).toBe("/cennik");
-    expect(stripLang("/pl/cennik")).toBe("/cennik");
-    expect(stripLang("/cennik")).toBe("/cennik");
+    expect(stripLang("/ru/kontakt")).toBe("/kontakt");
+    expect(stripLang("/pl/kontakt")).toBe("/kontakt");
+    expect(stripLang("/kontakt")).toBe("/kontakt");
     expect(stripLang("/rules")).toBe("/rules");
   });
 });

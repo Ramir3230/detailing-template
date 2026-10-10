@@ -6,7 +6,7 @@ import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
-import { glue, priceParts } from "@/lib/format";
+import { formatDuration, glue, priceParts } from "@/lib/format";
 import { langs, localePath, t, type Lang } from "@/lib/i18n";
 import { contactPagePath, groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
 
@@ -119,6 +119,22 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(hero, "нет секции hero").toContain('data-ignition=""');
     // Атрибуты, а не подстрока: имя есть и в классах (in-data-ignited:animate-none)
     expect(html).not.toMatch(/\sdata-(lit|ignited)=/);
+  });
+
+  it("keeps the price list at #cennik: the studio's Instagram and Maps link there", () => {
+    // Буквально, а не через sectionIds: ссылки в профилях студии мы не исправим, и
+    // переименованный якорь сломал бы их молча
+    const prices = tags(page(lang).html, /<section\b[^>]*>/g).find((tag) => tag.includes('id="cennik"'));
+    expect(prices, "нет секции прайса с якорем cennik").toBeDefined();
+  });
+
+  it("serves the price list with durations and the line on how prices are set", () => {
+    const visible = markup(lang);
+    const { units } = getDictionary(lang);
+    for (const { duration } of studio.services.flatMap((group) => group.services)) {
+      if (duration) expect(visible).toContain(escaped(formatDuration(duration, lang, units)));
+    }
+    expect(visible).toContain(escaped(glue(t(studio.priceNote, lang), lang)));
   });
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {

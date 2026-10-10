@@ -2,19 +2,19 @@ import { ClassPrice } from "@/components/ClassScope";
 import { ServiceName } from "@/components/Price";
 import { CheckIcon, ClockIcon } from "@/components/icons";
 import type { Dictionary } from "@/dictionaries/types";
-import { formatDuration, glue } from "@/lib/format";
+import { glue } from "@/lib/format";
 import { t, type Lang } from "@/lib/i18n";
 import type { GroupWithPage } from "@/lib/nav";
 import { priceList } from "@/lib/price-list";
 
 /*
  * Карточки услуг группы: цена для выбранного класса, длительность и «W zakresie». Цены
- * готовит тот же priceList, что и прайс главной, — счётчик и «indywidualnie» при XL
- * ведут себя одинаково. Звонка в карточке нет и при XL (решение владельца 09.10.2026):
+ * и длительность готовит тот же priceList, что и прайс главной, — счётчик и
+ * «indywidualnie» при XL ведут себя одинаково. Звонка в карточке нет и при XL (решение владельца 09.10.2026):
  * рядом плавающая «Zadzwoń» и карточка «Nie wiesz, którą wybrać?».
  */
 export function ServiceCards({ group, lang, dict }: { group: GroupWithPage; lang: Lang; dict: Dictionary }) {
-  const [{ rows }] = priceList([group], lang, dict.price);
+  const [{ rows }] = priceList([group], lang, dict);
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
@@ -35,10 +35,10 @@ export function ServiceCards({ group, lang, dict }: { group: GroupWithPage; lang
               </div>
               <ClassPrice prices={row.prices} rolling={row.rolling} order={i} size="card" />
             </div>
-            {service.duration && (
+            {row.duration && (
               <p className="mt-2 flex items-center gap-2 text-14 text-muted lg:text-15">
                 <ClockIcon size={16} />
-                {formatDuration(service.duration, lang, dict.units)}
+                {row.duration}
               </p>
             )}
             {service.scope && (
