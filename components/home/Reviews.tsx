@@ -4,7 +4,7 @@ import { SectionTitle } from "@/components/home/SectionTitle";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
 import { formatRating, formatReviewsInGoogle, glue } from "@/lib/format";
-import { fill, t, type Lang } from "@/lib/i18n";
+import { defaultLang, fill, t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 import { storyDuration } from "@/lib/stories";
 
@@ -21,10 +21,13 @@ export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   const ratingText = formatReviewsInGoogle(rating.count, words, lang);
 
   const stories = studio.reviews.map((review) => {
-    const text = glue(t(review.text, lang), lang);
+    // Отзыв из Google — цитата: без перевода он на языке оригинала, и диктор читает его так
+    const textLang = review.text[lang] ? lang : defaultLang;
+    const text = glue(t(review.text, lang), textLang);
     return {
       author: review.author,
       text,
+      lang: textLang,
       label: review.source === "google" ? words.google : words.example,
       duration: storyDuration(text),
     };

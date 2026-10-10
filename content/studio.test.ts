@@ -67,9 +67,18 @@ describe("active studio data", () => {
     }
   });
 
+  it("has the site address as https and without a path: canonical and hreflang build on it", () => {
+    if (!studio.url) return;
+    const url = new URL(studio.url);
+    expect(url.protocol).toBe("https:");
+    expect(url.pathname).toBe("/");
+  });
+
   it("leaves no demo leftovers once the site is open for search", () => {
     if (!studio.indexed) return;
     expect(studio.rating.url).toBeTruthy();
+    // Домен клиента: без него canonical может уйти на голый домен с перенаправлением
+    expect(studio.url).toBeTruthy();
     expect(studio.reviews.every((review) => review.source === "google")).toBe(true);
     // Заглушка до фото — одинаковые «до» и «после»: открытый сайт с ней не выходит
     for (const group of studio.services) {

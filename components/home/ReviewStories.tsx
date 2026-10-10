@@ -9,9 +9,10 @@ import {
   type PointerEvent,
 } from "react";
 import { ChevronIcon, PauseIcon, PlayIcon } from "@/components/icons";
-import { fill } from "@/lib/i18n";
+import { fill, type Lang } from "@/lib/i18n";
 
-type Story = { author: string; text: string; label: string; duration: number };
+/** lang — язык текста: у цитаты из Google без перевода он не совпадает с языком страницы. */
+type Story = { author: string; text: string; lang: Lang; label: string; duration: number };
 
 type Props = {
   stories: Story[];
@@ -229,7 +230,9 @@ export function ReviewStories({ stories, words }: Props) {
                 </span>
               </span>
               <div className="flex flex-1 items-center py-4 lg:py-5">
-                <blockquote className="translate-y-1.5 text-16 leading-long opacity-0 blur-[10px] brightness-30 transition-[opacity,translate,filter] duration-300 ease-in group-data-shown:translate-y-0 group-data-shown:opacity-100 group-data-shown:blur-[0px] group-data-shown:brightness-100 group-data-shown:delay-[450ms] group-data-shown:duration-[900ms] group-data-shown:ease-warm lg:text-19">
+                <blockquote
+                  lang={story.lang}
+                  className="translate-y-1.5 text-16 leading-long opacity-0 blur-[10px] brightness-30 transition-[opacity,translate,filter] duration-300 ease-in group-data-shown:translate-y-0 group-data-shown:opacity-100 group-data-shown:blur-[0px] group-data-shown:brightness-100 group-data-shown:delay-[450ms] group-data-shown:duration-[900ms] group-data-shown:ease-warm lg:text-19">
                   {story.text}
                 </blockquote>
               </div>

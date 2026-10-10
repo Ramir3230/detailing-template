@@ -83,11 +83,11 @@ function expectLanguageLinks(route: string, lang: Lang, path: string) {
     sorted(expected.map(([code, target]) => [code, localePath(target as Lang, path)])),
   );
 
-  // Переключатель — в меню и подвале
+  // Переключатель — в меню и подвале: каждая ссылка дважды
   const switchLinks = tags(markup(route), /<a\b[^>]*hreflang="[^"]*"[^>]*>/gi);
   const others = several ? publishedLangs.filter((code) => code !== lang) : [];
-  expect(new Set(sorted(switchLinks.map((tag) => [hreflang(tag), hrefPath(tag)])))).toEqual(
-    new Set(sorted(others.map((code) => [code, localePath(code, path)]))),
+  expect(sorted(switchLinks.map((tag) => [hreflang(tag), hrefPath(tag)]))).toEqual(
+    sorted([...others, ...others].map((code) => [code, localePath(code, path)])),
   );
 }
 
