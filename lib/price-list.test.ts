@@ -59,8 +59,8 @@ describe("priceList", () => {
 
   it("formats the duration in the page language, one for all classes", () => {
     const [group] = priceList(groups, "pl", pl);
-    expect(group.rows[0].duration).toBe("2–3 godziny");
-    expect(priceList(groups, "ru", ru)[0].rows[0].duration).toBe("2–3 часа");
+    expect(group.rows[0].duration).toBe("2–3\u00A0godziny");
+    expect(priceList(groups, "ru", ru)[0].rows[0].duration).toBe("2–3\u00A0часа");
     expect(group.rows[1].duration).toBeUndefined();
   });
 
