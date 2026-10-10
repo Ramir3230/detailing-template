@@ -38,7 +38,7 @@ export function Header({ lang, dict }: Props) {
         <nav aria-label={dict.header.mainNav} className="hidden gap-8 text-15 text-muted lg:flex">
           {[
             { key: "services" as const, path: servicesPath, currentOn: groupPagesPath },
-            ...studioPages.map((page) => ({ ...page, currentOn: page.path })),
+            ...studioPages(studio).map((page) => ({ ...page, currentOn: page.path })),
           ].map(({ key, path, currentOn }) => (
             <NavLink
               key={key}
@@ -88,7 +88,7 @@ export function Header({ lang, dict }: Props) {
               );
             })}
             <p className="caps-label mt-6 mb-1">{dict.menu.studio}</p>
-            {studioPages.map(({ key, path }) => (
+            {studioPages(studio).map(({ key, path }) => (
               <NavLink
                 key={key}
                 href={localePath(lang, path)}

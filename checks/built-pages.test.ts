@@ -8,7 +8,15 @@ import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
 import { formatDuration, glue, priceParts } from "@/lib/format";
 import { langs, localePath, t, type Lang } from "@/lib/i18n";
-import { contactPagePath, groupPagePath, groupSectionIds, hasGroupPage, sectionIds } from "@/lib/nav";
+import {
+  aboutCallId,
+  aboutPagePath,
+  contactPagePath,
+  groupPagePath,
+  groupSectionIds,
+  hasGroupPage,
+  sectionIds,
+} from "@/lib/nav";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
@@ -300,6 +308,80 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
     const images = tags(page(route).html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
     expect(images, "нет <img> фото входа").toHaveLength(1);
     expect(images[0]).not.toContain('loading="lazy"');
+  });
+
+  it("leaves the hero car to the home page", () => {
+    const { html } = page(route);
+    expect(html).not.toContain(carFile);
+    expect(html).not.toContain(studio.hero.car.src);
+  });
+
+  it("carries no real brands from the mockup", () => {
+    expect(page(route).html).not.toMatch(/spectre|mansory/i);
+  });
+});
+
+describe.each(langs)("built about page /%s/o-nas", (lang) => {
+  const route = `${lang}${aboutPagePath}`;
+  const dict = getDictionary(lang);
+  const { about } = studio;
+  const link = `href="${localePath(lang, aboutPagePath)}"`;
+
+  // Нет страницы в данных — нет и ссылок на неё: навигация ведёт только на готовое
+  if (!about) {
+    it("is not linked from the home page: the studio has no about page", () => {
+      expect(page(lang).html).not.toContain(link);
+    });
+
+    it("answers 404 when the studio has no about page", () => {
+      // Статус предотрисованной страницы Next кладёт рядом с её HTML
+      const meta = JSON.parse(readFileSync(built(route).replace(/\.html$/, ".meta"), "utf-8"));
+      expect(meta.status, "адрес O nas без данных отвечает не 404 — или Next сменил формат").toBe(404);
+    });
+    return;
+  }
+
+  it("is prerendered: `npm run build` has run", () => expectPrerendered(route));
+
+  it("names its language and keeps route changes instant", () => expectLang(route, lang));
+
+  it("is closed from search exactly when the studio data says so", () => expectSearchRule(route, lang));
+
+  it("has one main heading and is the page the navigation leads to", () => {
+    const { html, head } = page(route);
+    const headings = tags(html, /<h1\b[^>]*>[\s\S]*?<\/h1>/g);
+    expect(headings).toHaveLength(1);
+    // В заголовке страницы однобуквенные слова приклеены неразрывным пробелом, во вкладке — нет
+    expect(headings[0]).toContain(escaped(glue(dict.nav.about, lang)));
+    expect(head.match(/<title>([^<]*)<\/title>/)?.[1]).toContain(escaped(dict.nav.about));
+    expect(page(lang).html).toContain(link);
+  });
+
+  it("serves the intro, the facts and every chapter in the markup", () => {
+    const visible = markup(route);
+    const texts = [
+      about.intro,
+      ...about.facts.map(({ label }) => label),
+      ...about.chapters.flatMap(({ title, paragraphs }) => [title, ...paragraphs]),
+    ];
+    for (const text of texts) expect(visible).toContain(escaped(glue(t(text, lang), lang)));
+    // Цифра — целым содержимым тега: «1» и «2019» есть и в классах, и в тексте глав
+    for (const { value } of about.facts) expect(visible).toContain(`>${escaped(value)}</span>`);
+  });
+
+  it("loads the first chapter photo right away and the rest lazily", () => {
+    const [first, ...rest] = about.chapters.map(({ photo }) => photo.src);
+    // Первый кадр на первом экране телефона: ждать прокрутки ему незачем
+    const file = encodeURIComponent(first);
+    const images = tags(page(route).html, /<img\b[^>]*>/g).filter((tag) => tag.includes(file));
+    expect(images, "нет <img> кадра первой главы").toHaveLength(1);
+    expect(images[0]).not.toContain('loading="lazy"');
+    expectLazyPhotos(route, rest);
+  });
+
+  it("has the call card the floating call hides at", () => {
+    const call = tags(page(route).html, /<a\b[^>]*>/g).find((tag) => tag.includes(`id="${aboutCallId}"`));
+    expect(call, "нет кнопки звонка карточки в конце страницы").toContain('href="tel:');
   });
 
   it("leaves the hero car to the home page", () => {

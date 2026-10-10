@@ -1,17 +1,15 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { CallButton } from "@/components/CallButton";
 import { HoursList } from "@/components/contact/HoursList";
+import { FramePhoto } from "@/components/FramePhoto";
 import { ArrowIcon } from "@/components/icons";
 import { Messengers } from "@/components/Messengers";
 import { OpenStatus } from "@/components/OpenStatus";
 import { studio } from "@/content/studio";
-import type { Photo } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { formatDayRange, formatTimeRange } from "@/lib/format";
-import { frameSizes } from "@/lib/frame";
 import { groupHours } from "@/lib/hours";
-import { t, type Lang } from "@/lib/i18n";
+import type { Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 
 type Props = {
@@ -78,10 +76,10 @@ export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: P
   return address.photo ? (
     <div className="wrap lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,536px)] lg:grid-rows-[1fr_auto_auto_auto_1fr] lg:gap-x-20">
       {heading && <div className="lg:col-start-2 lg:row-start-2">{heading}</div>}
-      <EntrancePhoto
+      <FramePhoto
         photo={address.photo}
         lang={lang}
-        caption={dict.contact.photoExample}
+        caption={dict.photoExample}
         loading={photoLoading}
         className={`${after} lg:col-start-1 lg:row-span-full lg:mt-0 lg:self-center`}
       />
@@ -114,35 +112,5 @@ export function ContactStatus({ lang, dict, className }: { lang: Lang; dict: Dic
         className="text-muted"
       />
     </p>
-  );
-}
-
-/* Вход в студию 4:5: на телефоне во всю ширину, на десктопе до 520 px. */
-function EntrancePhoto({
-  photo,
-  lang,
-  caption,
-  loading,
-  className,
-}: {
-  photo: Photo;
-  lang: Lang;
-  caption: string;
-  loading: "lazy" | "eager";
-  className: string;
-}) {
-  return (
-    <figure className={className}>
-      <Image
-        src={photo.src}
-        width={photo.width}
-        height={photo.height}
-        alt={t(photo.alt, lang)}
-        sizes={frameSizes}
-        loading={loading}
-        className="aspect-[4/5] w-full rounded-card bg-surface object-cover lg:rounded-card-lg"
-      />
-      {photo.ai && <figcaption className="mt-2 text-12 leading-body text-muted">{caption}</figcaption>}
-    </figure>
   );
 }

@@ -1,4 +1,4 @@
-import type { BeforeAfter, Studio } from "@/content/types";
+import type { BeforeAfter, Photo, Studio } from "@/content/types";
 
 /** Кадр пары: подпись для диктора и сделан ли он ИИ. */
 type Frame = { alt: string; ai: boolean };
@@ -25,6 +25,11 @@ function pair(
     before: photo("przed", before),
     after: photo("po", after),
   };
+}
+
+/* Кадр O nas в public/o-nas/, 1040×1300: у выдуманной студии сделан ИИ */
+function aboutPhoto(file: string, alt: string): Photo {
+  return { src: `/o-nas/${file}.webp`, width: 1040, height: 1300, alt: { pl: alt }, ai: true };
 }
 
 /**
@@ -472,4 +477,56 @@ export const afterdark: Studio = {
       source: "example",
     },
   ],
+  /* Кадры ИИ владельца (10.10.2026), обрезка и увеличение — DESIGN.md, «Фотографии» */
+  about: {
+    intro: {
+      pl: "Małe studio na dwa stanowiska na Woli. Najczęściej robimy korektę lakieru i ceramikę, a pracujemy do późna — auto zostawiasz rano i odbierasz po pracy.",
+    },
+    facts: [
+      { value: "2019", label: { pl: "rok otwarcia studia" } },
+      { value: "2", label: { pl: "stanowiska, na każdym jedno auto" } },
+      { value: "1", label: { pl: "opiekun auta od przyjęcia do odbioru" } },
+    ],
+    chapters: [
+      {
+        title: { pl: "Jak zaczynaliśmy" },
+        paragraphs: [
+          {
+            pl: "Od aut znajomych, po godzinach. Kiedy chętnych było więcej niż wolnych wieczorów, w 2019 roku otworzyliśmy studio na Woli.",
+          },
+          {
+            pl: "Stąd nazwa: pracujemy do późna, więc po auto nie trzeba brać dnia wolnego.",
+          },
+        ],
+        photo: aboutPhoto("hala", "Hala studia nocą: dwa auta na stanowiskach pod sześciokątnymi lampami"),
+      },
+      {
+        title: { pl: "Jak pracujemy" },
+        paragraphs: [
+          {
+            pl: "Zanim zaczniemy, mierzymy grubość lakieru i robimy próbę na małym fragmencie. Widzisz efekt, zanim zdecydujesz o całym aucie.",
+          },
+          {
+            pl: "Cenę ustalamy przed rozpoczęciem prac i się jej trzymamy. Na stanowisku stoi tylko Twoje auto, więc pracujemy bez pośpiechu.",
+          },
+        ],
+        photo: aboutPhoto(
+          "korekta",
+          "Maska czarnego auta przedzielona taśmą: z lewej rysy, z prawej lustro po korekcie",
+        ),
+      },
+      {
+        title: { pl: "Na czym pracujemy" },
+        paragraphs: [
+          {
+            pl: "Na profesjonalnej chemii i certyfikowanych powłokach ceramicznych. Szampony mają neutralne pH, a auto myjemy ręcznie, bez szczotek.",
+          },
+          {
+            pl: "Przy odbiorze mówimy, co dokładnie nałożyliśmy, i podpowiadamy, jak dbać o auto, żeby efekt został na dłużej.",
+          },
+        ],
+        photo: aboutPhoto("chemia", "Regał z czarnymi butelkami, aplikatorami i ręcznikami z mikrofibry"),
+      },
+    ],
+  },
 };
