@@ -21,14 +21,19 @@ describe("alternates", () => {
 describe("siteUrl", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("takes the production domain on Vercel, previews included", () => {
+  it("takes the client's address from the studio data first", () => {
     vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "studio.pl");
-    expect(siteUrl().href).toBe("https://studio.pl/");
+    expect(siteUrl("https://www.studio.pl").href).toBe("https://www.studio.pl/");
+  });
+
+  it("takes the production domain on Vercel without one, previews included", () => {
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "studio.pl");
+    expect(siteUrl(undefined).href).toBe("https://studio.pl/");
   });
 
   it("falls back to localhost outside Vercel", () => {
     vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
     vi.stubEnv("PORT", "");
-    expect(siteUrl().href).toBe("http://localhost:3000/");
+    expect(siteUrl(undefined).href).toBe("http://localhost:3000/");
   });
 });
