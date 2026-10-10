@@ -8,7 +8,8 @@ import { getDictionary } from "@/dictionaries";
 import { telHref } from "@/lib/contact";
 import { formatPhone } from "@/lib/format";
 import { fill, isLang } from "@/lib/i18n";
-import { sectionIds } from "@/lib/nav";
+import { contactPagePath, sectionIds } from "@/lib/nav";
+import { alternates } from "@/lib/seo";
 
 const address = `${studio.address.street}, ${studio.address.area}`;
 
@@ -19,6 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/kontakt">)
   return {
     title: fill(dict.contactPage.metaTitle, { studio: studio.name }),
     description: fill(dict.contactPage.metaDescription, { studio: studio.name, address }),
+    alternates: alternates(lang, contactPagePath),
   };
 }
 

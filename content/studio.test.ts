@@ -2,10 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
-import type { Photo } from "@/content/types";
+import type { Photo, Text } from "@/content/types";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
+import { publishedLangs } from "@/lib/seo";
 
 /*
  * Из этих полей строятся ссылки и статус «Otwarte» на каждой странице. Ошибка в них
@@ -86,6 +87,17 @@ describe("active studio data", () => {
     const { bg, fg, muted, accent } = studio.theme;
     for (const color of [bg, fg, muted, accent]) expect(color).toMatch(/^#[0-9a-f]{6}$/i);
     for (const color of [fg, muted, accent]) expect(contrast(color, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("has every studio text in each published language", () => {
+    // Без перевода на /ru/ молча встал бы польский: t() подставляет его вместо пустого.
+    // Отзыв из Google — цитата человека, его показывают как написан
+    const texts = studioTexts({ ...studio, reviews: studio.reviews.filter(({ source }) => source !== "google") });
+    expect(texts.map(([path]) => path)).toContain("hero.title");
+    const missing = publishedLangs.flatMap((lang) =>
+      texts.flatMap(([path, text]) => (text[lang]?.trim() ? [] : [`${lang}: ${path}`])),
+    );
+    expect(missing).toEqual([]);
   });
 
   it("has working hours that close after they open", () => {
@@ -238,6 +250,14 @@ function expectFrame(photo: Photo) {
   expect(photo.width * 5).toBe(photo.height * 4);
   expect(photo.width).toBeGreaterThanOrEqual(1040);
   expect(photo.alt.pl.trim()).not.toBe("");
+}
+
+/* Тексты студии с путём до каждого: «services[1].faq[0].answer». */
+function studioTexts(value: unknown, path = ""): [string, Text][] {
+  if (Array.isArray(value)) return value.flatMap((item, i) => studioTexts(item, `${path}[${i}]`));
+  if (!value || typeof value !== "object") return [];
+  if (typeof (value as Text).pl === "string") return [[path, value as Text]];
+  return Object.entries(value).flatMap(([key, item]) => studioTexts(item, path ? `${path}.${key}` : key));
 }
 
 /* Контраст по WCAG 2: относительная яркость двух цветов #rrggbb. */
