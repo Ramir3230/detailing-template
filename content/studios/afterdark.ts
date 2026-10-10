@@ -28,7 +28,8 @@ function pair(
 }
 
 /**
- * Выдуманная студия шаблона (BRIEF.md). Тексты и цены — с холста дизайна.
+ * Выдуманная студия шаблона (BRIEF.md). Тексты и цены — с холста дизайна; тексты
+ * страниц групп, кроме Lakier, — черновик, принятый владельцем 09.10.2026.
  * Адрес — явная заглушка, телефон никуда не звонит: у выдуманной студии не должно
  * быть чужого реального адреса и номера. По той же причине мессенджеры открываются
  * по этому же номеру, а Instagram не указан: любое имя может оказаться чужим.
@@ -123,10 +124,22 @@ export const afterdark: Studio = {
     {
       slug: "mycie-i-szyby",
       name: { pl: "Mycie i szyby" },
+      intro: {
+        pl: "Mycie ręczne, bez szczotek, oraz powłoki, dzięki którym deszcz w trasie sam spływa z szyb. Ceny większości usług zależą od klasy auta.",
+      },
+      advice: { pl: "Zadzwoń — podpowiemy, czy wystarczy mycie, czy lepiej wziąć kompleks." },
       services: [
         {
           name: { pl: "Mycie detailingowe nadwozia" },
           price: { kind: "byClass", S: 200, M: 220, L: 250 },
+          duration: { unit: "hour", min: 2, max: 3 },
+          scope: [
+            { pl: "Piana aktywna przed myciem" },
+            { pl: "Mycie ręczne metodą dwóch wiader, bez szczotek" },
+            { pl: "Felgi i opony — osobnymi narzędziami" },
+            { pl: "Osuszanie mikrofibrą i sprężonym powietrzem" },
+            { pl: "Dressing opon" },
+          ],
           /* Оба кадра — ИИ, scripts/before-after/mycie.json */
           beforeAfter: pair(
             "mycie",
@@ -144,15 +157,56 @@ export const afterdark: Studio = {
         {
           name: { pl: "Kompleks detailingowy" },
           price: { kind: "byClass", S: 300, M: 330, L: 350 },
+          duration: { unit: "hour", min: 3, max: 4 },
+          scope: [
+            { pl: "Wszystko z mycia detailingowego nadwozia" },
+            { pl: "Odkurzanie wnętrza i bagażnika" },
+            { pl: "Czyszczenie plastików kokpitu" },
+            { pl: "Szyby od wewnątrz" },
+            { pl: "Szybki wosk na lakier — pomijamy go przy powłoce ceramicznej" },
+          ],
         },
         {
           name: { pl: "Powłoka hydrofobowa „Niewidzialna wycieraczka”" },
           note: { pl: "Wszystkie klasy, na wszystkie szyby" },
           price: { kind: "fixed", amount: 300 },
+          duration: { unit: "hour", min: 1, max: 2 },
+          scope: [
+            { pl: "Mycie i odtłuszczenie wszystkich szyb" },
+            { pl: "Nałożenie powłoki hydrofobowej" },
+            { pl: "Usunięcie nadmiaru powłoki — szyby bez smug" },
+          ],
         },
         {
           name: { pl: "Polerowanie szyb + powłoka ceramiczna" },
           price: { kind: "byClass", S: 350, M: 400, L: 450 },
+          duration: { unit: "hour", min: 4, max: 5 },
+          scope: [
+            { pl: "Mycie i dekontaminacja szyb" },
+            { pl: "Polerowanie tlenkiem ceru: mikrorysy i ślady po wycieraczkach" },
+            { pl: "Odtłuszczenie przed powłoką" },
+            { pl: "Powłoka ceramiczna na szyby" },
+          ],
+        },
+      ],
+      faq: [
+        {
+          question: { pl: "Czym mycie detailingowe różni się od myjni?" },
+          answer: {
+            pl: "Myjemy ręcznie, metodą dwóch wiader: w jednym jest szampon, w drugim płuczemy rękawicę, więc piasek nie wraca na lakier. Szczotki myjni automatycznej zostawiają na lakierze rysy i hologramy — u nas szczotek nie ma. Felgi myjemy osobnymi narzędziami, żeby pył z hamulców nie trafił na nadwozie.",
+          },
+        },
+        {
+          question: { pl: "Jak długo działa „Niewidzialna wycieraczka”?" },
+          answer: {
+            pl: "Do roku: im częściej pracują wycieraczki, tym szybciej powłoka się ściera. Od około 60 km/h krople same spływają z szyby, a wycieraczki można włączać rzadziej.",
+          },
+        },
+        {
+          question: { pl: "Czy polerowanie usunie odprysk na szybie?" },
+          answer: {
+            pl: "Nie. Polerowanie usuwa mikrorysy i matowe ślady po wycieraczkach — te, w których nie zaczepia paznokieć. Odpryski i pęknięcia naprawia serwis szyb, najlepiej przed polerowaniem i powłoką.",
+          },
         },
       ],
     },
@@ -234,15 +288,33 @@ export const afterdark: Studio = {
     {
       slug: "wnetrze",
       name: { pl: "Wnętrze" },
+      intro: {
+        pl: "Pranie tapicerki, skóra, plastiki i zapachy — od szybkiego ozonowania po czyszczenie z demontażem foteli.",
+      },
+      advice: { pl: "Zadzwoń — po opisie powiemy, czy wystarczy czyszczenie, czy potrzebny demontaż." },
       services: [
         {
           name: { pl: "Ozonowanie wnętrza" },
           note: { pl: "Wszystkie klasy" },
           price: { kind: "fixed", amount: 120 },
+          duration: { unit: "hour", min: 1 },
+          scope: [
+            { pl: "Ozonowanie kabiny i obiegu klimatyzacji" },
+            { pl: "Neutralizacja zapachów: dym, zwierzęta, wilgoć" },
+            { pl: "Wietrzenie auta po zabiegu" },
+          ],
         },
         {
           name: { pl: "Kompleksowe czyszczenie wnętrza" },
           price: { kind: "byClass", S: 800, M: 900, L: 1000 },
+          duration: { unit: "day", min: 1 },
+          scope: [
+            { pl: "Odkurzanie wnętrza i bagażnika" },
+            { pl: "Pranie ekstrakcyjne tapicerki i dywaników" },
+            { pl: "Czyszczenie i zabezpieczenie skóry" },
+            { pl: "Plastiki: czyszczenie i matowy dressing" },
+            { pl: "Szyby od wewnątrz" },
+          ],
           /* Из мокапа (решение владельца 09.10.2026): «po» — фото со свободной лицензией,
              «przed» — его правка ИИ */
           beforeAfter: pair(
@@ -263,16 +335,66 @@ export const afterdark: Studio = {
             pl: "Ostateczna cena zależy od stanu samochodu i zakresu prac",
           },
           price: { kind: "from", amount: 1500 },
+          duration: { unit: "day", min: 2, max: 3 },
+          scope: [
+            { pl: "Wszystko z kompleksowego czyszczenia wnętrza" },
+            { pl: "Demontaż foteli i elementów, pod które dostał się brud" },
+            { pl: "Pranie wykładziny podłogi pod fotelami" },
+            { pl: "Ozonowanie na koniec" },
+          ],
+        },
+      ],
+      faq: [
+        {
+          question: { pl: "Ile schnie tapicerka po praniu?" },
+          answer: {
+            pl: "Odbierasz auto z suchą tapicerką: pranie ekstrakcyjne zostawia w materiale niewiele wody, a resztę suszymy w studiu. Przy czyszczeniu z demontażem auto nocuje u nas — fotele wracają na miejsce dopiero suche.",
+          },
+        },
+        {
+          question: { pl: "Czy usuniecie sierść i zapach papierosów?" },
+          answer: {
+            pl: "Sierść — tak, to część kompleksowego czyszczenia. Z zapachem jest tak: czyszczenie usuwa jego źródło z tapicerki i plastików, a ozonowanie neutralizuje to, co zostało w powietrzu i klimatyzacji — to osobna usługa, przy czyszczeniu z demontażem jest już w cenie. Bardzo wżarty zapach dymu może wymagać czyszczenia z demontażem.",
+          },
+        },
+        {
+          question: { pl: "Kiedy potrzebny jest demontaż foteli?" },
+          answer: {
+            pl: "Gdy brud lub płyn dostał się pod fotele: rozlany napój wsiąkł w wykładzinę, w aucie czuć wilgoć albo zapach idzie od podłogi. Bez demontażu wyczyścimy tylko to, co widać. Ostateczną cenę podamy po obejrzeniu auta.",
+          },
         },
       ],
     },
     {
       slug: "felgi-i-silnik",
       name: { pl: "Felgi i silnik" },
+      intro: {
+        pl: "Felgi czyścimy z obu stron i chronimy ceramiką, komorę silnika — bez wody na elektryce. Cena czyszczenia felg zależy od klasy auta.",
+      },
+      advice: { pl: "Zadzwoń — umówimy oględziny i od razu podamy cenę detailingu silnika." },
       services: [
         {
           name: { pl: "Dokładne czyszczenie felg, powłoka ceramiczna" },
           price: { kind: "byClass", S: 450, M: 500, L: 550 },
+          duration: { unit: "hour", min: 4, max: 5 },
+          scope: [
+            { pl: "Zdejmowanie kół i dokręcanie kluczem dynamometrycznym" },
+            { pl: "Czyszczenie felg z obu stron i między szprychami" },
+            { pl: "Usunięcie wżartego pyłu z hamulców i smoły" },
+            { pl: "Powłoka ceramiczna na felgi" },
+            { pl: "Dressing opon" },
+          ],
+          /* Пара владельца (10.10.2026), как у Lakier: «po» — фото, «przed» — его правка ИИ;
+             «przed» совмещён с «po» по ключевым точкам, оба обрезаны до 4:5 */
+          beforeAfter: pair(
+            "felgi",
+            "Felgi",
+            {
+              alt: "Czarna felga przed czyszczeniem: rdza i pył z hamulców na tarczy, zabrudzona opona",
+              ai: true,
+            },
+            { alt: "Ta sama felga po czyszczeniu: czysta tarcza i opona", ai: false },
+          ),
         },
         {
           name: { pl: "Detailing komory silnika" },
@@ -280,6 +402,45 @@ export const afterdark: Studio = {
             pl: "Ostateczna cena ustalana jest po oględzinach samochodu",
           },
           price: { kind: "from", amount: 600 },
+          duration: { unit: "hour", min: 2, max: 3 },
+          scope: [
+            { pl: "Zabezpieczenie elektryki i dolotu powietrza" },
+            { pl: "Czyszczenie pędzlami i chemią do komory silnika" },
+            { pl: "Płukanie niskim ciśnieniem na zimnym silniku" },
+            { pl: "Osuszanie sprężonym powietrzem" },
+            { pl: "Matowy dressing na plastiki i gumy" },
+          ],
+          /* Пара владельца (10.10.2026), как у Felgi: «po» — фото, «przed» — его правка ИИ;
+             «po» совмещён с «przed» по ключевым точкам, оба обрезаны до 4:5 по кожуху */
+          beforeAfter: pair(
+            "silnik",
+            "Silnik",
+            {
+              alt: "Komora silnika przed detailingiem: kurz i zacieki na osłonie silnika i przewodach",
+              ai: true,
+            },
+            { alt: "Ta sama komora po detailingu: czysta, matowa osłona silnika", ai: false },
+          ),
+        },
+      ],
+      faq: [
+        {
+          question: { pl: "Czy mycie silnika jest bezpieczne?" },
+          answer: {
+            pl: "Tak, jeśli robi się je ostrożnie. Myjemy tylko zimny silnik, elektrykę i dolot powietrza zakrywamy, a zamiast myjki ciśnieniowej używamy pędzli i niskiego ciśnienia. Zanim uruchomimy silnik, komorę osuszamy sprężonym powietrzem.",
+          },
+        },
+        {
+          question: { pl: "Po co powłoka ceramiczna na felgach?" },
+          answer: {
+            pl: "Pył z hamulców i brud słabiej się do niej przyklejają, więc felgi myje się zwykłym szamponem, bez mocnej chemii. Powłoka trzyma około roku.",
+          },
+        },
+        {
+          question: { pl: "Czy zdejmujecie koła?" },
+          answer: {
+            pl: "Tak. Tylko tak doczyścimy wewnętrzną stronę felgi, a powłoka obejmie ją całą. Koła wracają na miejsce dokręcone kluczem dynamometrycznym, z momentem, który zaleca producent Twojego auta.",
+          },
         },
       ],
     },
