@@ -6,7 +6,8 @@ import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
-import { formatDuration, glue, priceParts } from "@/lib/format";
+import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
+import { groupHours } from "@/lib/hours";
 import { langs, localePath, t, type Lang } from "@/lib/i18n";
 import {
   aboutCallId,
@@ -299,6 +300,17 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
   it("has the contact call the floating call hides at", () => {
     const call = tags(page(route).html, /<div\b[^>]*>/g).find((tag) => tag.includes(`id="${sectionIds.contactCall}"`));
     expect(call, "нет кнопки звонка блока контактов").toBeDefined();
+  });
+
+  it("names the days in full for screen readers and short on a phone", () => {
+    // DESIGN.md, «Контакты»: полные с меткой «сегодня» не помещаются в строку телефона
+    const spans = tags(markup(route), /<span\b[^>]*>[^<]*<\/span>/g);
+    for (const { from, to } of groupHours(studio.hours)) {
+      const long = escaped(formatDayRange(from, to, dict.days.long, lang, " – "));
+      const short = escaped(formatDayRange(from, to, dict.days.short, lang, " – "));
+      expect(spans.find((span) => span.endsWith(`>${long}</span>`)), long).not.toContain("aria-hidden");
+      expect(spans.find((span) => span.endsWith(`>${short}</span>`)), short).toContain('aria-hidden="true"');
+    }
   });
 
   it("loads the entrance photo right away: on a phone it is on the first screen", () => {
