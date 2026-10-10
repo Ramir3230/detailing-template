@@ -15,7 +15,7 @@ type Week = readonly [string, string, string, string, string, string, string];
 export type Dictionary = {
   header: { openMenu: string; closeMenu: string; mainNav: string };
   /** Только готовые страницы: пункт появляется вместе со страницей. */
-  nav: { services: string; contact: string };
+  nav: { services: string; about: string; contact: string };
   menu: { services: string; studio: string };
   call: { label: string };
   /** orCall — «lub zadzwoń:» перед номером на десктопе. */
@@ -86,8 +86,7 @@ export type Dictionary = {
     /** Подпись под парами, где хоть один кадр сделан ИИ. */
     examples: string;
   };
-  /** photoExample — подпись под фото входа, сделанным ИИ. */
-  contact: { title: string; route: string; photoExample: string };
+  contact: { title: string; route: string };
   contactPage: {
     /** Подставляется {studio}: заголовок вкладки страницы Kontakt. */
     metaTitle: string;
@@ -112,6 +111,15 @@ export type Dictionary = {
     /** Карточка со звонком в конце страницы группы. */
     adviceTitle: string;
   };
+  aboutPage: {
+    /** Подставляется {studio}: заголовок вкладки страницы O nas. */
+    metaTitle: string;
+    /** Карточка со звонком в конце страницы. */
+    callTitle: string;
+    callText: string;
+  };
+  /** Подпись под одиночным кадром, сделанным ИИ: фото входа, кадры O nas. */
+  photoExample: string;
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */
   newTab: string;
   footer: { services: string; studio: string };
