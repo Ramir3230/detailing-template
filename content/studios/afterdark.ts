@@ -98,7 +98,7 @@ export const afterdark: Studio = {
     null,
   ],
   hero: {
-    title: { pl: "Twoje auto.\nNowy poziom.", ru: "Ваше авто.\nНовый блеск." },
+    title: { pl: "Twoje auto.\nNowy poziom.", ru: "Один звонок.\nНовое авто." },
     subtitle: { pl: "Studio detailingu na Woli", ru: "Студия детейлинга на Воле" },
     lead: {
       pl: "Studio detailingu na Woli. Korekta lakieru, ceramika, wnętrze — z ceną dla Twojej klasy auta od razu na stronie.",
