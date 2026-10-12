@@ -66,3 +66,39 @@ python scripts/map/render.py scripts/map/afterdark.json --preview <папка>
 ```
 
 Скрипт печатает поле `address.map` для файла данных студии.
+
+## Демо
+
+Персональное демо для питча — главная и Kontakt реальной студии: её услуги, цены,
+контакты, часы, рейтинг и отзывы, тема в её цвет. Страниц групп и O nas в демо нет. Как
+собрать — по шагам в скиле Claude `.claude/skills/demo-studio`, решения — ROADMAP,
+«11. Демо под студию».
+
+Данные демо живут в `demos/<студия>/` внутри этой папки, но не в git шаблона: у `demos/`
+своя история и приватный репозиторий `Ramir3230/detailing-demos`. Клонировать его в
+`demos/` рядом с кодом шаблона.
+
+```bash
+npm run demo:new -- <студия>            # заготовка demos/<студия>: всё студийное в [скобках]
+npm run demo:use -- demos/<студия>      # поставить демо в шаблон локально: check:data, dev
+npm run demo:use -- --reset             # вернуть шаблон к Afterdark — до коммитов шаблона
+npm run demo:deploy -- <студия>         # main + данные, npm run check, сборка без открытого адреса
+npm run demo:deploy -- <студия> --open  # та же сборка — на <студия>-demo.vercel.app
+```
+
+Залитое демо — замороженная сборка в своём проекте Vercel `<студия>-demo`: правки
+шаблона его не трогают, пока его не залить заново. Собственный адрес сборки закрыт
+логином Vercel — его смотрит владелец; `--open` ставит её на адрес проекта, открытый
+всем. Что залито, с каким коммитом шаблона, — `demos/<студия>/deployed.json`.
+
+Фиолетовые акценты кадров шаблона перекрашиваются в цвет студии (сейчас фиолетовое — только
+машина hero); перекрашенное ложится в `public/` демо и встаёт поверх шаблона только в его
+сборке:
+
+```bash
+pip install -r scripts/recolor/requirements.txt
+python scripts/recolor/recolor.py --accent "#rrggbb" --out demos/<студия>/public --sheet demos/<студия>/source/recolor.png
+```
+
+Фото входа и карта демо — те же скрипты, что выше, с выходом в `demos/<студия>/public`:
+`generate.py … --public demos/<студия>/public`, `render.py … --out demos/<студия>/public/mapa`.

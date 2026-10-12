@@ -22,7 +22,9 @@ N сидов подряд от сида в JSON; --vary przed держит «po�
 
 Кадры шаблона общие для всех демо, и правка JSON шаблона перезапишет файлы, на которые
 ссылаются данные студий. Для своей студии — новый JSON с out вида
-«przed-po/<студия>/<кадр>», существующие не править.
+«przed-po/<студия>/<кадр>», существующие не править. Кадр демо — с --public
+demos/<студия>/public: он ложится в папку демо, а не в public/ шаблона, и поверх шаблона
+встаёт только в копии для заливки (README, «Демо»).
 
 Поля JSON:
     out     путь внутри public/ без расширения. Пара ложится в <out>/po.webp и
@@ -425,7 +427,12 @@ def main() -> None:
     parser.add_argument("--candidates", type=int, help="сколько сидов показать на листе выбора")
     parser.add_argument("--vary", choices=["po", "przed"], help="какой сид перебирать, по умолчанию po")
     parser.add_argument("--preview", type=Path, help="папка для листа кандидатов и их кадров")
+    parser.add_argument("--public", type=Path, help="public/ демо вместо шаблона: demos/<студия>/public")
     args = parser.parse_args()
+    if args.public is not None:
+        # out и пути в выводе считаются от неё — данные демо ссылаются на те же /kontakt/…
+        global PUBLIC
+        PUBLIC = args.public.resolve()
 
     frame = json.loads(args.frame.read_text(encoding="utf-8"))
     name = args.frame.stem

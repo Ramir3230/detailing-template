@@ -49,7 +49,7 @@ function preview() {
 
   run("node", [join(work, "scripts", "demo", "use-studio.mjs"), dir, work]);
   // Зависимости и сборку делает Vercel; локальные — только для проверки
-  writeFileSync(join(work, ".vercelignore"), "node_modules\n.next\n");
+  writeFileSync(join(work, ".vercelignore"), "node_modules\n.next\n.demo-active\n");
   // Проект уже есть — связь из записи, а не поиск по имени папки
   if (saved.link) link(work, saved.link);
 
