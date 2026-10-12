@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
@@ -115,6 +115,13 @@ describe("active studio data", () => {
       texts.flatMap(([path, text]) => (text[lang]?.trim() ? [] : [`${lang}: ${path}`])),
     );
     expect(missing).toEqual([]);
+  });
+
+  it("is Afterdark in the template itself: a demo is put in only for a look or an upload", () => {
+    // Демо стоит (npm run demo:use, копия demo:deploy, check-demo в CI) — .demo-active есть.
+    // Нет его, а студия чужая — значит, шаблон собираются коммитить с реальной студией
+    if (existsSync(join(process.cwd(), ".demo-active"))) return;
+    expect(studio, "в шаблоне стоит не Afterdark — снять демо: npm run demo:use -- --reset").toBe(afterdark);
   });
 
   it("carries nothing of Afterdark once another studio is active: the demo is its own studio", () => {

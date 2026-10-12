@@ -18,7 +18,8 @@ if (slug === "afterdark") fail("afterdark — студия шаблона");
 const demos = join(root, "demos");
 if (!existsSync(join(demos, ".git"))) fail("нет demos/ со своим git — README, «Демо»");
 const dir = join(demos, slug);
-if (existsSync(dir)) fail(`demos/${slug} уже есть`);
+// Папка с source/ от владельца может быть раньше заготовки — нельзя затереть только данные
+if (existsSync(join(dir, "studio.ts"))) fail(`demos/${slug}/studio.ts уже есть`);
 
 for (const sub of ["public", "source"]) mkdirSync(join(dir, sub), { recursive: true });
 const template = readFileSync(join(root, "scripts", "demo", "studio-template.ts"), "utf-8");

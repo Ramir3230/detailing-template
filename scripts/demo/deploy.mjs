@@ -13,8 +13,8 @@
  * у каждой коммит шаблона, адрес и дата, и связь с проектом Vercel.
  *
  * Копия собирается во временной папке без git: Vercel CLI, увидев репозиторий, подключил
- * бы его к проекту демо, и демо пересобиралось бы на каждый пуш шаблона. После заливки
- * копия удаляется — --open ей не нужен.
+ * бы его к проекту демо, и демо пересобиралось бы на каждый пуш шаблона. Копия удаляется
+ * при любом исходе — --open ей не нужен.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -38,6 +38,8 @@ function preview() {
   const commit = run("git", ["rev-parse", "--verify", `${ref}^{commit}`]).trim();
   // Имя папки — имя проекта: по нему Vercel CLI заводит проект при первой заливке
   const temp = mkdtempSync(join(tmpdir(), "detailing-demo-"));
+  // Копия с node_modules и .next — после себя при любом исходе, и при красном check тоже
+  process.on("exit", () => cleanup(temp));
   const work = join(temp, project);
   step(`шаблон ${ref} (${commit.slice(0, 7)}) → ${work}`);
 
@@ -75,7 +77,6 @@ function preview() {
     preview: { url, target, ref, commit, at: new Date().toISOString() },
     ...(saved.production ? { production: saved.production } : {}),
   });
-  cleanup(temp);
   console.log(`\nпревью (закрыто логином Vercel): ${url}\nпосле взгляда владельца: npm run demo:deploy -- ${slug} --open`);
 }
 

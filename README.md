@@ -92,13 +92,13 @@ npm run demo:deploy -- <студия> --open  # та же сборка — на 
 всем. Что залито, с каким коммитом шаблона, — `demos/<студия>/deployed.json`.
 
 Фиолетовые акценты кадров шаблона перекрашиваются в цвет студии (сейчас фиолетовое — только
-машина hero); перекрашенное ложится в `public/` демо и встаёт поверх шаблона только в его
-сборке:
+машина hero); перекрашенное ложится в `public/` демо и встаёт поверх шаблона в копии для
+заливки или на время просмотра (`npm run demo:use`, снять — `--reset`):
 
 ```bash
 pip install -r scripts/recolor/requirements.txt
 python scripts/recolor/recolor.py --accent "#rrggbb" --out demos/<студия>/public --sheet demos/<студия>/source/recolor.png
 ```
 
-Фото входа и карта демо — те же скрипты, что выше, с выходом в `demos/<студия>/public`:
-`generate.py … --public demos/<студия>/public`, `render.py … --out demos/<студия>/public/mapa`.
+Фото входа и карта демо — те же скрипты, что выше, с `--public demos/<студия>/public`: файлы
+ложатся в папку демо, а не в `public/` шаблона.
