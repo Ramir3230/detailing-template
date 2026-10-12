@@ -51,11 +51,13 @@ async function preview() {
   step("npm run check — красное не заливается");
   run("npm", ["run", "check"], { cwd: work });
 
-  step(`vercel deploy → ${project}, превью`);
-  // Превью — явно: первую заливку нового проекта Vercel CLI иначе делает продакшеном, и
-  // демо открылось бы по <проект>.vercel.app раньше, чем его посмотрит владелец
+  step(`vercel deploy → ${project}, сборка без адреса`);
+  // Продакшен-сборка, но без адреса проекта: первую заливку нового проекта Vercel ставит на
+  // <проект>.vercel.app сама, даже превью, и демо открылось бы раньше, чем его посмотрит
+  // владелец. Собственный адрес сборки закрыт логином; --open ставит на неё адрес проекта
+  // (vercel promote) — без пересборки, ровно то, что владелец видел
   const url = deploymentUrl(
-    run("vercel", ["deploy", "--yes", "--target", "preview", "--format", "json"], { cwd: work }),
+    run("vercel", ["deploy", "--yes", "--prod", "--skip-domain", "--format", "json"], { cwd: work }),
   );
   save({ project, template: { ref, commit }, preview: { url, at: new Date().toISOString() } });
   console.log(`\nпревью (закрыто логином Vercel): ${url}\nпосле взгляда владельца: npm run demo:deploy -- ${slug} --open`);
