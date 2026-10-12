@@ -21,7 +21,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["**/*.test.ts"],
-          exclude: ["node_modules/**", ".next/**", "checks/**"],
+          exclude: ["node_modules/**", ".next/**", "checks/**", "demos/**"],
         },
       },
       ...(builtRun

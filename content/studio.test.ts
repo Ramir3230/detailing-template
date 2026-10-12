@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
+import { afterdark } from "@/content/studios/afterdark";
 import type { Photo, Text } from "@/content/types";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
@@ -44,8 +45,8 @@ describe("active studio data", () => {
     for (const slug of slugs) expect(Object.values(sectionIds)).not.toContain(slug);
   });
 
-  it("has at least one group page: the group route does not build without one", () => {
-    expect(studio.services.filter(hasGroupPage).length).toBeGreaterThan(0);
+  it("has at least one service group: the group route builds on the first one", () => {
+    expect(studio.services.length).toBeGreaterThan(0);
   });
 
   it("gives every service of a group page its duration and scope", () => {
@@ -107,6 +108,19 @@ describe("active studio data", () => {
       texts.flatMap(([path, text]) => (text[lang]?.trim() ? [] : [`${lang}: ${path}`])),
     );
     expect(missing).toEqual([]);
+  });
+
+  it("carries nothing of Afterdark once another studio is active: the demo is its own studio", () => {
+    if (studio === afterdark) return;
+    // Название, логотип, подписи кадров и файлы Afterdark — карта и фото входа названы по студии
+    expect(JSON.stringify(studio)).not.toMatch(/afterdark/i);
+    // Пометка заготовки demo:new в квадратных скобках — место ещё не заполнено
+    expect(strings(studio).filter((text) => /\[[^\]]*\]/.test(text))).toEqual([]);
+    const phones = [studio.phone, ...studio.messengers.flatMap((item) => ("phone" in item ? [item.phone] : []))];
+    expect(phones).not.toContain(afterdark.phone);
+    // Отзывы Afterdark — выдуманные примеры: у чужой студии они выдали бы себя за её клиентов
+    const examples = new Set(afterdark.reviews.map(({ text }) => text.pl));
+    expect(studio.reviews.filter(({ text }) => examples.has(text.pl))).toEqual([]);
   });
 
   it("has working hours that close after they open", () => {
@@ -267,6 +281,13 @@ function studioTexts(value: unknown, path = ""): [string, Text][] {
   if (!value || typeof value !== "object") return [];
   if (typeof (value as Text).pl === "string") return [[path, value as Text]];
   return Object.entries(value).flatMap(([key, item]) => studioTexts(item, path ? `${path}.${key}` : key));
+}
+
+/* Все строки данных, включая пути файлов и ссылки. */
+function strings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (!value || typeof value !== "object") return [];
+  return Object.values(value).flatMap(strings);
 }
 
 /* Контраст по WCAG 2: относительная яркость двух цветов #rrggbb. */

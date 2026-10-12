@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { studio } from "@/content/studio";
-import { defaultLang, localePath, type Lang } from "@/lib/i18n";
+import { getDictionary } from "@/dictionaries";
+import { defaultLang, fill, localePath, type Lang } from "@/lib/i18n";
 
 /*
  * Что видит поиск: открытые языки и адреса страницы на них. Читает данные студии —
@@ -43,4 +44,12 @@ export function alternates(
       "x-default": localePath(defaultLang, path),
     },
   };
+}
+
+/**
+ * Вкладка страницы 404: у незнакомого адреса и у страницы, которой нет в данных студии, —
+ * группы без страницы, O nas без текстов. Иначе вкладка взяла бы заголовок главной.
+ */
+export function notFoundMetadata(lang: Lang): Metadata {
+  return { title: fill(getDictionary(lang).notFound.metaTitle, { studio: studio.name }) };
 }
