@@ -22,9 +22,19 @@ describe("active studio data", () => {
     expect(telHref(studio.phone)).toBe(`tel:${studio.phone}`);
     for (const messenger of studio.messengers) {
       if ("phone" in messenger) expect(messenger.phone).toMatch(phone);
+      // Номер страницы Facebook из ссылки profile.php?id=…
+      else if ("id" in messenger) expect(messenger.id).toMatch(/^\d{5,20}$/);
+      // У Facebook в имени нет «_», и оно бывает длиннее
+      else if (messenger.kind === "facebook") expect(messenger.username).toMatch(/^[A-Za-z0-9.]{5,50}$/);
       else expect(messenger.username).toMatch(/^[A-Za-z0-9._]{3,32}$/);
       expect(() => new URL(messengerHref(messenger))).not.toThrow();
     }
+    // Кнопка на вид: два адреса одного мессенджера — две одинаковые кнопки и один ключ React
+    const kinds = studio.messengers.map(({ kind }) => kind);
+    expect(new Set(kinds).size).toBe(kinds.length);
+    // Пилюли меню встают в ряд: четыре на 375 вылезают за край, раскладки четырёх в
+    // DESIGN.md нет (ROADMAP, «11. Демо под студию»)
+    expect(kinds.length, "четыре мессенджера не помещаются в меню на 375").toBeLessThanOrEqual(3);
   });
 
   it("has whole prices: the price counter shows digits only", () => {

@@ -14,5 +14,9 @@ export function messengerHref(messenger: Messenger): string {
       return `https://wa.me/${messenger.phone.slice(1)}`;
     case "instagram":
       return `https://www.instagram.com/${messenger.username}/`;
+    case "facebook":
+      return "username" in messenger
+        ? `https://www.facebook.com/${messenger.username}`
+        : `https://www.facebook.com/profile.php?id=${messenger.id}`;
   }
 }
