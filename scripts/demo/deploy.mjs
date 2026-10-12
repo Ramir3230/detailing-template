@@ -38,8 +38,10 @@ function preview() {
   const commit = run("git", ["rev-parse", "--verify", `${ref}^{commit}`]).trim();
   // Имя папки — имя проекта: по нему Vercel CLI заводит проект при первой заливке
   const temp = mkdtempSync(join(tmpdir(), "detailing-demo-"));
-  // Копия с node_modules и .next — после себя при любом исходе, и при красном check тоже
+  // Копия с node_modules и .next — после себя при любом исходе, и при красном check тоже.
+  // Ctrl+C без слушателя завершает Node мимо exit — сигнал переводим в обычный выход
   process.on("exit", () => cleanup(temp));
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(signal, () => process.exit(130));
   const work = join(temp, project);
   step(`шаблон ${ref} (${commit.slice(0, 7)}) → ${work}`);
 
