@@ -8,15 +8,17 @@ import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
 import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
-import { defaultLang, langs, localePath, t, type Lang } from "@/lib/i18n";
+import { defaultLang, fill, langs, localePath, t, type Lang } from "@/lib/i18n";
 import {
   aboutCallId,
   aboutPagePath,
   contactPagePath,
   groupPagePath,
+  groupPagesPath,
   groupSectionIds,
   hasGroupPage,
   sectionIds,
+  servicesPath,
 } from "@/lib/nav";
 import { isPublished, publishedLangs } from "@/lib/seo";
 
@@ -222,6 +224,17 @@ describe("built group route", () => {
     expect(route, "маршрута групп нет в prerender-manifest — Next мог сменить формат").toBeDefined();
     expect(route.compute, "маршрут групп отвечает до конца отрисовки — или Next сменил формат").toBe("blocking");
   });
+
+  // Студия без страниц групп (демо): группы ведут к своим местам в прайсе главной
+  if (groupPages.length > 0) return;
+
+  it.each(langs)("is not linked from the home page /%s: the studio has no group pages", (lang) => {
+    expect(page(lang).html).not.toContain(`href="${localePath(lang, groupPagesPath)}/`);
+  });
+
+  it.each(langs)("answers with the studio's 404 at the address it is built on, /%s", (lang) =>
+    expectNotFoundPage(`${lang}${groupPagePath(studio.services[0].slug)}`, lang),
+  );
 });
 
 describe.each(groupPages)("built group page /$route", ({ lang, group, route }) => {
@@ -388,11 +401,7 @@ describe.each(langs)("built about page /%s/o-nas", (lang) => {
       expect(page(lang).html).not.toContain(link);
     });
 
-    it("answers 404 when the studio has no about page", () => {
-      // Статус предотрисованной страницы Next кладёт рядом с её HTML
-      const meta = JSON.parse(readFileSync(built(route).replace(/\.html$/, ".meta"), "utf-8"));
-      expect(meta.status, "адрес O nas без данных отвечает не 404 — или Next сменил формат").toBe(404);
-    });
+    it("answers with the studio's 404 when the studio has no about page", () => expectNotFoundPage(route, lang));
     return;
   }
 
@@ -450,4 +459,50 @@ describe.each(langs)("built about page /%s/o-nas", (lang) => {
   it("carries no real brands from the mockup", () => {
     expect(page(route).html).not.toMatch(/spectre|mansory/i);
   });
+});
+
+/*
+ * Данные ответа для браузера: строки self.__next_f.push([1, "…"]) подряд. Страницу 404
+ * Next 16 с Cache Components отдаёт пустой оболочкой и рисует в браузере по ним (ROADMAP,
+ * блок 11), поэтому тема, язык и тексты 404 проверяются здесь, а не в разметке.
+ */
+function flight(route: string): string {
+  return [...page(route).html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)]
+    .map(([, chunk]) => JSON.parse(chunk) as string)
+    .join("");
+}
+
+/*
+ * Страница 404 студии на этом адресе: статус, закрыта от поиска, тема и язык, вкладка — и
+ * тело. Тело — строка данных с заголовком страницы: ссылки на прайс и звонок есть и в
+ * шапке, текст заголовка — во вкладке, и без своей строки они нашлись бы там.
+ */
+function expectNotFoundPage(route: string, lang: Lang) {
+  const meta = JSON.parse(readFileSync(built(route).replace(/\.html$/, ".meta"), "utf-8"));
+  expect(meta.status, `${route} отвечает не 404 — или Next сменил формат`).toBe(404);
+  expect(page(route).head).toMatch(/<meta name="robots" content="[^"]*noindex/);
+
+  const dict = getDictionary(lang);
+  const data = flight(route);
+  expect(data).toContain(`"lang":"${lang}"`);
+  for (const [name, color] of Object.entries(studio.theme)) expect(data).toContain(`"--${name}":"${color}"`);
+  expect(data).toContain(`"children":"${fill(dict.notFound.metaTitle, { studio: studio.name })}"`);
+
+  const body = data.split("\n").find((row) => row.includes(`"children":"${glue(dict.notFound.title, lang)}"`));
+  expect(body, `${route}: нет заголовка страницы 404`).toBeDefined();
+  expect(body).toContain(glue(dict.notFound.text, lang));
+  expect(body).toContain(`"href":"${localePath(lang, servicesPath)}"`);
+  expect(body).toContain(`"href":"tel:${studio.phone}"`);
+}
+
+describe.each(langs)("built 404 page /%s/404", (lang) => {
+  const route = `${lang}/404`;
+
+  it("renders in full before answering: the 404 goes out as 404", () => {
+    const manifest = JSON.parse(readFileSync(join(process.cwd(), ".next", "prerender-manifest.json"), "utf-8"));
+    expect(manifest.dynamicRoutes?.["/[lang]/[...missing]"]?.compute, "404 уходит до конца отрисовки").toBe("blocking");
+  });
+
+  it("is the studio's 404: theme, language, text, the way to prices and the call", () =>
+    expectNotFoundPage(route, lang));
 });

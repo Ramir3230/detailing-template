@@ -39,3 +39,25 @@ jobs:
       # собранных страниц. typegen идёт первым: next-env.d.ts и .next/ не в git, а без них
       # tsc не знает типов маршрутов.
       - run: npm run check
+
+  # Та же проверка на студии в форме демо (checks/demo-fixture): без страниц групп и O nas,
+  # в другом цвете, без фото входа и карты. Демо собираются из main — шаблон обязан
+  # собирать и такую студию, а не только Afterdark.
+  check-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - run: node scripts/demo/use-studio.mjs checks/demo-fixture .
+
+      - run: npm run check

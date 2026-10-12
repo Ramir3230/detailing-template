@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Демо студий: своя папка со своим git, проверяет их `npm run check` при заливке
+    "demos/**",
   ]),
 ]);
 

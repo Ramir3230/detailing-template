@@ -8,6 +8,8 @@
 
     python scripts/map/render.py scripts/map/afterdark.json [--out public/mapa] [--preview DIR]
 
+Карта демо — с --public demos/<студия>/public: файлы ложатся в его mapa/, а не в шаблон.
+
 Поля JSON:
     center   [широта, долгота] булавки — она в середине кадра;
     zoom     масштаб MapLibre: 15 — квартал с названиями улиц.
@@ -155,14 +157,14 @@ def knock_out(lines: Image.Image, names: Image.Image) -> Image.Image:
     return ImageChops.lighter(ImageChops.subtract(lines, field), names)
 
 
-def save(level: Image.Image, path: Path) -> dict:
+def save(level: Image.Image, path: Path, public: Path) -> dict:
     """Белый с прозрачностью по силе чернил. Прозрачность сжимается с потерями: на тёмной
     карте разницы не видно, а файл вдвое легче."""
     white = Image.new("L", level.size, 255)
     Image.merge("RGBA", (white, white, white, level)).save(
         path, "WEBP", quality=80, alpha_quality=60, method=6)
-    src = "/" + path.relative_to(ROOT / "public").as_posix()
-    print(f"{path.relative_to(ROOT).as_posix()} — {path.stat().st_size // 1024} КБ")
+    src = "/" + path.relative_to(public).as_posix()
+    print(f"{path.as_posix()} — {path.stat().st_size // 1024} КБ")
     return {"src": src, "width": level.width, "height": level.height}
 
 
@@ -172,12 +174,15 @@ def main() -> None:
     sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("params", type=Path)
-    parser.add_argument("--out", type=Path, default=ROOT / "public" / "mapa")
+    parser.add_argument("--public", type=Path, default=ROOT / "public",
+                        help="public/ демо вместо шаблона: demos/<студия>/public")
+    parser.add_argument("--out", type=Path, help="папка внутри --public, по умолчанию <public>/mapa")
     parser.add_argument("--preview", type=Path, help="папка для превью на тёмном фоне")
     args = parser.parse_args()
 
-    out = args.out.resolve()
-    if not out.is_relative_to(ROOT / "public"):
+    public = args.public.resolve()
+    out = (args.out or public / "mapa").resolve()
+    if not out.is_relative_to(public):
         raise SystemExit("--out — папка внутри public/: из неё строится адрес файла")
 
     params = json.loads(args.params.read_text(encoding="utf-8"))
@@ -192,8 +197,8 @@ def main() -> None:
 
     out.mkdir(parents=True, exist_ok=True)
     stem = args.params.stem
-    files = {"wide": save(level, out / f"{stem}.webp"),
-             "narrow": save(narrow, out / f"{stem}-narrow.webp")}
+    files = {"wide": save(level, out / f"{stem}.webp", public),
+             "narrow": save(narrow, out / f"{stem}-narrow.webp", public)}
 
     if args.preview:
         args.preview.mkdir(parents=True, exist_ok=True)
