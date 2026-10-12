@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
-import type { Photo, Text } from "@/content/types";
+import { afterdark } from "@/content/studios/afterdark";
+import type { Photo, Studio, Text } from "@/content/types";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
@@ -44,8 +45,8 @@ describe("active studio data", () => {
     for (const slug of slugs) expect(Object.values(sectionIds)).not.toContain(slug);
   });
 
-  it("has at least one group page: the group route does not build without one", () => {
-    expect(studio.services.filter(hasGroupPage).length).toBeGreaterThan(0);
+  it("has at least one service group: the group route builds on the first one", () => {
+    expect(studio.services.length).toBeGreaterThan(0);
   });
 
   it("gives every service of a group page its duration and scope", () => {
@@ -59,6 +60,13 @@ describe("active studio data", () => {
 
   it("explains how the studio sets its prices: the line under the price list", () => {
     expect(studio.priceNote.pl.trim()).not.toBe("");
+  });
+
+  it("has a real rating: Google stars from above 0 to 5 and a whole review count", () => {
+    // Hero и отзывы показывают его числом — «0,0» у заготовки демо вышло бы на страницу
+    const { value, count } = studio.rating;
+    expect(value > 0 && value <= 5, `рейтинг ${value}`).toBe(true);
+    expect(Number.isInteger(count) && count > 0, `отзывов ${count}`).toBe(true);
   });
 
   it("has https links for the route and the Google reviews", () => {
@@ -107,6 +115,32 @@ describe("active studio data", () => {
       texts.flatMap(([path, text]) => (text[lang]?.trim() ? [] : [`${lang}: ${path}`])),
     );
     expect(missing).toEqual([]);
+  });
+
+  it("is Afterdark in the template itself: a demo is put in only for a look or an upload", () => {
+    // Демо стоит (npm run demo:use, копия demo:deploy, check-demo в CI) — .demo-active есть.
+    // Нет его, а студия чужая — значит, шаблон собираются коммитить с реальной студией
+    if (existsSync(join(process.cwd(), ".demo-active"))) return;
+    expect(studio, "в шаблоне стоит не Afterdark — снять демо: npm run demo:use -- --reset").toBe(afterdark);
+  });
+
+  it("carries nothing of Afterdark once another studio is active: the demo is its own studio", () => {
+    if (studio === afterdark) return;
+    // Название, логотип, подписи кадров и файлы Afterdark — карта и фото входа названы по студии
+    expect(JSON.stringify(studio)).not.toMatch(/afterdark/i);
+    // Пометка заготовки demo:new в квадратных скобках — место ещё не заполнено
+    expect(strings(studio).filter((text) => /\[[^\]]*\]/.test(text))).toEqual([]);
+    const phones = [studio.phone, ...studio.messengers.flatMap((item) => ("phone" in item ? [item.phone] : []))];
+    expect(phones).not.toContain(afterdark.phone);
+    // Отзывы и рейтинг Afterdark выдуманы: у чужой студии они выдали бы себя за её клиентов
+    const examples = new Set(afterdark.reviews.map(({ text }) => text.pl));
+    expect(studio.reviews.filter(({ text }) => examples.has(text.pl))).toEqual([]);
+    expect(studio.rating, "рейтинг Afterdark").not.toEqual(afterdark.rating);
+    // Тексты о самой студии и её месте — «na Woli», «Warszawa-Wola»
+    const own = ({ hero, meta, about }: Studio) =>
+      [hero.subtitle, hero.lead, meta.title, meta.description, about?.intro].flatMap((text) => (text ? [text.pl] : []));
+    const afterdarkTexts = new Set(own(afterdark));
+    expect(own(studio).filter((text) => afterdarkTexts.has(text))).toEqual([]);
   });
 
   it("has working hours that close after they open", () => {
@@ -267,6 +301,13 @@ function studioTexts(value: unknown, path = ""): [string, Text][] {
   if (!value || typeof value !== "object") return [];
   if (typeof (value as Text).pl === "string") return [[path, value as Text]];
   return Object.entries(value).flatMap(([key, item]) => studioTexts(item, path ? `${path}.${key}` : key));
+}
+
+/* Все строки данных, включая пути файлов и ссылки. */
+function strings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (!value || typeof value !== "object") return [];
+  return Object.values(value).flatMap(strings);
 }
 
 /* Контраст по WCAG 2: относительная яркость двух цветов #rrggbb. */

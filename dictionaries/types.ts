@@ -118,6 +118,12 @@ export type Dictionary = {
     callTitle: string;
     callText: string;
   };
+  notFound: {
+    /** Подставляется {studio}: заголовок вкладки страницы 404. */
+    metaTitle: string;
+    title: string;
+    text: string;
+  };
   /** Подпись под одиночным кадром, сделанным ИИ: фото входа, кадры O nas. */
   photoExample: string;
   /** Подсказка диктору у ссылок, которые открываются в новой вкладке. */

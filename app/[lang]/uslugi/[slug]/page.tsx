@@ -10,13 +10,12 @@ import { telHref } from "@/lib/contact";
 import { formatPhone } from "@/lib/format";
 import { fill, isLang, t } from "@/lib/i18n";
 import { groupPagePath, groupSectionIds, hasGroupPage } from "@/lib/nav";
-import { alternates } from "@/lib/seo";
+import { alternates, notFoundMetadata } from "@/lib/seo";
 
 /*
  * Страница группы услуг (BRIEF.md): главная отвечает «сколько», страница группы — «что
  * именно за эти деньги». Собирается на каждую группу, у которой в данных есть страница;
- * другой адрес под /uslugi — 404. Хотя бы одну такую группу требует content/studio.test.ts:
- * с Cache Components маршрут без единого адреса не собирается.
+ * другой адрес под /uslugi — 404.
  *
  * Страница целиком статическая, и сборка за этим следит. Заодно незнакомый адрес Next
  * сначала дорисовывает до конца и только потом отвечает — 404 уходит со статусом 404.
@@ -25,7 +24,10 @@ import { alternates } from "@/lib/seo";
 export const ensureStatic = "navigation";
 
 export function generateStaticParams() {
-  return studio.services.filter(hasGroupPage).map(({ slug }) => ({ slug }));
+  const pages = studio.services.filter(hasGroupPage).map(({ slug }) => ({ slug }));
+  // С Cache Components маршрут без единого адреса не собирается. У студии без страниц групп
+  // (демо) собирается адрес первой группы — он отвечает 404, как любой другой под /uslugi
+  return pages.length > 0 ? pages : studio.services.slice(0, 1).map(({ slug }) => ({ slug }));
 }
 
 function findGroup(slug: string) {
@@ -36,8 +38,9 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[lang]/uslugi/[slug]">): Promise<Metadata> {
   const { lang, slug } = await params;
+  if (!isLang(lang)) notFound();
   const group = findGroup(slug);
-  if (!isLang(lang) || !group) notFound();
+  if (!group) return notFoundMetadata(lang);
   const dict = getDictionary(lang);
   return {
     title: fill(dict.group.metaTitle, { group: t(group.name, lang), studio: studio.name }),

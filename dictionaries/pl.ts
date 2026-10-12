@@ -91,6 +91,11 @@ export const pl: Dictionary = {
     callTitle: "Porozmawiajmy o Twoim aucie",
     callText: "Zadzwoń — podpowiemy, od czego zacząć, i umówimy termin.",
   },
+  notFound: {
+    metaTitle: "Nie ma takiej strony — {studio}",
+    title: "Nie ma takiej strony",
+    text: "Adres mógł się zmienić. Ceny wszystkich usług i kontakt są na stronie głównej.",
+  },
   photoExample: "Zdjęcie przykładowe",
   newTab: "otwiera się w nowej karcie",
   footer: { services: "Usługi", studio: "Studio" },

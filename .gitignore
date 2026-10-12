@@ -43,6 +43,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# демо студий: своя папка со своим git (README, «Демо»); поставленное демо — копии
+# заменённых файлов шаблона (npm run demo:use)
+/demos/
+/.demo-active/
+# файл данных реальной студии, поставленной demo:use, в git шаблона не попадает
+/content/studios/*
+!/content/studios/afterdark.ts
+
 # python: скрипт вырезки машины hero
 __pycache__/
 .venv/

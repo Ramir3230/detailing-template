@@ -1,33 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { defaultLang, langs } from "@/lib/i18n";
+import { proxyAction } from "@/lib/routing";
 
-/*
- * Польский основной и живёт без префикса: `/` и `/kontakt` внутри отдаются из
- * app/[lang] с lang = pl. Адрес с `/pl` уводим на адрес без префикса, чтобы у
- * страницы был один адрес. Остальные языки — на своих префиксах, как есть.
- */
+/* Куда ведёт адрес — решает lib/routing.ts: язык по префиксу и сразу 404 незнакомому. */
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const prefix = `/${defaultLang}`;
-
-  if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
-    const url = request.nextUrl.clone();
-    url.pathname = pathname.slice(prefix.length) || "/";
-    return NextResponse.redirect(url, 308);
-  }
-
-  const prefixed = langs.some((lang) => pathname === `/${lang}` || pathname.startsWith(`/${lang}/`));
-  if (prefixed) return NextResponse.next();
+  const action = proxyAction(request.nextUrl.pathname);
+  if (action.kind === "next") return NextResponse.next();
 
   const url = request.nextUrl.clone();
-  url.pathname = `${prefix}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.rewrite(url);
+  url.pathname = action.pathname;
+  return action.kind === "redirect" ? NextResponse.redirect(url, 308) : NextResponse.rewrite(url);
 }
 
 export const config = {
   /* Всё, кроме служебных путей Next и Vercel, маршрутов в корне app/ вне [lang]
-     (/icon без расширения, будущие api/ и apple-icon) и файлов с расширением:
-     robots.txt, фото. Новый маршрут в корне app/ — добавить сюда, иначе он
-     перепишется в /pl/… и отдаст 404. */
-  matcher: ["/((?!_next/|_vercel/|api/|icon$|apple-icon$|.*\\..*).*)"],
+     (/icon без расширения, будущие api/ и apple-icon) и файлов из public/ по их
+     расширениям. Адрес с другой точкой — старый `.html` или `.php` — получает 404 студии,
+     а не стандартную Next. Новый маршрут в корне app/ или новый тип файла в public/ —
+     добавить сюда, иначе адрес перепишется в /pl/… и отдаст 404. */
+  matcher: ["/((?!_next/|_vercel/|api/|icon$|apple-icon$|.*\\.(?:webp|png|jpe?g|svg|ico|txt|xml|webmanifest)$).*)"],
 };

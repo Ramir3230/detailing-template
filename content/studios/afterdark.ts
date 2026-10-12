@@ -72,7 +72,7 @@ export const afterdark: Studio = {
     area: "Warszawa-Wola",
     /* Кадр владельца (ИИ, вывеска Afterdark), решение 09.10.2026; вход SPECTRE не берём */
     photo: {
-      src: "/kontakt/wejscie.webp",
+      src: "/kontakt/afterdark.webp",
       width: 1040,
       height: 1300,
       alt: {
