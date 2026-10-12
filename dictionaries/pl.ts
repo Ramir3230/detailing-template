@@ -10,7 +10,7 @@ export const pl: Dictionary = {
   menu: { services: "Usługi", studio: "Studio" },
   call: { label: "Zadzwoń" },
   hero: { checkPrice: "Sprawdź cenę", orCall: "lub zadzwoń:" },
-  messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram" },
+  messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram", facebook: "Facebook" },
   status: {
     open: "Otwarte",
     closed: "Zamknięte",

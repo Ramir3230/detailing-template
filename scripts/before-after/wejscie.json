@@ -1,7 +1,7 @@
 {
   "out": "kontakt/wejscie-ai",
   "po": {
-    "prompt": "professional evening photo of the entrance of a small car detailing studio in an industrial building in a European city, wide open sectional garage door with bright cool white light pouring out from inside, inside the studio a glossy dark car stands sideways under LED light panels, seen from the side, wet asphalt in front reflecting the light, dark blue sky at dusk, plain wall without signs, realistic, high detail, architectural photography",
+    "prompt": "professional evening photo of the entrance of a small car detailing studio in an industrial building in a European city, wide open sectional garage door with bright cool white light pouring out from inside, inside the studio a glossy dark car stands sideways under LED light panels, seen from the side, wet asphalt in front reflecting the light, dark blue sky at dusk, plain wall without signs, realistic",
     "negative": "logo, emblem, badge, brand name, text, letters, writing, sign, watermark, license plate, number plate, people, person, hands, cartoon, illustration, 3d render, cgi, painting, deformed, distorted, blurry, lowres, oversaturated, front grille, car front, neon sign, signboard, shop sign, graffiti",
     "seed": 714,
     "erase": [
