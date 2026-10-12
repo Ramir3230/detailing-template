@@ -2,6 +2,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { pageSegments, proxyAction } from "@/lib/routing";
+import { config } from "@/proxy";
 
 describe("proxyAction", () => {
   it("serves Polish without a prefix and leads /pl addresses there", () => {
@@ -28,6 +29,20 @@ describe("proxyAction", () => {
   it("leaves an unknown address under a known page to its route", () => {
     expect(proxyAction("/uslugi/nie-ma")).toEqual({ kind: "rewrite", pathname: "/pl/uslugi/nie-ma" });
     expect(proxyAction("/ru/uslugi/nie-ma")).toEqual({ kind: "next" });
+  });
+});
+
+describe("proxy matcher", () => {
+  it("lets every file type of public/ pass by: an unlisted one would get the studio 404", () => {
+    // В копии демо тест идёт после use-studio — уже на фото демо поверх шаблона
+    const group = config.matcher[0].match(/\(\?:([^)]+)\)\$/)?.[1];
+    expect(group, "в matcher нет списка расширений").toBeDefined();
+    const passes = new RegExp(`\\.(?:${group})$`);
+    const files = readdirSync(join(process.cwd(), "public"), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && !entry.name.startsWith("."))
+      .map(({ name }) => name);
+    expect(files.length).toBeGreaterThan(0);
+    expect(files.filter((name) => !passes.test(name))).toEqual([]);
   });
 });
 

@@ -9,13 +9,15 @@
  * Проект — <студия>-demo. Адрес проекта (<студия>-demo.vercel.app) открыт, собственные
  * адреса сборок закрыты логином — защита Vercel по умолчанию. Залитое демо заморожено:
  * правки шаблона его не трогают, пока его не залить заново; новая заливка открытого демо
- * до --open не видна. Что залито — demos/<студия>/deployed.json: коммит шаблона, адреса, даты.
+ * до --open не видна. demos/<студия>/deployed.json — что залито: превью и открытая сборка,
+ * у каждой коммит шаблона, адрес и дата, и связь с проектом Vercel.
  *
- * Копия собирается в папке временных файлов без git: Vercel CLI, увидев репозиторий,
- * подключил бы его к проекту демо, и демо пересобиралось бы на каждый пуш шаблона.
+ * Копия собирается во временной папке без git: Vercel CLI, увидев репозиторий, подключил
+ * бы его к проекту демо, и демо пересобиралось бы на каждый пуш шаблона. После заливки
+ * копия удаляется — --open ей не нужен.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -23,29 +25,33 @@ const root = join(import.meta.dirname, "..", "..");
 const { slug, open, ref } = parseArgs(process.argv.slice(2));
 const dir = join(root, "demos", slug);
 const project = `${slug}-demo`;
-// Имя папки — имя проекта: по нему Vercel CLI находит проект или заводит новый
-const work = join(tmpdir(), "detailing-demos", project);
 const record = join(dir, "deployed.json");
+const saved = existsSync(record) ? JSON.parse(readFileSync(record, "utf-8")) : {};
 
 if (!existsSync(join(dir, "studio.ts"))) fail(`нет demos/${slug}/studio.ts — сначала npm run demo:new -- ${slug}`);
 
 if (open) await promote();
-else await preview();
+else preview();
 
-async function preview() {
+function preview() {
   if (ref === "origin/main") run("git", ["fetch", "-q", "origin", "main"]);
   const commit = run("git", ["rev-parse", "--verify", `${ref}^{commit}`]).trim();
+  // Имя папки — имя проекта: по нему Vercel CLI заводит проект при первой заливке
+  const temp = mkdtempSync(join(tmpdir(), "detailing-demo-"));
+  const work = join(temp, project);
   step(`шаблон ${ref} (${commit.slice(0, 7)}) → ${work}`);
 
-  rmSync(work, { recursive: true, force: true });
+  run("git", ["worktree", "prune"]);
   run("git", ["worktree", "add", "--detach", "-q", work, commit]);
   // Копия без git: отвязываем и забываем рабочее дерево
   rmSync(join(work, ".git"), { force: true });
   run("git", ["worktree", "prune"]);
 
   run("node", [join(work, "scripts", "demo", "use-studio.mjs"), dir, work]);
-  // Зависимости и сборку собирает Vercel; локальные — только для проверки
+  // Зависимости и сборку делает Vercel; локальные — только для проверки
   writeFileSync(join(work, ".vercelignore"), "node_modules\n.next\n");
+  // Проект уже есть — связь из записи, а не поиск по имени папки
+  if (saved.link) link(work, saved.link);
 
   step("npm ci");
   run("npm", ["ci", "--no-audit", "--no-fund"], { cwd: work });
@@ -57,57 +63,85 @@ async function preview() {
   // <проект>.vercel.app сама, даже превью, и демо открылось бы раньше, чем его посмотрит
   // владелец. Собственный адрес сборки закрыт логином; --open ставит на неё адрес проекта
   // (vercel promote) — без пересборки, ровно то, что владелец видел
-  const url = deploymentUrl(
-    run("vercel", ["deploy", "--yes", "--prod", "--skip-domain", "--format", "json"], { cwd: work }),
-  );
-  save({ project, template: { ref, commit }, preview: { url, at: new Date().toISOString() } });
+  const output = run("vercel", ["deploy", "--yes", "--prod", "--skip-domain", "--format", "json"], { cwd: work });
+  const url = output.match(/https:\/\/[a-z0-9-]+\.vercel\.app/)?.[0] ?? fail("vercel deploy не вернул адрес сборки");
+  const target = output.match(/"target":\s*"([a-z]+)"/)?.[1] ?? "";
+  const { orgId, projectId } = JSON.parse(readFileSync(join(work, ".vercel", "project.json"), "utf-8"));
+
+  // Открытая сборка остаётся в записи, пока новую не откроют: превью могут и не принять
+  save({
+    project,
+    link: { orgId, projectId },
+    preview: { url, target, ref, commit, at: new Date().toISOString() },
+    ...(saved.production ? { production: saved.production } : {}),
+  });
+  rmSync(temp, { recursive: true, force: true });
   console.log(`\nпревью (закрыто логином Vercel): ${url}\nпосле взгляда владельца: npm run demo:deploy -- ${slug} --open`);
 }
 
 async function promote() {
-  const saved = existsSync(record) ? JSON.parse(readFileSync(record, "utf-8")) : null;
-  if (!saved?.preview?.url) fail("превью ещё не заливали: npm run demo:deploy -- " + slug);
-  if (!existsSync(join(work, ".vercel"))) fail(`нет ${work} от заливки превью — залейте превью заново`);
+  const { preview: built, link: linked } = saved;
+  if (!built?.url || !linked) fail(`превью ещё не заливали: npm run demo:deploy -- ${slug}`);
+  // promote сборки не из продакшена Vercel делает новой сборкой — её никто не видел
+  if (built.target !== "production") fail("превью собрано не продакшен-сборкой — залейте превью заново");
 
-  step(`vercel promote ${saved.preview.url}`);
-  // Повторный --open (скажем, после упавшей проверки ниже) — та же сборка уже на адресе
-  run("vercel", ["promote", saved.preview.url, "--yes", "--timeout", "10m"], {
-    cwd: work,
-    ok: /is already the current production deployment/,
-  });
-  const url = `https://${productionHost(saved.preview.url)}`;
+  let url = saved.production?.deployment === built.url ? saved.production.url : "";
+  if (url) step(`уже открыто: ${url}`);
+  else {
+    const temp = mkdtempSync(join(tmpdir(), "detailing-demo-"));
+    link(temp, linked);
+    step(`vercel promote ${built.url}`);
+    run("vercel", ["promote", built.url, "--timeout", "10m"], {
+      cwd: temp,
+      // Повтор после упавшей проверки ниже: та же сборка уже на адресе
+      ok: /is already the current production deployment/,
+    });
+    url = `https://${productionHost(built.url, temp)}`;
+    rmSync(temp, { recursive: true, force: true });
+  }
 
   // Открыто ли: запрос без логина, и демо закрыто от поиска
   for (const path of ["/", "/kontakt", "/ru"]) {
     const response = await fetch(url + path, { redirect: "manual" });
     const html = await response.text();
-    if (response.status !== 200) fail(`${url}${path} отвечает ${response.status} — не открыто`);
-    if (!/<meta name="robots" content="[^"]*noindex/.test(html)) fail(`${url}${path} без noindex`);
+    const problem =
+      response.status !== 200
+        ? `отвечает ${response.status}`
+        : /<meta name="robots" content="[^"]*noindex/.test(html)
+          ? ""
+          : "без noindex";
+    if (problem) fail(`${url}${path} ${problem}. Адрес уже стоит на сборке — откатить: Vercel, проект ${project}, Instant Rollback`);
   }
-  save({ ...saved, production: { url, at: new Date().toISOString() } });
-  // Копия с node_modules больше не нужна: следующая заливка соберёт свою
-  rmSync(work, { recursive: true, force: true });
+  save({ ...saved, production: { ...built, url, deployment: built.url, at: new Date().toISOString() } });
   console.log(`\nоткрыто: ${url} — 200 без логина, noindex на месте`);
+}
+
+/* Связь папки с проектом Vercel — то, что пишет vercel link; секретов в ней нет */
+function link(folder, { orgId, projectId }) {
+  mkdirSync(join(folder, ".vercel"), { recursive: true });
+  writeFileSync(join(folder, ".vercel", "project.json"), JSON.stringify({ orgId, projectId }));
 }
 
 /*
  * Адрес, который promote поставил на сборку: <проект>.vercel.app или с хвостом, если имя
- * было занято. Из списка алиасов: `project ls` и `inspect` отдают его не сразу.
+ * было занято. Из списка алиасов аккаунта, по страницам: `project ls` и `inspect` отдают
+ * его не сразу, а алиасы веток шаблона давно открытое демо отодвигают с первой страницы.
  */
-function productionHost(deployment) {
-  const { aliases = [] } = JSON.parse(run("vercel", ["alias", "ls", "--format", "json"], { cwd: work }));
-  const host = aliases
-    .filter(({ url }) => url === new URL(deployment).host)
-    .map(({ alias }) => alias)
-    .sort((a, b) => a.length - b.length)[0];
-  if (!host) fail(`на сборке ${deployment} нет адреса проекта — promote не прошёл?`);
-  return host;
-}
-
-function deploymentUrl(output) {
-  const url = output.match(/https:\/\/[a-z0-9-]+\.vercel\.app/)?.[0];
-  if (!url) fail("vercel deploy не вернул адрес превью");
-  return url;
+function productionHost(deployment, cwd) {
+  const host = new URL(deployment).host;
+  let next = "";
+  do {
+    const page = JSON.parse(
+      run("vercel", ["alias", "ls", "--limit", "100", "--format", "json", ...(next ? ["--next", next] : [])], { cwd }),
+    );
+    const found = (page.aliases ?? [])
+      .filter(({ url }) => url === host)
+      .map(({ alias }) => alias)
+      .sort((a, b) => a.length - b.length)[0];
+    if (found) return found;
+    next = page.pagination?.next ? String(page.pagination.next) : "";
+  } while (next);
+  return fail(`на сборке ${deployment} нет адреса проекта — promote не прошёл?`);
 }
 
 function save(data) {

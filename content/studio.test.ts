@@ -62,6 +62,13 @@ describe("active studio data", () => {
     expect(studio.priceNote.pl.trim()).not.toBe("");
   });
 
+  it("has a real rating: Google stars from above 0 to 5 and a whole review count", () => {
+    // Hero и отзывы показывают его числом — «0,0» у заготовки демо вышло бы на страницу
+    const { value, count } = studio.rating;
+    expect(value > 0 && value <= 5, `рейтинг ${value}`).toBe(true);
+    expect(Number.isInteger(count) && count > 0, `отзывов ${count}`).toBe(true);
+  });
+
   it("has https links for the route and the Google reviews", () => {
     for (const url of [studio.address.routeUrl, studio.rating.url]) {
       if (url) expect(new URL(url).protocol).toBe("https:");

@@ -24,11 +24,14 @@ function pair(group: string): BeforeAfter {
   return found;
 }
 
-/** Услуга-заготовка: цена 0 не проходит тест данных, как и пометки. */
+/*
+ * Услуга-заготовка: цена 0 не проходит тест данных, как и пометки. Длительности нет —
+ * её показывает строка прайса, и выдуманная вышла бы у каждой услуги. Есть у студии —
+ * `duration: { unit: "hour", min: 2, max: 3 }`.
+ */
 const service = (beforeAfter?: BeforeAfter): Service => ({
   name: { pl: "[Usługa]", ru: "[Услуга]" },
   price: { kind: "byClass", S: 0, M: 0, L: 0 },
-  duration: { unit: "hour", min: 1, max: 2 },
   ...(beforeAfter ? { beforeAfter } : {}),
 });
 
