@@ -6,7 +6,8 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
-import { isLang, langs, t, type Lang } from "@/lib/i18n";
+import { isLang, langs, t } from "@/lib/i18n";
+import { isPublished, siteUrl } from "@/lib/seo";
 import "../globals.css";
 
 /* subsets — что предзагружать. Кириллица подключена в любом случае и по unicode-range
@@ -35,14 +36,13 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-function isPublished(lang: Lang): boolean {
-  return (studio.languages as readonly Lang[]).includes(lang);
-}
-
+/* canonical и hreflang у каждой страницы свои (lib/seo.ts, alternates): унаследованный
+   отсюда canonical склеил бы страницу с главной. */
 export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   return {
+    metadataBase: siteUrl(),
     title: t(studio.meta.title, lang),
     description: t(studio.meta.description, lang),
     /* Шаблон и демо закрыты от поиска целиком, язык без текстов студии — тоже:

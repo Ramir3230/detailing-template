@@ -14,6 +14,7 @@ import { telHref } from "@/lib/contact";
 import { formatFrom, formatPhone, glue, lowestAmount } from "@/lib/format";
 import { localePath, t, type Lang } from "@/lib/i18n";
 import { groupPagesPath, groupPath, servicesPath, studioPages } from "@/lib/nav";
+import { publishedLangs } from "@/lib/seo";
 
 type Props = { lang: Lang; dict: Dictionary };
 
@@ -104,9 +105,9 @@ export function Header({ lang, dict }: Props) {
             <p className="text-center text-14 text-muted">{status}</p>
             <CallButton dict={dict} />
             <Messengers dict={dict} variant="menu" />
-            {studio.languages.length > 1 && (
+            {publishedLangs.length > 1 && (
               <div className="mt-1 flex justify-center text-13 text-muted">
-                <LangSwitch lang={lang} words={dict.language} />
+                <LangSwitch lang={lang} langs={publishedLangs} words={dict.language} />
               </div>
             )}
           </div>

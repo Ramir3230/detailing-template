@@ -9,7 +9,8 @@ import { getDictionary } from "@/dictionaries";
 import { telHref } from "@/lib/contact";
 import { formatPhone } from "@/lib/format";
 import { fill, isLang, t } from "@/lib/i18n";
-import { groupSectionIds, hasGroupPage } from "@/lib/nav";
+import { groupPagePath, groupSectionIds, hasGroupPage } from "@/lib/nav";
+import { alternates } from "@/lib/seo";
 
 /*
  * Страница группы услуг (BRIEF.md): главная отвечает «сколько», страница группы — «что
@@ -41,6 +42,7 @@ export async function generateMetadata({
   return {
     title: fill(dict.group.metaTitle, { group: t(group.name, lang), studio: studio.name }),
     description: t(group.intro, lang),
+    alternates: alternates(lang, groupPagePath(group.slug)),
   };
 }
 
