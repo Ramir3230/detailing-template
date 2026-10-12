@@ -14,8 +14,9 @@
  * демо стоит, второе не ставится, а шаблон не коммитится — тест данных требует Afterdark.
  *
  * Править демо — в demos/<студия>/, не в копии в шаблоне: --reset её удалит и потому
- * откажет, если она отличается от источника.
+ * откажет, если копию правили после постановки.
  */
+import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
@@ -52,17 +53,19 @@ function activate(dir, root) {
     for (const file of walk(photos)) files.push([join("public", relative(photos, file)), file]);
   }
 
-  // Первая фаза — план и копии заменяемого; шаблон пока не тронут
+  // Первая фаза — план и копии заменяемого; шаблон пока не тронут. Отпечаток того, что
+  // ляжет в шаблон: по нему --reset узнаёт, правили ли копию после постановки
   const manifest = { slug, created: [], replaced: [] };
   for (const [path, from] of files) {
     const to = join(target, path);
+    const entry = { path, from, hash: from ? digest(from) : null };
     if (existsSync(to)) {
       // Копия заменённого — с .bak: tsc и eslint берут **/*.ts, копии им не нужны
       const backup = join(state, "backup", `${path}.bak`);
       mkdirSync(dirname(backup), { recursive: true });
       cpSync(to, backup);
-      manifest.replaced.push({ path, from });
-    } else manifest.created.push({ path, from });
+      manifest.replaced.push(entry);
+    } else manifest.created.push(entry);
   }
   mkdirSync(state, { recursive: true });
   writeFileSync(join(state, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
@@ -82,6 +85,8 @@ function activate(dir, root) {
 }
 
 function reset(root, force) {
+  // «--reset demos/<студия>» искал бы демо в папке демо и молча отвечал «не стоит»
+  if (!existsSync(join(root, "content", "studio.ts"))) fail(`${root} — не корень шаблона: npm run demo:use -- --reset`);
   const state = join(root, ".demo-active");
   if (!existsSync(state)) return console.log("демо не стоит — шаблон как есть");
   if (!existsSync(join(state, "manifest.json"))) {
@@ -91,19 +96,25 @@ function reset(root, force) {
   const manifest = readManifest(state);
   const { slug, created, replaced } = manifest;
 
-  // Копия в шаблоне правлена, а источник нет — правка пропала бы вместе с копией
-  const edited = [...created, ...replaced].filter(
-    ({ path, from }) =>
-      from && existsSync(from) && existsSync(join(root, path)) && !readFileSync(join(root, path)).equals(readFileSync(from)),
-  );
+  // Копию в шаблоне правили после постановки — правка пропала бы вместе с ней. Сверка —
+  // с отпечатком на момент постановки, не с источником: его правят штатно (скил, шаг 6),
+  // а переименованный источник не делает правленую копию ненужной
+  const backupOf = (path) => join(state, "backup", `${path}.bak`);
+  const edited = [...created, ...replaced].filter(({ path, hash }) => {
+    const file = join(root, path);
+    if (!hash || !existsSync(file) || digest(file) === hash) return false;
+    // Постановка упала до этого файла: в шаблоне ещё его оригинал, не правка
+    return !(existsSync(backupOf(path)) && readFileSync(file).equals(readFileSync(backupOf(path))));
+  });
   if (edited.length > 0 && !force) {
-    const list = edited.map(({ path, from }) => `  ${path} → ${relative(root, from)}`).join("\n");
-    fail(`правки в шаблоне не перенесены в папку демо:\n${list}\nперенесите — или --reset --force, чтобы выбросить`);
+    const list = edited.map(({ path, from }) => `  ${path} (из ${relative(root, from)})`).join("\n");
+    fail(
+      `копию в шаблоне правили после постановки:\n${list}\nнужная правка — в папку демо руками, потом --reset --force`,
+    );
   }
 
   for (const { path } of replaced) {
-    const backup = join(state, "backup", `${path}.bak`);
-    if (existsSync(backup)) cpSync(backup, join(root, path));
+    if (existsSync(backupOf(path))) cpSync(backupOf(path), join(root, path));
   }
   for (const { path } of created) rmSync(join(root, path), { force: true });
   rmSync(state, { recursive: true, force: true });
@@ -121,6 +132,10 @@ function clearImageCache(root, { created, replaced }) {
   if (!existsSync(cache)) return;
   rmSync(cache, { recursive: true, force: true });
   console.log("кэш картинок Next очищен: кадры по тем же путям сменились");
+}
+
+function digest(file) {
+  return createHash("sha256").update(readFileSync(file)).digest("hex");
 }
 
 function readManifest(state) {
