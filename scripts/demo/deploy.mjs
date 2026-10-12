@@ -65,7 +65,11 @@ function preview() {
   // <проект>.vercel.app сама, даже превью, и демо открылось бы раньше, чем его посмотрит
   // владелец. Собственный адрес сборки закрыт логином; --open ставит на неё адрес проекта
   // (vercel promote) — без пересборки, ровно то, что владелец видел
-  const output = run("vercel", ["deploy", "--yes", "--prod", "--skip-domain", "--format", "json"], { cwd: work });
+  // Копия — аргументом, а не рабочей папкой: фоновый процесс CLI держит папку, из которой
+  // его звали, и копию было бы не удалить (.claude/gotchas.md)
+  const output = run("vercel", ["deploy", work, "--yes", "--prod", "--skip-domain", "--format", "json"], {
+    cwd: tmpdir(),
+  });
   const url = output.match(/https:\/\/[a-z0-9-]+\.vercel\.app/)?.[0] ?? fail("vercel deploy не вернул адрес сборки");
   const target = output.match(/"target":\s*"([a-z]+)"/)?.[1] ?? "";
   const { orgId, projectId } = JSON.parse(readFileSync(join(work, ".vercel", "project.json"), "utf-8"));
