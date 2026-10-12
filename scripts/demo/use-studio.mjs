@@ -4,19 +4,25 @@
  *
  *   npm run demo:use -- demos/<студия>     посмотреть демо локально: check:data, dev
  *   npm run demo:use -- --reset            вернуть шаблон к Afterdark
+ *   npm run demo:use -- --reset --force    вернуть, даже если копия данных в шаблоне правлена
  *   node scripts/demo/use-studio.mjs <папка студии> <корень копии>   копия demo:deploy, CI
  *
  * Папка студии — demos/<студия>/ или checks/demo-fixture/: studio.ts с `export const
  * studio` и, если есть, public/ с файлами по тем же путям, что в шаблоне. Что заменено и
  * что добавлено, записывается в .demo-active/ корня, заменённое — туда же копией: --reset
  * возвращает ровно это и не трогает остального, в том числе незакоммиченных правок. Пока
- * демо стоит, второе не ставится; коммитить шаблон с поставленным демо нельзя.
+ * демо стоит, второе не ставится, а шаблон не коммитится — тест данных требует Afterdark.
+ *
+ * Править демо — в demos/<студия>/, не в копии в шаблоне: --reset её удалит и потому
+ * откажет, если она отличается от источника.
  */
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
-const [first, second] = process.argv.slice(2);
-if (first === "--reset") reset(resolve(second ?? "."));
+const args = process.argv.slice(2);
+const flags = new Set(args.filter((arg) => arg.startsWith("--")));
+const [first, second] = args.filter((arg) => !arg.startsWith("--"));
+if (flags.has("--reset")) reset(resolve(first ?? "."), flags.has("--force"));
 else activate(first, second ?? ".");
 
 function activate(dir, root) {
@@ -33,18 +39,20 @@ function activate(dir, root) {
   if (!/export const studio\b/.test(readFileSync(data, "utf-8"))) fail(`${data}: нет export const studio`);
   if (!existsSync(join(target, "content", "studio.ts"))) fail(`${target} — не корень шаблона`);
   const state = join(target, ".demo-active");
-  if (existsSync(state)) fail(`уже стоит демо ${readManifest(state).slug} — сначала npm run demo:use -- --reset`);
+  if (existsSync(join(state, "manifest.json"))) {
+    fail(`уже стоит демо ${readManifest(state).slug} — сначала npm run demo:use -- --reset`);
+  }
+  // Без manifest — прошлая постановка упала до копирования: шаблон не тронут
+  rmSync(state, { recursive: true, force: true });
 
-  // Что ляжет в шаблон: путь от корня → откуда
-  const files = new Map([
-    [join("content", "studios", `${slug}.ts`), data],
-    [join("content", "studio.ts"), null],
-  ]);
+  // Что ляжет в шаблон: путь от корня → откуда (content/studio.ts пишется ниже)
+  const files = [[join("content", "studios", `${slug}.ts`), data], [join("content", "studio.ts"), null]];
   const photos = join(source, "public");
   if (existsSync(photos)) {
-    for (const file of walk(photos)) files.set(join("public", relative(photos, file)), file);
+    for (const file of walk(photos)) files.push([join("public", relative(photos, file)), file]);
   }
 
+  // Первая фаза — план и копии заменяемого; шаблон пока не тронут
   const manifest = { slug, created: [], replaced: [] };
   for (const [path, from] of files) {
     const to = join(target, path);
@@ -53,28 +61,66 @@ function activate(dir, root) {
       const backup = join(state, "backup", `${path}.bak`);
       mkdirSync(dirname(backup), { recursive: true });
       cpSync(to, backup);
-      manifest.replaced.push(path);
-    } else manifest.created.push(path);
-    mkdirSync(dirname(to), { recursive: true });
-    if (from) cpSync(from, to);
+      manifest.replaced.push({ path, from });
+    } else manifest.created.push({ path, from });
+  }
+  mkdirSync(state, { recursive: true });
+  writeFileSync(join(state, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+
+  // Вторая фаза — в шаблон
+  for (const [path, from] of files) {
+    if (!from) continue;
+    mkdirSync(dirname(join(target, path)), { recursive: true });
+    cpSync(from, join(target, path));
   }
   writeFileSync(
     join(target, "content", "studio.ts"),
     `/* Активная студия — ${slug}: её поставил scripts/demo/use-studio.mjs, вернуть — --reset. */\nexport { studio } from "@/content/studios/${slug}";\n`,
   );
-  mkdirSync(state, { recursive: true });
-  writeFileSync(join(state, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  clearImageCache(target, manifest);
   console.log(`активная студия: ${slug}`);
 }
 
-function reset(root) {
+function reset(root, force) {
   const state = join(root, ".demo-active");
   if (!existsSync(state)) return console.log("демо не стоит — шаблон как есть");
-  const { slug, created, replaced } = readManifest(state);
-  for (const path of replaced) cpSync(join(state, "backup", `${path}.bak`), join(root, path));
-  for (const path of created) rmSync(join(root, path), { force: true });
+  if (!existsSync(join(state, "manifest.json"))) {
+    rmSync(state, { recursive: true, force: true });
+    return console.log("постановка демо упала до копирования — шаблон не тронут");
+  }
+  const manifest = readManifest(state);
+  const { slug, created, replaced } = manifest;
+
+  // Копия в шаблоне правлена, а источник нет — правка пропала бы вместе с копией
+  const edited = [...created, ...replaced].filter(
+    ({ path, from }) =>
+      from && existsSync(from) && existsSync(join(root, path)) && !readFileSync(join(root, path)).equals(readFileSync(from)),
+  );
+  if (edited.length > 0 && !force) {
+    const list = edited.map(({ path, from }) => `  ${path} → ${relative(root, from)}`).join("\n");
+    fail(`правки в шаблоне не перенесены в папку демо:\n${list}\nперенесите — или --reset --force, чтобы выбросить`);
+  }
+
+  for (const { path } of replaced) {
+    const backup = join(state, "backup", `${path}.bak`);
+    if (existsSync(backup)) cpSync(backup, join(root, path));
+  }
+  for (const { path } of created) rmSync(join(root, path), { force: true });
   rmSync(state, { recursive: true, force: true });
+  clearImageCache(root, manifest);
   console.log(`демо ${slug} снято: возвращено ${replaced.length}, убрано ${created.length}`);
+}
+
+/*
+ * Кадр, заменённый по тому же пути, оптимизатор Next отдаёт из кэша старым
+ * (.claude/gotchas.md): после смены фото кэш картинок — долой, иначе на экране не то.
+ */
+function clearImageCache(root, { created, replaced }) {
+  if (![...created, ...replaced].some(({ path }) => path.startsWith("public"))) return;
+  const cache = join(root, ".next", "cache", "images");
+  if (!existsSync(cache)) return;
+  rmSync(cache, { recursive: true, force: true });
+  console.log("кэш картинок Next очищен: кадры по тем же путям сменились");
 }
 
 function readManifest(state) {
