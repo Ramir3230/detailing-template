@@ -1,16 +1,17 @@
 """Перекраска фиолетовых акцентов кадров шаблона в цвет студии.
 
 Машина hero и кадры до/после сняты под фиолетовую тему Afterdark: бампер M3, подсветка
-салона, неон в кадре. У студии с другим акцентом они спорили бы с темой. Скрипт сдвигает
-оттенок только там, где пиксель фиолетовый и насыщенный, с мягким краем маски; яркость
-и геометрия остаются, поэтому слой фар и карта глубины машины совпадают с перекрашенной.
+салона, неон в кадре. У студии с другим акцентом они спорили бы с темой. Скрипт меняет
+только пиксели, где цвет фиолетовый и заметный, с мягким краем маски: оттенок — сдвигом
+к акценту студии, насыщенность и яркость — в отношении акцента к фиолетовому. Геометрия
+не меняется, поэтому слой фар и карта глубины машины совпадают с перекрашенной.
 
-    python scripts/recolor/recolor.py --accent "#ff6a3d" --out demos/<студия>/public \
-        --sheet demos/<студия>/source/recolor.png
+    python scripts/recolor/recolor.py --accent "#ff6a3d" --out demos/<студия>/public --sheet demos/<студия>/source/recolor.png
 
-Без путей смотрит все .webp в public/hero и public/przed-po. Кадр, где фиолетового меньше
-порога, не трогает: перекрашивать в нём нечего. Перекрашенный файл ложится в --out по тому
-же пути, что в public/, и в копии шаблона встаёт поверх исходного (scripts/demo/use-studio.mjs).
+Без путей смотрит все .webp в public/hero и public/przed-po; кадр до/после тянет за собой
+вторую половину своей пары. Кадр, где фиолетового меньше порога, не трогает. Перекрашенный
+файл ложится в --out по тому же пути, что в public/, и в копии шаблона встаёт поверх
+исходного (scripts/demo/use-studio.mjs).
 Сдвиг оттенка хорош для насыщенных цветов; к золоту, белому или серому фиолетовый не
 сдвигается — тогда кадр решается отдельно (README, «Демо»).
 """
@@ -124,14 +125,20 @@ def main() -> None:
     parser.add_argument("--sheet", type=Path, help="лист «было / стало», .png")
     args = parser.parse_args()
 
-    files = [p.resolve() for p in args.paths] or sorted(f for d in SCAN for f in (PUBLIC / d).rglob("*.webp"))
+    # Пара до/после — одна папка: перекрашена одна половина — на шторке они разойдутся.
+    # Поэтому кадр пары тянет за собой всю папку, а решение — по большей доле в паре
+    def with_pair(file: Path) -> list[Path]:
+        in_pairs = file.relative_to(PUBLIC).parts[0] == "przed-po"
+        return sorted(file.parent.glob("*.webp")) if in_pairs else [file]
+
+    chosen = [p.resolve() for p in args.paths] or [f for d in SCAN for f in (PUBLIC / d).rglob("*.webp")]
+    files = sorted({pair for file in chosen for pair in with_pair(file)})
     results = {}
     for file in files:
         with Image.open(file) as source:
             source.load()
             results[file] = (source, *recolor(source, args.accent))
 
-    # Пара до/после — одна папка: перекрашена одна половина — на шторке они разойдутся
     def share_of(file: Path) -> float:
         if file.relative_to(PUBLIC).parts[0] != "przed-po":
             return results[file][2]
