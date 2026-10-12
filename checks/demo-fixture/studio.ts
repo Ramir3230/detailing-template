@@ -30,8 +30,27 @@ export const studio: Studio = {
     { kind: "telegram", phone },
     { kind: "whatsapp", phone },
   ],
-  address: { street: "ul. Przykładowa 12", area: renamed.address.area },
+  meta: {
+    title: {
+      pl: "Nocturne Detailing — studio detailingu, Warszawa-Mokotów",
+      ru: "Nocturne Detailing — студия детейлинга на Мокотуве, Варшава",
+    },
+    description: {
+      pl: "Mycie, korekta lakieru i wnętrze na Mokotowie — z ceną dla Twojej klasy auta.",
+      ru: "Мойка, полировка и салон на Мокотуве — с ценой для класса вашей машины.",
+    },
+  },
+  hero: {
+    ...renamed.hero,
+    subtitle: { pl: "Studio detailingu na Mokotowie", ru: "Студия детейлинга на Мокотуве" },
+    lead: {
+      pl: "Studio detailingu na Mokotowie. Mycie, korekta lakieru, wnętrze — z ceną dla Twojej klasy auta od razu.",
+      ru: "Студия детейлинга на Мокотуве. Мойка, полировка, салон — с ценой для класса вашей машины сразу.",
+    },
+  },
+  address: { street: "ul. Przykładowa 12", area: "Warszawa-Mokotów" },
   services: renamed.services.map(withoutPage),
+  rating: { value: 4.8, count: 37 },
   reviews: [
     {
       author: "Anna P.",
