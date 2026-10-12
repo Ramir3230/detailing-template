@@ -8,15 +8,17 @@ import { defaultCarClass } from "@/lib/car-class";
 import { homePairServices } from "@/lib/compare";
 import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
-import { defaultLang, langs, localePath, t, type Lang } from "@/lib/i18n";
+import { defaultLang, fill, langs, localePath, t, type Lang } from "@/lib/i18n";
 import {
   aboutCallId,
   aboutPagePath,
   contactPagePath,
   groupPagePath,
+  groupPagesPath,
   groupSectionIds,
   hasGroupPage,
   sectionIds,
+  servicesPath,
 } from "@/lib/nav";
 import { isPublished, publishedLangs } from "@/lib/seo";
 
@@ -221,6 +223,18 @@ describe("built group route", () => {
     const route = manifest.dynamicRoutes?.["/[lang]/uslugi/[slug]"];
     expect(route, "маршрута групп нет в prerender-manifest — Next мог сменить формат").toBeDefined();
     expect(route.compute, "маршрут групп отвечает до конца отрисовки — или Next сменил формат").toBe("blocking");
+  });
+
+  // Студия без страниц групп (демо): группы ведут к своим местам в прайсе главной
+  if (groupPages.length > 0) return;
+
+  it.each(langs)("is not linked from the home page /%s: the studio has no group pages", (lang) => {
+    expect(page(lang).html).not.toContain(`href="${localePath(lang, groupPagesPath)}/`);
+  });
+
+  it.each(langs)("answers 404 at the address it is built on, /%s", (lang) => {
+    const meta = JSON.parse(readFileSync(built(`${lang}${groupPagePath(studio.services[0].slug)}`).replace(/\.html$/, ".meta"), "utf-8"));
+    expect(meta.status, "адрес группы без страницы отвечает не 404 — или Next сменил формат").toBe(404);
   });
 });
 
@@ -449,5 +463,44 @@ describe.each(langs)("built about page /%s/o-nas", (lang) => {
 
   it("carries no real brands from the mockup", () => {
     expect(page(route).html).not.toMatch(/spectre|mansory/i);
+  });
+});
+
+/*
+ * Данные ответа для браузера: строки self.__next_f.push([1, "…"]) подряд. Страницу 404
+ * Next 16 с Cache Components отдаёт пустой оболочкой и рисует в браузере по ним (ROADMAP,
+ * блок 11), поэтому тема, язык и тексты 404 проверяются здесь, а не в разметке.
+ */
+function flight(route: string): string {
+  return [...page(route).html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)]
+    .map(([, chunk]) => JSON.parse(chunk) as string)
+    .join("");
+}
+
+describe.each(langs)("built 404 page /%s/404", (lang) => {
+  const route = `${lang}/404`;
+  const dict = getDictionary(lang);
+
+  it("answers 404 after rendering in full, closed from search", () => {
+    const meta = JSON.parse(readFileSync(built(route).replace(/\.html$/, ".meta"), "utf-8"));
+    expect(meta.status, "незнакомый адрес отвечает не 404 — или Next сменил формат").toBe(404);
+    const manifest = JSON.parse(readFileSync(join(process.cwd(), ".next", "prerender-manifest.json"), "utf-8"));
+    expect(manifest.dynamicRoutes?.["/[lang]/[...missing]"]?.compute, "404 уходит до конца отрисовки").toBe("blocking");
+    expect(page(route).head).toMatch(/<meta name="robots" content="[^"]*noindex/);
+  });
+
+  it("comes in the studio theme and the language of its address", () => {
+    const data = flight(route);
+    expect(data).toContain(`"lang":"${lang}"`);
+    for (const [name, color] of Object.entries(studio.theme)) expect(data).toContain(`"--${name}":"${color}"`);
+    expect(data).toContain(glue(dict.notFound.title, lang));
+    expect(data).toContain(glue(dict.notFound.text, lang));
+    expect(data).toContain(fill(dict.notFound.metaTitle, { studio: studio.name }));
+  });
+
+  it("leads to the price list and the call", () => {
+    const data = flight(route);
+    expect(data).toContain(`"href":"${localePath(lang, servicesPath)}"`);
+    expect(data).toContain(`"href":"tel:${studio.phone}"`);
   });
 });
