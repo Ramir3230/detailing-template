@@ -75,7 +75,7 @@ function preview() {
     preview: { url, target, ref, commit, at: new Date().toISOString() },
     ...(saved.production ? { production: saved.production } : {}),
   });
-  rmSync(temp, { recursive: true, force: true });
+  cleanup(temp);
   console.log(`\nпревью (закрыто логином Vercel): ${url}\nпосле взгляда владельца: npm run demo:deploy -- ${slug} --open`);
 }
 
@@ -88,16 +88,17 @@ async function promote() {
   let url = saved.production?.deployment === built.url ? saved.production.url : "";
   if (url) step(`уже открыто: ${url}`);
   else {
-    const temp = mkdtempSync(join(tmpdir(), "detailing-demo-"));
-    link(temp, linked);
+    // Проект — переменными связи Vercel CLI, без папки: в папке шаблона своя связь, с его
+    // проектом, а временную на Windows держит фоновый процесс CLI
+    const env = { ...process.env, VERCEL_ORG_ID: linked.orgId, VERCEL_PROJECT_ID: linked.projectId };
     step(`vercel promote ${built.url}`);
     run("vercel", ["promote", built.url, "--timeout", "10m"], {
-      cwd: temp,
+      cwd: tmpdir(),
+      env,
       // Повтор после упавшей проверки ниже: та же сборка уже на адресе
       ok: /is already the current production deployment/,
     });
-    url = `https://${productionHost(built.url, temp)}`;
-    rmSync(temp, { recursive: true, force: true });
+    url = `https://${productionHost(built.url, env)}`;
   }
 
   // Открыто ли: запрос без логина, и демо закрыто от поиска
@@ -127,13 +128,12 @@ function link(folder, { orgId, projectId }) {
  * было занято. Из списка алиасов аккаунта, по страницам: `project ls` и `inspect` отдают
  * его не сразу, а алиасы веток шаблона давно открытое демо отодвигают с первой страницы.
  */
-function productionHost(deployment, cwd) {
+function productionHost(deployment, env) {
   const host = new URL(deployment).host;
   let next = "";
   do {
-    const page = JSON.parse(
-      run("vercel", ["alias", "ls", "--limit", "100", "--format", "json", ...(next ? ["--next", next] : [])], { cwd }),
-    );
+    const args = ["alias", "ls", "--limit", "100", "--format", "json", ...(next ? ["--next", next] : [])];
+    const page = JSON.parse(run("vercel", args, { cwd: tmpdir(), env }));
     const found = (page.aliases ?? [])
       .filter(({ url }) => url === host)
       .map(({ alias }) => alias)
@@ -142,6 +142,18 @@ function productionHost(deployment, cwd) {
     next = page.pagination?.next ? String(page.pagination.next) : "";
   } while (next);
   return fail(`на сборке ${deployment} нет адреса проекта — promote не прошёл?`);
+}
+
+/*
+ * Временная папка — после себя. На Windows фоновый процесс Vercel CLI ещё держит её
+ * рабочей папкой пару секунд: повторы, а не удалось — сказать, а не падать после заливки.
+ */
+function cleanup(folder) {
+  try {
+    rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
+  } catch {
+    console.log(`не удалось удалить ${folder} — удалите вручную`);
+  }
 }
 
 function save(data) {
@@ -165,9 +177,9 @@ function parseArgs(args) {
  * подходит под ok. npm и vercel на Windows — .cmd, их запускает только оболочка;
  * аргументы с пробелами — в кавычках.
  */
-function run(command, args, { cwd = root, ok } = {}) {
+function run(command, args, { cwd = root, env = process.env, ok } = {}) {
   const shell = process.platform === "win32" && command !== "git" && command !== "node";
-  const options = { cwd, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 };
+  const options = { cwd, env, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 };
   // С оболочкой — одной строкой: массив аргументов Node при shell склеивает сам и предупреждает
   const result = shell
     ? spawnSync([command, ...args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg))].join(" "), { ...options, shell })
