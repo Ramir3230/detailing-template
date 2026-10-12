@@ -16,6 +16,7 @@
     "test:built": "vitest run --project built",
     "check:data": "vitest run --project unit content/studio.test.ts",
     "demo:new": "node scripts/demo/new.mjs",
+    "demo:use": "node scripts/demo/use-studio.mjs",
     "demo:deploy": "node scripts/demo/deploy.mjs"
   },
   "dependencies": {

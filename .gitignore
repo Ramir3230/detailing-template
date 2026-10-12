@@ -43,8 +43,10 @@ yarn-error.log*
 # vercel
 .vercel
 
-# демо студий: своя папка со своим git (README, «Демо»)
+# демо студий: своя папка со своим git (README, «Демо»); поставленное демо — копии
+# заменённых файлов шаблона (npm run demo:use)
 /demos/
+/.demo-active/
 
 # python: скрипт вырезки машины hero
 __pycache__/
