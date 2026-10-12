@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import { afterdark } from "@/content/studios/afterdark";
-import type { Photo, Text } from "@/content/types";
+import type { Photo, Studio, Text } from "@/content/types";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
@@ -118,9 +118,15 @@ describe("active studio data", () => {
     expect(strings(studio).filter((text) => /\[[^\]]*\]/.test(text))).toEqual([]);
     const phones = [studio.phone, ...studio.messengers.flatMap((item) => ("phone" in item ? [item.phone] : []))];
     expect(phones).not.toContain(afterdark.phone);
-    // Отзывы Afterdark — выдуманные примеры: у чужой студии они выдали бы себя за её клиентов
+    // Отзывы и рейтинг Afterdark выдуманы: у чужой студии они выдали бы себя за её клиентов
     const examples = new Set(afterdark.reviews.map(({ text }) => text.pl));
     expect(studio.reviews.filter(({ text }) => examples.has(text.pl))).toEqual([]);
+    expect(studio.rating, "рейтинг Afterdark").not.toEqual(afterdark.rating);
+    // Тексты о самой студии и её месте — «na Woli», «Warszawa-Wola»
+    const own = ({ hero, meta, about }: Studio) =>
+      [hero.subtitle, hero.lead, meta.title, meta.description, about?.intro].flatMap((text) => (text ? [text.pl] : []));
+    const afterdarkTexts = new Set(own(afterdark));
+    expect(own(studio).filter((text) => afterdarkTexts.has(text))).toEqual([]);
   });
 
   it("has working hours that close after they open", () => {
