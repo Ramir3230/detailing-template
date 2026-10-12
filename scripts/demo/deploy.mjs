@@ -52,7 +52,11 @@ async function preview() {
   run("npm", ["run", "check"], { cwd: work });
 
   step(`vercel deploy → ${project}, превью`);
-  const url = deploymentUrl(run("vercel", ["deploy", "--yes", "--format", "json"], { cwd: work }));
+  // Превью — явно: первую заливку нового проекта Vercel CLI иначе делает продакшеном, и
+  // демо открылось бы по <проект>.vercel.app раньше, чем его посмотрит владелец
+  const url = deploymentUrl(
+    run("vercel", ["deploy", "--yes", "--target", "preview", "--format", "json"], { cwd: work }),
+  );
   save({ project, template: { ref, commit }, preview: { url, at: new Date().toISOString() } });
   console.log(`\nпревью (закрыто логином Vercel): ${url}\nпосле взгляда владельца: npm run demo:deploy -- ${slug} --open`);
 }
@@ -79,11 +83,10 @@ async function promote() {
 
 /* Продакшен-адрес проекта: <проект>.vercel.app или с хвостом, если имя было занято */
 function productionHost() {
-  const inspect = run("vercel", ["project", "inspect", project, "--format", "json"], { cwd: work });
-  const hosts = [...inspect.matchAll(/[a-z0-9-]+\.vercel\.app/g)].map(([host]) => host);
-  const host = hosts.find((item) => item.startsWith(project)) ?? hosts[0];
-  if (!host) fail(`не нашёл продакшен-адрес проекта ${project}`);
-  return host;
+  const { projects = [] } = JSON.parse(run("vercel", ["project", "ls", "--format", "json"], { cwd: work }));
+  const url = projects.find(({ name }) => name === project)?.latestProductionUrl;
+  if (!url) fail(`не нашёл продакшен-адрес проекта ${project}`);
+  return new URL(url).host;
 }
 
 function deploymentUrl(output) {
@@ -114,8 +117,11 @@ function parseArgs(args) {
  */
 function run(command, args, { cwd = root } = {}) {
   const shell = process.platform === "win32" && command !== "git" && command !== "node";
-  const quoted = shell ? args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg)) : args;
-  const result = spawnSync(command, quoted, { cwd, encoding: "utf-8", shell, maxBuffer: 64 * 1024 * 1024 });
+  const options = { cwd, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 };
+  // С оболочкой — одной строкой: массив аргументов Node при shell склеивает сам и предупреждает
+  const result = shell
+    ? spawnSync([command, ...args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg))].join(" "), { ...options, shell })
+    : spawnSync(command, args, options);
   if (result.status !== 0) {
     const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim().split("\n").slice(-40).join("\n");
     fail(`${command} ${args.join(" ")} — код ${result.status}\n${output || result.error?.message || ""}`);
