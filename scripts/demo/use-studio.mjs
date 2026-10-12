@@ -30,7 +30,11 @@ if (!/export const studio\b/.test(readFileSync(data, "utf-8"))) fail(`${data}: �
 if (!existsSync(join(target, "content", "studio.ts"))) fail(`${target} — не корень шаблона`);
 
 cpSync(data, join(target, "content", "studios", `${slug}.ts`));
-if (existsSync(join(source, "public"))) cpSync(join(source, "public"), join(target, "public"), { recursive: true });
+// Служебное (.gitkeep пустой папки) на сайт не идёт
+const visible = (path) => !basename(path).startsWith(".");
+if (existsSync(join(source, "public"))) {
+  cpSync(join(source, "public"), join(target, "public"), { recursive: true, filter: visible });
+}
 writeFileSync(
   join(target, "content", "studio.ts"),
   `/* Активная студия — ${slug}: её поставил scripts/demo/use-studio.mjs. */\nexport { studio } from "@/content/studios/${slug}";\n`,
