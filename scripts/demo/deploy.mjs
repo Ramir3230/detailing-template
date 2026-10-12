@@ -2,13 +2,14 @@
  * Заливка демо в свой проект Vercel: копия шаблона из main, данные и фото студии поверх,
  * `npm run check` — и только зелёное уходит на Vercel.
  *
- *   npm run demo:deploy -- <студия>               превью: закрыто логином Vercel, смотрит владелец
- *   npm run demo:deploy -- <студия> --open        это превью — в продакшен: открыто всем по ссылке
+ *   npm run demo:deploy -- <студия>               превью: сборка по своему адресу, закрытому логином
+ *   npm run demo:deploy -- <студия> --open        это превью — на адрес проекта: открыто всем по ссылке
  *   npm run demo:deploy -- <студия> --ref HEAD    собрать не из origin/main (проверка конвейера)
  *
- * Проект — <студия>-demo, его продакшен-адрес открыт, превью закрыты (защита Vercel по
- * умолчанию). Залитое демо заморожено: правки шаблона его не трогают, пока его не залить
- * заново. Что залито — demos/<студия>/deployed.json: коммит шаблона, адреса, даты.
+ * Проект — <студия>-demo. Адрес проекта (<студия>-demo.vercel.app) открыт, собственные
+ * адреса сборок закрыты логином — защита Vercel по умолчанию. Залитое демо заморожено:
+ * правки шаблона его не трогают, пока его не залить заново; новая заливка открытого демо
+ * до --open не видна. Что залито — demos/<студия>/deployed.json: коммит шаблона, адреса, даты.
  *
  * Копия собирается в папке временных файлов без git: Vercel CLI, увидев репозиторий,
  * подключил бы его к проекту демо, и демо пересобиралось бы на каждый пуш шаблона.
@@ -69,8 +70,12 @@ async function promote() {
   if (!existsSync(join(work, ".vercel"))) fail(`нет ${work} от заливки превью — залейте превью заново`);
 
   step(`vercel promote ${saved.preview.url}`);
-  run("vercel", ["promote", saved.preview.url, "--yes", "--timeout", "10m"], { cwd: work });
-  const url = `https://${productionHost()}`;
+  // Повторный --open (скажем, после упавшей проверки ниже) — та же сборка уже на адресе
+  run("vercel", ["promote", saved.preview.url, "--yes", "--timeout", "10m"], {
+    cwd: work,
+    ok: /is already the current production deployment/,
+  });
+  const url = `https://${productionHost(saved.preview.url)}`;
 
   // Открыто ли: запрос без логина, и демо закрыто от поиска
   for (const path of ["/", "/kontakt", "/ru"]) {
@@ -80,15 +85,23 @@ async function promote() {
     if (!/<meta name="robots" content="[^"]*noindex/.test(html)) fail(`${url}${path} без noindex`);
   }
   save({ ...saved, production: { url, at: new Date().toISOString() } });
+  // Копия с node_modules больше не нужна: следующая заливка соберёт свою
+  rmSync(work, { recursive: true, force: true });
   console.log(`\nоткрыто: ${url} — 200 без логина, noindex на месте`);
 }
 
-/* Продакшен-адрес проекта: <проект>.vercel.app или с хвостом, если имя было занято */
-function productionHost() {
-  const { projects = [] } = JSON.parse(run("vercel", ["project", "ls", "--format", "json"], { cwd: work }));
-  const url = projects.find(({ name }) => name === project)?.latestProductionUrl;
-  if (!url) fail(`не нашёл продакшен-адрес проекта ${project}`);
-  return new URL(url).host;
+/*
+ * Адрес, который promote поставил на сборку: <проект>.vercel.app или с хвостом, если имя
+ * было занято. Из списка алиасов: `project ls` и `inspect` отдают его не сразу.
+ */
+function productionHost(deployment) {
+  const { aliases = [] } = JSON.parse(run("vercel", ["alias", "ls", "--format", "json"], { cwd: work }));
+  const host = aliases
+    .filter(({ url }) => url === new URL(deployment).host)
+    .map(({ alias }) => alias)
+    .sort((a, b) => a.length - b.length)[0];
+  if (!host) fail(`на сборке ${deployment} нет адреса проекта — promote не прошёл?`);
+  return host;
 }
 
 function deploymentUrl(output) {
@@ -114,19 +127,21 @@ function parseArgs(args) {
 }
 
 /*
- * Команда с выводом в строку; упала — хвост её вывода и выход. npm и vercel на Windows —
- * .cmd, их запускает только оболочка; аргументы с пробелами — в кавычках.
+ * Команда с выводом в строку; упала — хвост её вывода и выход, кроме ответа, который
+ * подходит под ok. npm и vercel на Windows — .cmd, их запускает только оболочка;
+ * аргументы с пробелами — в кавычках.
  */
-function run(command, args, { cwd = root } = {}) {
+function run(command, args, { cwd = root, ok } = {}) {
   const shell = process.platform === "win32" && command !== "git" && command !== "node";
   const options = { cwd, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 };
   // С оболочкой — одной строкой: массив аргументов Node при shell склеивает сам и предупреждает
   const result = shell
     ? spawnSync([command, ...args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg))].join(" "), { ...options, shell })
     : spawnSync(command, args, options);
-  if (result.status !== 0) {
-    const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim().split("\n").slice(-40).join("\n");
-    fail(`${command} ${args.join(" ")} — код ${result.status}\n${output || result.error?.message || ""}`);
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+  if (result.status !== 0 && !ok?.test(output)) {
+    const tail = output.split("\n").slice(-40).join("\n");
+    fail(`${command} ${args.join(" ")} — код ${result.status}\n${tail || result.error?.message || ""}`);
   }
   return result.stdout;
 }
