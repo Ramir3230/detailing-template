@@ -14,4 +14,11 @@ describe("contact links", () => {
       "https://www.instagram.com/studio.x/",
     );
   });
+
+  it("builds a Facebook link by page name or by the id of a page without one", () => {
+    expect(messengerHref({ kind: "facebook", username: "studio.x" })).toBe("https://www.facebook.com/studio.x");
+    expect(messengerHref({ kind: "facebook", id: "123456789012345" })).toBe(
+      "https://www.facebook.com/profile.php?id=123456789012345",
+    );
+  });
 });

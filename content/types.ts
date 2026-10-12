@@ -117,12 +117,17 @@ export type WeekHours = readonly [
   DayHours,
 ];
 
-/** Номера — в международном формате без пробелов: +48123456789. */
+/**
+ * Номера — в международном формате без пробелов: +48123456789. У страницы Facebook без
+ * своего имени вместо него номер из ссылки: profile.php?id=123456789012345.
+ */
 export type Messenger =
   | { kind: "telegram"; username: string }
   | { kind: "telegram"; phone: string }
   | { kind: "whatsapp"; phone: string }
-  | { kind: "instagram"; username: string };
+  | { kind: "instagram"; username: string }
+  | { kind: "facebook"; username: string }
+  | { kind: "facebook"; id: string };
 
 export type Review = {
   author: string;
