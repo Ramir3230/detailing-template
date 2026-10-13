@@ -187,6 +187,8 @@ describe("active studio data", () => {
     for (const { x, y, w } of car.headlights) {
       for (const value of [x, y, w]) expect(value > 0 && value < 100).toBe(true);
     }
+    // Видимость ореола — доля: 0 погасил бы свет фар целиком, больше 1 прозрачность не бывает
+    if (car.halo !== undefined) expect(car.halo > 0 && car.halo <= 1).toBe(true);
   });
 
   it("has before/after pairs: one 4:5 size for both frames, sharp on a desktop 2x screen", () => {

@@ -89,6 +89,8 @@ type Props = {
   aspect: number;
   headlights: readonly Headlight[];
   underglow?: Underglow;
+  /** Видимость ореола фар из данных машины; без неё — как у слоя на CSS. */
+  halo?: number;
   /** Фото и светодиоды фар статичной машины — из них берутся текстуры. */
   body: RefObject<HTMLImageElement | null>;
   rings: RefObject<HTMLImageElement | null>;
@@ -113,7 +115,7 @@ type Props = {
  * шейдера, картинок или контекста, когда устройство не тянет и при reduced motion у
  * машины без неона кодом: тогда фото и неон на CSS.
  */
-export function CarVolume({ map, aspect, headlights, underglow, body, rings, floor, onState }: Props) {
+export function CarVolume({ map, aspect, headlights, underglow, halo, body, rings, floor, onState }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -171,7 +173,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
     try {
       // Цвет акцента темы — у холста стоит text-accent
       const accent = components(getComputedStyle(element).color);
-      volume = createVolume(gl, { aspect, accent, headlights, underglow });
+      volume = createVolume(gl, { aspect, accent, headlights, underglow, halo });
     } catch {
       // Шейдер не собрался на этом устройстве
       return off();
@@ -416,7 +418,7 @@ export function CarVolume({ map, aspect, headlights, underglow, body, rings, flo
       stop();
       onState({ car: false, neon: false });
     };
-  }, [map, aspect, headlights, underglow, body, rings, floor, onState]);
+  }, [map, aspect, headlights, underglow, halo, body, rings, floor, onState]);
 
   // Холст — кадр машины с полями FIELD: свет на полу и отражение, запас на поворот
   const side = (FIELD.side / aspect) * 100;
