@@ -479,9 +479,10 @@
  * будет. При reduced motion, без JS и в браузере, не знающем запрос scripting, машина
  * горит сразу, а разметка сервера и клиента одна и та же.
  */
-/* Видимость ореола фары — копия в halo(), lib/car-volume-gl.ts: меняются вместе */
+/* Видимость ореола фары — halo из данных машины (--halo на HeroCar), без него 0,85.
+   Копия — HALO и halo() в lib/car-volume-gl.ts: меняются вместе */
 .ignite-headlight {
-  opacity: 0.85;
+  opacity: var(--halo, 0.85);
 }
 
 @media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
