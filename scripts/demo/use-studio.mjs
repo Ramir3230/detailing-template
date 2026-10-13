@@ -125,12 +125,15 @@ function reset(root, force) {
 /*
  * Кадр, заменённый по тому же пути, оптимизатор Next отдаёт из кэша старым
  * (.claude/gotchas.md): после смены фото кэш картинок — долой, иначе на экране не то.
+ * Кэшей два: next start пишет в .next/cache/images, next dev — в .next/dev/cache/images.
+ * Запущенный next dev может дописывать свой, пока он удаляется, — отсюда повторы.
  */
 function clearImageCache(root, { created, replaced }) {
   if (![...created, ...replaced].some(({ path }) => path.startsWith("public"))) return;
-  const cache = join(root, ".next", "cache", "images");
-  if (!existsSync(cache)) return;
-  rmSync(cache, { recursive: true, force: true });
+  const caches = [join(root, ".next", "cache", "images"), join(root, ".next", "dev", "cache", "images")];
+  const found = caches.filter((cache) => existsSync(cache));
+  if (found.length === 0) return;
+  for (const cache of found) rmSync(cache, { recursive: true, force: true, maxRetries: 5 });
   console.log("кэш картинок Next очищен: кадры по тем же путям сменились");
 }
 
