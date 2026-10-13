@@ -59,6 +59,8 @@ const SILL_LENGTH = 1.8;
 const BOUNCE_AHEAD_OF_LIP = 0.17;
 const BOUNCE_BELOW_FLOOR = 0.05;
 const BOUNCE_SPAN = [15, 85] as const;
+/** Видимость ореола фар у машины без halo в данных — копия .ignite-headlight. */
+const HALO = 0.85;
 
 export type Layers = {
   /** Фото машины, светодиоды фар — те же <img>, что показывает страница. */
@@ -159,6 +161,7 @@ uniform vec3 uAccent;
 uniform vec2 uBloomStep;
 uniform float uBloomLod;
 uniform vec3 uHeadlights[2];
+uniform float uHalo;
 uniform bool uMirror;
 uniform float uFade;
 uniform float uReflection;
@@ -190,7 +193,8 @@ vec4 screen(vec4 below, vec4 above) {
 
 // Ореол фары — .glow-headlight и .ignite-headlight из app/globals.css: эллипс вдвое
 // шире светодиодов и вдвое ниже своей ширины, белое ядро в холодный голубой,
-// видимость 0,85. Стопы в premultiplied alpha: градиент CSS смешивает их так же
+// видимость uHalo (HALO или halo машины). Стопы в premultiplied alpha: градиент CSS
+// смешивает их так же
 vec4 halo(vec3 lamp) {
   float t = length((vUv - lamp.xy) / vec2(lamp.z, lamp.z * uAspect / 2.0));
   vec4 core = vec4(1.0);
@@ -202,7 +206,7 @@ vec4 halo(vec3 lamp) {
   else if (t < 0.5) color = mix(near, mid, (t - 0.22) / 0.28);
   else if (t < 0.8) color = mix(mid, far, (t - 0.5) / 0.3);
   else color = mix(far, vec4(0.0), min((t - 0.8) / 0.2, 1.0));
-  return color * 0.85;
+  return color * uHalo;
 }
 
 void main() {
@@ -629,11 +633,13 @@ export function createVolume(
     accent,
     headlights,
     underglow,
+    halo = HALO,
   }: {
     aspect: number;
     accent: [number, number, number];
     headlights: readonly Headlight[];
     underglow?: Underglow;
+    halo?: number;
   },
 ): Volume {
   const parallel = gl.getExtension("KHR_parallel_shader_compile");
@@ -718,6 +724,7 @@ export function createVolume(
     gl.uniform1f(at("uAspect"), aspect);
     gl.uniform3f(at("uAccent"), ...accent);
     gl.uniform3fv(at("uHeadlights"), headlights.flatMap(({ x, y, w }) => [x / 100, y / 100, w / 100]));
+    gl.uniform1f(at("uHalo"), halo);
     gl.uniform4f(at("uFrame"), ...frame);
     // Полтексела панели: выборка у её края не заглядывает в соседнюю
     gl.uniform1f(at("uPanel"), 0.5 / (layers.map.naturalHeight / 3));

@@ -128,7 +128,7 @@ const layer = "pointer-events-none absolute mix-blend-screen";
  */
 export function HeroCar({ car, className = "" }: { car: HeroCarData; className?: string }) {
   const ready = use(Ready);
-  const { src, lights, depth, width, height, headlights, underglow } = car;
+  const { src, lights, depth, width, height, headlights, underglow, halo } = car;
   const body = useRef<HTMLImageElement>(null);
   const rings = useRef<HTMLImageElement>(null);
   const floor = useRef<HTMLDivElement>(null);
@@ -139,7 +139,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
       data-volume={shown.car ? "" : undefined}
       data-neon={shown.neon ? "" : undefined}
       className={`relative ${className}`}
-      style={{ aspectRatio: `${width} / ${height}`, "--car-aspect": width / height } as CSSProperties}
+      style={{ aspectRatio: `${width} / ${height}`, "--car-aspect": width / height, "--halo": halo } as CSSProperties}
     >
       {/* Неон на CSS прячется, а не убирается: по его вспышке зажигается неон холста */}
       <div
@@ -153,6 +153,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
           aspect={width / height}
           headlights={headlights}
           underglow={underglow}
+          halo={halo}
           body={body}
           rings={rings}
           floor={floor}
