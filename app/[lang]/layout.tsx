@@ -52,12 +52,13 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   };
 }
 
-/* Четыре цвета темы студии; производные считает app/globals.css. */
+/* Четыре цвета темы студии и её спектр неона, если есть; производные считает app/globals.css. */
 const themeVars = {
   "--bg": studio.theme.bg,
   "--fg": studio.theme.fg,
   "--muted": studio.theme.muted,
   "--accent": studio.theme.accent,
+  ...(studio.theme.spectrum && { "--spectrum": studio.theme.spectrum.join(", ") }),
 } as CSSProperties;
 
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {

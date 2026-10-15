@@ -122,6 +122,7 @@ export function Hero({ lang, dict }: Props) {
             />
             <HeroCar
               car={studio.hero.car}
+              spectrum={studio.theme.spectrum}
               className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:hero-car-fit"
             />
           </div>

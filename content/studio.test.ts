@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import { afterdark } from "@/content/studios/afterdark";
 import type { Photo, Studio, Text } from "@/content/types";
+import { SPECTRUM_MAX } from "@/lib/car-volume";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
@@ -111,9 +112,13 @@ describe("active studio data", () => {
   });
 
   it("has a readable theme: hex colors, text and accent at 4.5:1 to the background", () => {
-    const { bg, fg, muted, accent } = studio.theme;
-    for (const color of [bg, fg, muted, accent]) expect(color).toMatch(/^#[0-9a-f]{6}$/i);
+    const { bg, fg, muted, accent, spectrum = [] } = studio.theme;
+    for (const color of [bg, fg, muted, accent, ...spectrum]) expect(color).toMatch(/^#[0-9a-f]{6}$/i);
     for (const color of [fg, muted, accent]) expect(contrast(color, bg)).toBeGreaterThanOrEqual(4.5);
+    // Спектр — переход хотя бы двух цветов; больше SPECTRUM_MAX шейдер неона не возьмёт.
+    // Это только свет пола, текстом он не бывает — контраст ему не нужен
+    if (studio.theme.spectrum) expect(spectrum.length).toBeGreaterThanOrEqual(2);
+    expect(spectrum.length).toBeLessThanOrEqual(SPECTRUM_MAX);
   });
 
   it("has the logo mark it names: a vector SVG in public/logo/ the size of its viewBox", () => {

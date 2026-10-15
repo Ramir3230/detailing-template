@@ -20,6 +20,7 @@
  */
 
 import type { Headlight, Underglow } from "@/content/types";
+import { SPECTRUM_MAX } from "@/lib/car-volume";
 
 /* Камера в трёх высотах кадра от машины — перспектива около 19°, как у фото */
 const CAMERA = 3;
@@ -145,6 +146,29 @@ void main() {
 }
 `;
 
+/*
+ * Цвет неона вдоль машины (theme.spectrum, DESIGN.md, «Спектр неона»): цвета sRGB слева
+ * направо по ширине кадра машины; без спектра — один цвет, акцент темы. Соседние цвета
+ * смешиваются в sRGB, как у градиента CSS в .glow-floor-spectrum.
+ */
+const spectrumGlsl = /* glsl */ `
+uniform vec3 uSpectrum[${SPECTRUM_MAX}];
+uniform int uStops;
+
+// Цвет неона в доле t ширины кадра машины, sRGB
+vec3 neonAt(float t) {
+  if (uStops < 2) return uSpectrum[0];
+  float x = clamp(t, 0.0, 1.0) * float(uStops - 1);
+  int i = min(int(x), uStops - 2);
+  return mix(uSpectrum[i], uSpectrum[i + 1], x - float(i));
+}
+
+// sRGB в линейный свет — для пола, который считает свет физически
+vec3 linearOf(vec3 c) {
+  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+`;
+
 const carFragment = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uColor;
@@ -157,7 +181,6 @@ uniform float uPanel;
 uniform float uLight;
 // Источник отсвета неона: x левого и правого края, высота, глубина (BOUNCE_*)
 uniform vec4 uBounce;
-uniform vec3 uAccent;
 uniform vec2 uBloomStep;
 uniform float uBloomLod;
 uniform vec3 uHeadlights[2];
@@ -172,6 +195,7 @@ in vec3 vPosition;
 in float vHeight;
 out vec4 outColor;
 ${constants}
+${spectrumGlsl}
 // Наклон в карте — от −SLOPE до SLOPE: DEPTH_SLOPE в scripts/hero-car/cutout.py
 const float SLOPE = 8.0;
 // Сдвиг мип-уровня к резкости: браузер уменьшает картинку чётче, чем смесь мип-уровней,
@@ -229,10 +253,12 @@ void main() {
     float lit = max(dot(normal, toLight / reach), 0.0) / (1.0 + 6.0 * reach * reach);
     // Светлая краска отражает больше тёмного стекла и шин
     float albedo = dot(color.rgb / color.a, vec3(0.2126, 0.7152, 0.0722));
-    color = screen(color, vec4(uAccent * (uLight * lit * (0.4 + 0.6 * albedo) * color.a), 0.0));
+    // Цвет неона там, откуда идёт свет: у спектра левый край кузова светится иначе правого
+    vec3 neon = neonAt(0.5 + source.x / uAspect);
+    color = screen(color, vec4(neon * (uLight * lit * (0.4 + 0.6 * albedo) * color.a), 0.0));
     // Низ кузова у самого пола освещён снизу: губа, воздухозаборники, края колёс
     float rim = exp(-max(vHeight, 0.0) / RIM_HEIGHT);
-    color = screen(color, vec4(uAccent * (uLight * RIM * rim * (0.5 + 0.5 * albedo) * color.a), 0.0));
+    color = screen(color, vec4(neon * (uLight * RIM * rim * (0.5 + 0.5 * albedo) * color.a), 0.0));
   }
 
   // Ореол светодиодов, как .lights-bloom: размытие, затем яркость 1,5
@@ -280,7 +306,6 @@ uniform vec4 uFrame;
 uniform vec2 uResolution;
 // Разворот машины: cos и sin
 uniform vec2 uYaw;
-uniform vec3 uAccent;
 uniform float uNeon;
 uniform float uGloss;
 // Трубка под губой: x левого и правого концов, z, высота
@@ -295,6 +320,7 @@ uniform vec4 uHaze;
 uniform vec2 uBody;
 out vec4 outColor;
 ${constants}
+${spectrumGlsl}
 const float PI = 3.14159265;
 const int SHADOW_SAMPLES = 8;
 // Щель под передней губой, в высотах кадра (~5 см)
@@ -388,12 +414,6 @@ float visibility(vec3 p, vec3 a, vec3 b) {
   return seen / float(SHADOW_SAMPLES);
 }
 
-float segmentDistance(vec2 p, vec2 a, vec2 b) {
-  vec2 ab = b - a;
-  float t = clamp(dot(p - a, ab) / dot(ab, ab), 0.0, 1.0);
-  return length(p - a - ab * t);
-}
-
 void main() {
   vec2 edge = gl_FragCoord.xy / uResolution;
   vec2 screen = uFrame.xy + (edge * 2.0 - 1.0) * uFrame.zw;
@@ -449,12 +469,17 @@ void main() {
       * (1.0 - smoothstep(uBody.x - 0.05, uBody.x, abs(p.x)));
     diffuse *= 1.0 - under;
     glint *= 1.0 - under;
-    light = uAccent * (diffuse * ALBEDO / PI * (0.9 + 0.2 * grain) + glint);
+    // Цвет — неона напротив точки пола: у спектра он меняется вдоль машины, сбоку от
+    // кузова — крайний
+    light = linearOf(neonAt(0.5 + p.x / (2.0 * uBody.x))) * (diffuse * ALBEDO / PI * (0.9 + 0.2 * grain) + glint);
   }
 
-  // Дымка: свет трубки, рассеянный в воздухе у пола
-  float d = segmentDistance(screen, uHaze.xy, uHaze.zw);
-  light += uAccent * (0.9 * exp(-pow(d / 0.035, 2.0)) + 0.12 / (1.0 + pow(d / 0.09, 2.0)));
+  // Дымка: свет трубки, рассеянный в воздухе у пола. Цвет — точки трубки напротив
+  vec2 ab = uHaze.zw - uHaze.xy;
+  float along = clamp(dot(screen - uHaze.xy, ab) / dot(ab, ab), 0.0, 1.0);
+  float d = length(screen - uHaze.xy - ab * along);
+  vec3 haze = linearOf(neonAt(0.5 + mix(uTube.x, uTube.y, along) / (2.0 * uBody.x)));
+  light += haze * (0.9 * exp(-pow(d / 0.035, 2.0)) + 0.12 / (1.0 + pow(d / 0.09, 2.0)));
 
   // Экспозиция: яркое уходит в белое само, как у снимка неона; затем sRGB
   vec3 color = 1.0 - exp(-light * uNeon * EXPOSURE);
@@ -615,11 +640,6 @@ function grid(gl: WebGL2RenderingContext, program: WebGLProgram, aspect: number)
 }
 
 /* Цвет темы для расчёта света — в линейных долях */
-function linear([r, g, b]: [number, number, number]): [number, number, number] {
-  const channel = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  return [channel(r), channel(g), channel(b)];
-}
-
 /**
  * Готовит сцену. Программы пола собираются сразу, ещё до фото, — неон на полу горит с
  * самого зажигания; программа машины — в setCar, когда сцена отыграла. Не собравшийся
@@ -630,13 +650,14 @@ export function createVolume(
   gl: WebGL2RenderingContext,
   {
     aspect,
-    accent,
+    spectrum,
     headlights,
     underglow,
     halo = HALO,
   }: {
     aspect: number;
-    accent: [number, number, number];
+    /** Цвета неона sRGB 0..1 слева направо; один — акцент темы. */
+    spectrum: readonly (readonly [number, number, number])[];
     headlights: readonly Headlight[];
     underglow?: Underglow;
     halo?: number;
@@ -662,6 +683,13 @@ export function createVolume(
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
 
+  /* Спектр неона — в обе программы: свет пола и отсвет на кузове */
+  const stops = spectrum.slice(0, SPECTRUM_MAX);
+  const setSpectrum = (program: WebGLProgram) => {
+    gl.uniform3fv(gl.getUniformLocation(program, "uSpectrum"), stops.flat());
+    gl.uniform1i(gl.getUniformLocation(program, "uStops"), stops.length);
+  };
+
   /* Программы пола готовы — один раз задать то, что не меняется */
   type FloorUniform = "resolution" | "yaw" | "neon" | "gloss" | "tube" | "sill" | "wheels" | "haze" | "body" | "stretch";
   let floorUniforms: Record<FloorUniform, WebGLUniformLocation | null> | null = null;
@@ -671,7 +699,7 @@ export function createVolume(
     const at = (name: string) => gl.getUniformLocation(floorLink.program, name);
     gl.useProgram(floorLink.program);
     gl.uniform4f(at("uFrame"), ...frame);
-    gl.uniform3f(at("uAccent"), ...linear(accent));
+    setSpectrum(floorLink.program);
     gl.useProgram(stretchLink.program);
     gl.uniform1i(gl.getUniformLocation(stretchLink.program, "uFloor"), 3);
     floorUniforms = {
@@ -722,7 +750,7 @@ export function createVolume(
     gl.uniform1i(at("uLights"), 1);
     gl.uniform1i(at("uMap"), 2);
     gl.uniform1f(at("uAspect"), aspect);
-    gl.uniform3f(at("uAccent"), ...accent);
+    setSpectrum(program);
     gl.uniform3fv(at("uHeadlights"), headlights.flatMap(({ x, y, w }) => [x / 100, y / 100, w / 100]));
     gl.uniform1f(at("uHalo"), halo);
     gl.uniform4f(at("uFrame"), ...frame);
