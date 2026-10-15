@@ -13,57 +13,65 @@ type Props = {
   /** Заголовок и подсказка секции — рисует сервер. */
   heading: ReactNode;
   groups: PriceGroup[];
-  /** Строка под списком: как студия считает цену. */
-  footnote: string;
-  descriptions: Record<CarClass, string>;
-  words: { classLabel: string; individualQuote: string; call: string; whatsIncluded: string };
-  telHref: string;
+  /** Переключатель классов — только когда цена от класса зависит (classPriced). */
+  picker?: {
+    label: string;
+    descriptions: Record<CarClass, string>;
+    individualQuote: string;
+    call: string;
+    telHref: string;
+  };
+  /** Колонка цен в строках. У прайса по запросу её нет: в каждой было бы «indywidualnie». */
+  priced: boolean;
+  /** Под списком: строка о том, как студия считает цену, или карточка wyceny — рисует сервер. */
+  footer: ReactNode;
+  whatsIncluded: string;
 };
 
 /*
  * Прайс главной: в строке одна цена для выбранного класса. Телефон — переключатель
  * липнет под шапкой (64 px), пока на экране прайс. Десктоп (от 1024) — переключатель
  * в липкой боковой колонке слева, список справа. На телефоне колонка «растворяется»
- * (display: contents), чтобы липкий блок жил в границах всей секции.
+ * (display: contents), чтобы липкий блок жил в границах всей секции. Без цены по классу
+ * переключателя нет, у прайса по запросу нет и колонки цен (DESIGN.md, «Прайс»).
  */
-export function PriceList({ heading, groups, footnote, descriptions, words, telHref }: Props) {
+export function PriceList({ heading, groups, picker, priced, footer, whatsIncluded }: Props) {
   const selected = useCarClass();
   // Номер строки во всём прайсе: счётчики трогаются лёгкой волной сверху вниз.
   const firstRow = groups.map((_, i) =>
     groups.slice(0, i).reduce((count, group) => count + group.rows.length, 0),
   );
+  // Под шапку и липкий переключатель, при XL — ещё под плашку; без переключателя — под шапку
+  const scrollMargin = !picker ? "scroll-mt-20" : selected === "XL" ? "scroll-mt-50" : "scroll-mt-36";
 
   return (
     <ClassScope className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12">
       <div className="contents lg:sticky lg:top-6 lg:block lg:max-w-95 lg:flex-[1_1_300px]">
         {heading}
-        <ClassPicker
-          label={words.classLabel}
-          descriptions={descriptions}
-          className="mt-4 lg:mt-6"
-          xlNote={
-            <div className="mt-2 flex items-center justify-between gap-3 rounded-badge border border-accent-badge pr-3 pl-4">
-              <p className="text-14">{words.individualQuote}</p>
-              <a
-                href={telHref}
-                className="inline-flex min-h-11 items-center gap-2 font-medium text-accent"
-              >
-                <PhoneIcon size={16} />
-                {words.call}
-              </a>
-            </div>
-          }
-        />
+        {picker && (
+          <ClassPicker
+            label={picker.label}
+            descriptions={picker.descriptions}
+            className="mt-4 lg:mt-6"
+            xlNote={
+              <div className="mt-2 flex items-center justify-between gap-3 rounded-badge border border-accent-badge pr-3 pl-4">
+                <p className="text-14">{picker.individualQuote}</p>
+                <a
+                  href={picker.telHref}
+                  className="inline-flex min-h-11 items-center gap-2 font-medium text-accent"
+                >
+                  <PhoneIcon size={16} />
+                  {picker.call}
+                </a>
+              </div>
+            }
+          />
+        )}
       </div>
 
       <div className="mt-5 flex flex-col gap-7 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px] lg:gap-10">
         {groups.map((group, groupIndex) => (
-          <div
-            key={group.slug}
-            id={group.slug}
-            // под шапку и липкий переключатель, при XL — ещё под плашку
-            className={`${selected === "XL" ? "scroll-mt-50" : "scroll-mt-36"} lg:scroll-mt-6`}
-          >
+          <div key={group.slug} id={group.slug} className={`${scrollMargin} lg:scroll-mt-6`}>
             <div className="flex items-baseline justify-between gap-3 pb-2">
               <h3 className="caps-label">{group.name}</h3>
               {/* Главная отвечает «сколько», страница группы — «что за эти деньги» */}
@@ -72,7 +80,7 @@ export function PriceList({ heading, groups, footnote, descriptions, words, telH
                   href={group.page}
                   className="-my-3 inline-flex min-h-11 shrink-0 items-center text-13 whitespace-nowrap text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg lg:text-14"
                 >
-                  {words.whatsIncluded}
+                  {whatsIncluded}
                   {/* Диктор в списке ссылок различает четыре «Co wchodzi» по группе */}
                   <span className="sr-only">: {group.name}</span>
                 </Link>
@@ -96,17 +104,19 @@ export function PriceList({ heading, groups, footnote, descriptions, words, telH
                       </span>
                     )}
                   </div>
-                  <ClassPrice
-                    prices={row.prices}
-                    rolling={row.rolling}
-                    order={firstRow[groupIndex] + rowIndex}
-                  />
+                  {priced && (
+                    <ClassPrice
+                      prices={row.prices}
+                      rolling={row.rolling}
+                      order={firstRow[groupIndex] + rowIndex}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
           </div>
         ))}
-        <p className="text-13 leading-note text-muted lg:text-14">{footnote}</p>
+        {footer}
       </div>
     </ClassScope>
   );

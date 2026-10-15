@@ -149,7 +149,8 @@ export function ComparePairs({
 
       <div className={`mt-4 flex items-baseline justify-between gap-3 ${place.caption}`}>
         <ServiceName name={pair.service} brand={pair.brand} />
-        <Price parts={pair.price} />
+        {/* Только сумма: «indywidualnie» под кадром ничего не говорит (DESIGN.md, «До/после») */}
+        {pair.price.kind === "amount" && <Price parts={pair.price} />}
       </div>
       {pairs.some((item) => item.examples) && (
         // Место держится и под парой без ИИ: строка не прыгает при смене вкладки

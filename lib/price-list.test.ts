@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ServiceGroup } from "@/content/types";
+import type { Price, ServiceGroup } from "@/content/types";
 import { pl } from "@/dictionaries/pl";
 import { ru } from "@/dictionaries/ru";
 import { parseCarClass } from "@/lib/car-class";
-import { priceList } from "@/lib/price-list";
+import { classPriced, priceList, quoteOnly } from "@/lib/price-list";
 import { storyDuration } from "@/lib/stories";
 
 const groups: ServiceGroup[] = [
@@ -68,6 +68,24 @@ describe("priceList", () => {
     const [group] = priceList(groups, "pl", pl);
     expect(group.rows[0]).not.toHaveProperty("brand", expect.anything());
     expect(group.rows[1]).toMatchObject({ brand: "GYEON", note: "Wszystkie klasy" });
+  });
+});
+
+describe("price list modes", () => {
+  const withPrices = (...prices: Price[]): ServiceGroup[] => [
+    { ...groups[0], services: prices.map((price, i) => ({ name: { pl: `Usługa ${i}` }, price })) },
+  ];
+
+  it("keeps the class switch only while some price depends on the class", () => {
+    expect(classPriced(groups)).toBe(true);
+    expect(classPriced(withPrices({ kind: "fixed", amount: 300 }, { kind: "from", amount: 900 }))).toBe(false);
+    expect(classPriced(withPrices({ kind: "individual" }))).toBe(false);
+  });
+
+  it("is a price list on request only when no service names an amount", () => {
+    expect(quoteOnly(withPrices({ kind: "individual" }, { kind: "individual" }))).toBe(true);
+    expect(quoteOnly(withPrices({ kind: "individual" }, { kind: "from", amount: 900 }))).toBe(false);
+    expect(quoteOnly(groups)).toBe(false);
   });
 });
 

@@ -9,7 +9,7 @@ export const ru: Dictionary = {
   nav: { services: "Услуги", about: "О нас", contact: "Контакты" },
   menu: { services: "Услуги", studio: "Студия" },
   call: { label: "Позвонить" },
-  hero: { checkPrice: "Узнать цену", orCall: "или позвоните:" },
+  hero: { checkPrice: "Узнать цену", seeServices: "Смотреть услуги", orCall: "или позвоните:" },
   messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram", facebook: "Facebook" },
   status: {
     open: "Открыто",
@@ -44,6 +44,8 @@ export const ru: Dictionary = {
     pickLong: "Выберите класс своего автомобиля — в каждой строке останется одна цена.",
     classLabel: "Класс автомобиля",
     individualQuote: "Индивидуальный расчёт",
+    titleQuote: "Услуги",
+    quoteHint: "Цену считаем под вашу машину — спросите расчёт.",
   },
   reviews: {
     title: "Отзывы",
@@ -95,6 +97,7 @@ export const ru: Dictionary = {
     metaTitle: "Такой страницы нет — {studio}",
     title: "Такой страницы нет",
     text: "Адрес мог измениться. Цены на все услуги и контакты — на главной.",
+    textQuote: "Адрес мог измениться. Все услуги и контакты — на главной.",
   },
   photoExample: "Фото для примера",
   newTab: "открывается в новой вкладке",
