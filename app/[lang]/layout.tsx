@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
+import { spectrumStops } from "@/lib/car-volume";
 import { isLang, langs, t } from "@/lib/i18n";
 import { isPublished, siteUrl } from "@/lib/seo";
 import "../globals.css";
@@ -58,7 +59,7 @@ const themeVars = {
   "--fg": studio.theme.fg,
   "--muted": studio.theme.muted,
   "--accent": studio.theme.accent,
-  ...(studio.theme.spectrum && { "--spectrum": studio.theme.spectrum.join(", ") }),
+  ...(studio.theme.spectrum && { "--spectrum": spectrumStops(studio.theme.spectrum) }),
 } as CSSProperties;
 
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {

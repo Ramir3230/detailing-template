@@ -183,7 +183,10 @@ export type HeroCar = {
  */
 export type LogoMark = { src: string; width: number; height: number };
 
-/** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
+/**
+ * Четыре цвета темы; производные выводятся из них в app/globals.css. Спектр — отдельно:
+ * необязательный свет неона пола, не производная от четырёх.
+ */
 export type Theme = {
   bg: string;
   fg: string;
@@ -194,7 +197,7 @@ export type Theme = {
    * студии, чей бренд — переход цветов, а не один. Только свет: текст, кнопки и
    * свечения остаются цвета accent.
    */
-  spectrum?: readonly string[];
+  spectrum?: readonly [string, string, ...string[]];
 };
 
 export type Studio = {

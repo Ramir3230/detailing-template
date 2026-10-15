@@ -7,6 +7,21 @@ const toRadians = Math.PI / 180;
 /** Сколько цветов спектра неона берёт шейдер: длиннее theme.spectrum не пускает тест данных. */
 export const SPECTRUM_MAX = 8;
 
+/* Слой неона пола на CSS шире машины на 12% с каждой стороны (.glow-floor-spectrum) */
+const FLOOR_EDGE = 12 / 124;
+
+/**
+ * Стопы градиента CSS неона пола — по ширине машины, а не слоя: холст раскладывает спектр
+ * по кадру машины и за его краями держит крайний цвет, градиент — так же. Иначе при
+ * смене слоя на CSS холстом цвет у краёв машины сдвигался бы.
+ */
+export function spectrumStops(colors: readonly string[]): string {
+  const span = 1 - 2 * FLOOR_EDGE;
+  return colors
+    .map((color, i) => `${color} ${(100 * (FLOOR_EDGE + (span * i) / (colors.length - 1))).toFixed(2)}%`)
+    .join(", ");
+}
+
 /**
  * Поворот кадра машины: сначала наклон (pitch), затем разворот (yaw), в градусах.
  * Положительный yaw уводит перед машины вправо, положительный pitch — вверх: машина
