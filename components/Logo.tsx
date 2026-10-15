@@ -9,12 +9,13 @@ type Props = Omit<HTMLAttributes<HTMLSpanElement>, "children"> & { unlit?: boole
  * Логотип надписью; размер задаёт место, где он стоит. unlit — погашенная неоновая
  * трубка: приглушённый, без свечения (hero до зажигания). Знак студии из данных стоит
  * перед надписью высотой 1,5 em от её кегля (DESIGN.md, «Знак студии»): надпись — текстом,
- * буквы внутри знака в шапке не прочесть. stacked — знак над надписью (hero телефона):
- * крупная надпись рядом со знаком в колонку телефона не встаёт.
+ * буквы внутри знака в шапке не прочесть. stacked — знак над надписью (hero телефона,
+ * подвал): там надпись рядом со знаком в колонку не встаёт. Выравнивание столбца —
+ * items-center или items-start — задаёт место: без него знак растянулся бы на ширину.
  */
 export function Logo({ className = "", unlit = false, stacked = false, ...rest }: Props) {
   const mark = studio.logoMark;
-  const layout = !mark ? "" : stacked ? "inline-flex flex-col items-center gap-[0.3em]" : "inline-flex items-center gap-[0.45em]";
+  const layout = !mark ? "" : stacked ? "inline-flex flex-col gap-[0.3em]" : "inline-flex items-center gap-[0.45em]";
   return (
     <span
       {...rest}

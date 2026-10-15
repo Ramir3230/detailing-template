@@ -44,8 +44,8 @@ export function Hero({ lang, dict }: Props) {
         <div className="text-center lg:hidden">
           <div className="grid text-30 short:text-24">
             {/* Знак студии — над надписью: рядом с ней крупная надпись в колонку не встаёт */}
-            <Logo unlit stacked className="col-start-1 row-start-1" />
-            <Logo aria-hidden="true" stacked className="ignite-logo col-start-1 row-start-1" />
+            <Logo unlit stacked className="col-start-1 row-start-1 items-center" />
+            <Logo aria-hidden="true" stacked className="ignite-logo col-start-1 row-start-1 items-center" />
           </div>
           {studio.logoCaption && (
             // Слева поле на ширину разрядки: она висит и справа от последней буквы

@@ -209,6 +209,9 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(prices).toContain(escaped(glue(dict.prices.quoteHint, lang)));
     expect(prices).toContain(escaped(dict.prices.individualQuote));
     for (const messenger of studio.messengers) expect(prices).toContain(`href="${escaped(messengerHref(messenger))}"`);
+    // Под кадром до/после — только сумма: «indywidualnie» там не показываем
+    const pairs = html.match(new RegExp(`<section\\b[^>]*>(?:(?!</section>)[\\s\\S])*${escaped(dict.beforeAfter.title)}[\\s\\S]*?</section>`))?.[0] ?? "";
+    expect(pairs).not.toContain(escaped(dict.price.individual));
   });
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
