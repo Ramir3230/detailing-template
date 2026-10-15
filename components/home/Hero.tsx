@@ -43,8 +43,9 @@ export function Hero({ lang, dict }: Props) {
             Оба слоя — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает */}
         <div className="text-center lg:hidden">
           <div className="grid text-30 short:text-24">
-            <Logo unlit className="col-start-1 row-start-1" />
-            <Logo aria-hidden="true" className="ignite-logo col-start-1 row-start-1" />
+            {/* justify-center — для логотипа со знаком: он строка из знака и надписи */}
+            <Logo unlit className="col-start-1 row-start-1 justify-center" />
+            <Logo aria-hidden="true" className="ignite-logo col-start-1 row-start-1 justify-center" />
           </div>
           {studio.logoCaption && (
             // Слева поле на ширину разрядки: она висит и справа от последней буквы
