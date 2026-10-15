@@ -232,8 +232,17 @@ describe.each(langs)("built home page /%s", (lang) => {
     const marks = tags(markup(lang), /<img\b[^>]*>/g).filter((tag) => mark && tag.includes(`src="${mark.src}"`));
     // Шапка, меню, hero — погашенный и горящий слои — и подвал
     expect(marks).toHaveLength(mark ? 5 : 0);
-    // Имя студии стоит рядом текстом: знак для диктора — украшение
-    for (const tag of marks) expect(tag).toContain('alt=""');
+    for (const tag of marks) {
+      // Имя студии стоит рядом текстом: знак для диктора — украшение
+      expect(tag).toContain('alt=""');
+      // Знак на первом экране — в hero телефона и в шапке десктопа
+      expect(tag).not.toContain('loading="lazy"');
+    }
+  });
+
+  it("draws the tab icon once at build time", () => {
+    // Иконку со знаком сборка рисует заранее: асинхронное чтение файла это сорвало бы
+    expect(existsSync(join(process.cwd(), ".next", "server", "app", "icon.body")), "иконка не пререндерена").toBe(true);
   });
 
   it("has one main heading", () => {

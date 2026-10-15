@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { ImageResponse } from "next/og";
 import { studio } from "@/content/studio";
 
@@ -10,9 +10,12 @@ export const contentType = "image/png";
 /* Знак вписан в 28 px: по 2 px поля, чтобы края не резало скругление вкладки */
 const BOX = 28;
 
-export default async function Icon() {
+export default function Icon() {
   const mark = studio.logoMark;
-  const svg = mark && (await readFile(join(process.cwd(), "public", mark.src), "base64"));
+  // Синхронно: асинхронное чтение файла Next с Cache Components не пререндерит, и иконка
+  // рисовалась бы на каждый запрос. Путь — из public/logo/ (тест данных): с переменной
+  // частью шире сборка утянула бы в серверные функции весь public/
+  const svg = mark && readFileSync(join(process.cwd(), "public", "logo", basename(mark.src)), "base64");
   const scale = mark ? BOX / Math.max(mark.width, mark.height) : 0;
 
   return new ImageResponse(
