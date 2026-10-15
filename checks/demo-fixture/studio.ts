@@ -6,6 +6,7 @@ import type { ServiceGroup, Studio } from "@/content/types";
  * O nas, в другом цвете, без фото входа и карты и без следов Afterdark. Демо собираются
  * из main, и шаблон обязан собирать такую студию, а не только Afterdark. Прайс — по
  * запросу, как у студии без цен: прайс с ценами по классу проверяет прогон на Afterdark.
+ * Логотип — со знаком (public/logo), у Afterdark он только надписью.
  *
  * Тексты — Afterdark с другим названием: здесь проверяется форма данных, а не слова.
  */
@@ -30,6 +31,7 @@ const phone = "+48500100200";
 
 export const studio: Studio = {
   ...renamed,
+  logoMark: { src: "/logo/nocturne.svg", width: 100, height: 100 },
   theme: { bg: "#07080a", fg: "#f3f4f6", muted: "#8b9099", accent: "#ff6a3d" },
   phone,
   messengers: [

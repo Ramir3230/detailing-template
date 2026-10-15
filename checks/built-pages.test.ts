@@ -227,6 +227,15 @@ describe.each(langs)("built home page /%s", (lang) => {
     }
   });
 
+  it("puts the studio mark before the logo wherever the logo stands", () => {
+    const mark = studio.logoMark;
+    const marks = tags(markup(lang), /<img\b[^>]*>/g).filter((tag) => mark && tag.includes(`src="${mark.src}"`));
+    // Шапка, меню, hero — погашенный и горящий слои — и подвал
+    expect(marks).toHaveLength(mark ? 5 : 0);
+    // Имя студии стоит рядом текстом: знак для диктора — украшение
+    for (const tag of marks) expect(tag).toContain('alt=""');
+  });
+
   it("has one main heading", () => {
     expect(page(lang).html.match(/<h1[\s>]/g)).toHaveLength(1);
   });

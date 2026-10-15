@@ -176,14 +176,23 @@ export type HeroCar = {
   underglow?: Underglow;
 };
 
+/**
+ * Знак студии перед надписью логотипа (DESIGN.md, «Логотип»): SVG на прозрачном фоне,
+ * путь от public/ и размер из его viewBox. Надпись остаётся текстом — буквы внутри знака
+ * в шапке не прочесть.
+ */
+export type LogoMark = { src: string; width: number; height: number };
+
 /** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
 export type Theme = { bg: string; fg: string; muted: string; accent: string };
 
 export type Studio = {
   /** Полное название: «©», заголовок вкладки. */
   name: string;
-  /** Логотип-заглушка надписью, прописными. */
+  /** Логотип надписью, прописными. */
   logo: string;
+  /** Знак перед надписью; нет — логотип только надписью, иконка вкладки — его буквой. */
+  logoMark?: LogoMark;
   /** Подпись под логотипом в hero, разрядкой: «Detailing». */
   logoCaption?: string;
   /** «Studio detailingu» — подпись под логотипом в подвале. */
