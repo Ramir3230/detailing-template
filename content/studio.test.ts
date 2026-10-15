@@ -116,17 +116,24 @@ describe("active studio data", () => {
     for (const color of [fg, muted, accent]) expect(contrast(color, bg)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("has the logo mark it names: an SVG in public/ the size of its viewBox", () => {
+  it("has the logo mark it names: a vector SVG in public/logo/ the size of its viewBox", () => {
     const mark = studio.logoMark;
     if (!mark) return;
-    // Только SVG: знак стоит и в шапке 28 px, и в hero, и в иконке вкладки — растр где-то
-    // вышел бы мыльным, а иконку рисует ImageResponse, который WebP не читает
-    expect(mark.src).toMatch(/^\/[\w\-/]+\.svg$/);
+    // Только SVG: знак стоит и в шапке, и в hero, и в иконке вкладки — растр где-то вышел
+    // бы мыльным, а иконку рисует ImageResponse, который WebP не читает. Только в
+    // public/logo/: иконка читает знак оттуда, не утягивая в функции весь public/
+    expect(mark.src).toMatch(/^\/logo\/[\w-]+\.svg$/);
     const file = join(process.cwd(), "public", mark.src);
     expect(existsSync(file), `нет файла знака public${mark.src}`).toBe(true);
-    const box = readFileSync(file, "utf-8").match(/viewBox="([^"]+)"/)?.[1].trim().split(/[\s,]+/).map(Number);
+    const svg = readFileSync(file, "utf-8");
+    const box = svg.match(/viewBox="([^"]+)"/)?.[1].trim().split(/[\s,]+/).map(Number);
     expect(box, "у знака нет viewBox").toHaveLength(4);
     expect({ width: box?.[2], height: box?.[3] }).toEqual({ width: mark.width, height: mark.height });
+    // Контуры, а не растр в обёртке SVG и не буквы: надпись стоит рядом текстом, а иконка
+    // без шрифта нарисовала бы на месте букв пустоту
+    expect(svg, "в знаке растр или текст").not.toMatch(/<image\b|<text\b/);
+    // Знак — фигура рядом с надписью: широкий оттеснил бы её за край hero на телефоне
+    expect(mark.width / mark.height, "знак шире 3:2").toBeLessThanOrEqual(1.5);
   });
 
   it("has every studio text in each published language", () => {
