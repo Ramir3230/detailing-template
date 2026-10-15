@@ -227,6 +227,15 @@ describe.each(langs)("built home page /%s", (lang) => {
     }
   });
 
+  it("lights the floor neon with the theme spectrum exactly when the theme has one", () => {
+    const { html } = page(lang);
+    const { spectrum } = studio.theme;
+    expect(html.includes("glow-floor-spectrum"), "неон пола спектром").toBe(Boolean(spectrum));
+    const root = html.match(/<html\b[^>]*>/)?.[0] ?? "";
+    if (spectrum) expect(root).toContain(`--spectrum:${spectrum.join(", ")}`);
+    else expect(root).not.toContain("--spectrum");
+  });
+
   it("puts the studio mark before the logo wherever the logo stands", () => {
     const mark = studio.logoMark;
     const marks = tags(markup(lang), /<img\b[^>]*>/g).filter((tag) => mark && tag.includes(`src="${mark.src}"`));
@@ -532,7 +541,10 @@ function expectNotFoundPage(route: string, lang: Lang) {
   const dict = getDictionary(lang);
   const data = flight(route);
   expect(data).toContain(`"lang":"${lang}"`);
-  for (const [name, color] of Object.entries(studio.theme)) expect(data).toContain(`"--${name}":"${color}"`);
+  // Спектр — одной переменной через запятую, как его ставит корневой layout
+  for (const [name, color] of Object.entries(studio.theme)) {
+    expect(data).toContain(`"--${name}":"${typeof color === "string" ? color : color.join(", ")}"`);
+  }
   expect(data).toContain(`"children":"${fill(dict.notFound.metaTitle, { studio: studio.name })}"`);
 
   const body = data.split("\n").find((row) => row.includes(`"children":"${glue(dict.notFound.title, lang)}"`));

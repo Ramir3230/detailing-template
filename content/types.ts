@@ -184,7 +184,18 @@ export type HeroCar = {
 export type LogoMark = { src: string; width: number; height: number };
 
 /** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
-export type Theme = { bg: string; fg: string; muted: string; accent: string };
+export type Theme = {
+  bg: string;
+  fg: string;
+  muted: string;
+  accent: string;
+  /**
+   * Спектр неона пола — от 2 до 8 цветов слева направо (DESIGN.md, «Спектр неона»): у
+   * студии, чей бренд — переход цветов, а не один. Только свет: текст, кнопки и
+   * свечения остаются цвета accent.
+   */
+  spectrum?: readonly string[];
+};
 
 export type Studio = {
   /** Полное название: «©», заголовок вкладки. */

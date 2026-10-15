@@ -126,7 +126,16 @@ const layer = "pointer-events-none absolute mix-blend-screen";
  * сцена отыграла, машину со всем светом фар вместо фото (data-volume). Пока он не готов
  * или если холста не будет, остаются эти слои.
  */
-export function HeroCar({ car, className = "" }: { car: HeroCarData; className?: string }) {
+export function HeroCar({
+  car,
+  spectrum,
+  className = "",
+}: {
+  car: HeroCarData;
+  /** Спектр неона из темы студии (DESIGN.md, «Спектр неона»). */
+  spectrum?: readonly string[];
+  className?: string;
+}) {
   const ready = use(Ready);
   const { src, lights, depth, width, height, headlights, underglow, halo } = car;
   const body = useRef<HTMLImageElement>(null);
@@ -145,7 +154,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
       <div
         ref={floor}
         aria-hidden="true"
-        className="glow-floor ignite-floor pointer-events-none absolute top-[96%] h-[38%] in-data-neon:invisible"
+        className={`${spectrum ? "glow-floor-spectrum" : "glow-floor"} ignite-floor pointer-events-none absolute top-[96%] h-[38%] in-data-neon:invisible`}
       />
       {depth && (
         <CarVolume
@@ -154,6 +163,7 @@ export function HeroCar({ car, className = "" }: { car: HeroCarData; className?:
           headlights={headlights}
           underglow={underglow}
           halo={halo}
+          spectrum={spectrum}
           body={body}
           rings={rings}
           floor={floor}
