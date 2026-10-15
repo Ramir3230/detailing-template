@@ -1,10 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
+import { spectrumStops } from "@/lib/car-volume";
 import { homePairServices } from "@/lib/compare";
 import { messengerHref } from "@/lib/contact";
 import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
@@ -227,12 +228,24 @@ describe.each(langs)("built home page /%s", (lang) => {
     }
   });
 
+  it("ships the spectrum floor neon in the built CSS: next dev once dropped a new utility", () => {
+    const dir = join(process.cwd(), ".next", "static", "chunks");
+    const css = readdirSync(dir)
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => readFileSync(join(dir, file), "utf-8"))
+      .join("");
+    // Разлив и горячее пятно — псевдоэлементы со спектром (app/globals.css)
+    for (const part of ["before", "after"]) {
+      expect(css).toMatch(new RegExp(`\\.glow-floor-spectrum:+${part}\\{[^}]*var\\(--spectrum\\)`));
+    }
+  });
+
   it("lights the floor neon with the theme spectrum exactly when the theme has one", () => {
     const { html } = page(lang);
     const { spectrum } = studio.theme;
     expect(html.includes("glow-floor-spectrum"), "неон пола спектром").toBe(Boolean(spectrum));
     const root = html.match(/<html\b[^>]*>/)?.[0] ?? "";
-    if (spectrum) expect(root).toContain(`--spectrum:${spectrum.join(", ")}`);
+    if (spectrum) expect(root).toContain(`--spectrum:${spectrumStops(spectrum)}`);
     else expect(root).not.toContain("--spectrum");
   });
 
@@ -541,9 +554,9 @@ function expectNotFoundPage(route: string, lang: Lang) {
   const dict = getDictionary(lang);
   const data = flight(route);
   expect(data).toContain(`"lang":"${lang}"`);
-  // Спектр — одной переменной через запятую, как его ставит корневой layout
+  // Спектр — одной переменной стопами градиента, как его ставит корневой layout
   for (const [name, color] of Object.entries(studio.theme)) {
-    expect(data).toContain(`"--${name}":"${typeof color === "string" ? color : color.join(", ")}"`);
+    expect(data).toContain(`"--${name}":"${typeof color === "string" ? color : spectrumStops(color)}"`);
   }
   expect(data).toContain(`"children":"${fill(dict.notFound.metaTitle, { studio: studio.name })}"`);
 

@@ -443,19 +443,40 @@
   mask-image: linear-gradient(to bottom, transparent, #000 18%);
 }
 
-/* Неон пола спектром (theme.spectrum, DESIGN.md, «Спектр неона»): тот же слой, что
-   .glow-floor, но цвет — горизонтальный градиент спектра через ширину слоя, горячее пятно —
-   белым поверх него, а разлив — маской того же эллипса. Маски пересекаются: разлив и мягкий
-   верх слоя */
+/* Неон пола спектром (theme.spectrum, DESIGN.md, «Спектр неона»): те же эллипсы и доли,
+   что у .glow-floor, но цвет — градиент спектра поперёк слоя (стопы по ширине машины —
+   spectrumStops в lib/car-volume.ts). Форму даёт маска, а маска элемента режет и потомков:
+   поэтому сам слой пуст, а разлив и горячее пятно — два псевдоэлемента со своими масками,
+   каждая пересечена с мягким верхом слоя */
 @utility glow-floor-spectrum {
   inset-inline: -12%;
-  background:
-    radial-gradient(33% 14% at 50% 10%, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.12) 55%, transparent),
-    linear-gradient(90deg, var(--spectrum));
-  mask:
-    radial-gradient(48% 55% at 50% 12%, #000, rgb(0 0 0 / 0.27) 55%, transparent),
-    linear-gradient(to bottom, transparent, #000 18%);
-  mask-composite: intersect;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Разлив к зрителю: спектр 45 → 12% */
+  &::before {
+    background: linear-gradient(90deg, var(--spectrum));
+    mask:
+      radial-gradient(48% 55% at 50% 12%, rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.12) 55%, transparent),
+      linear-gradient(to bottom, transparent, #000 18%);
+    mask-composite: intersect;
+  }
+
+  /* Горячее пятно под бампером: в ядре спектр с белым 45/55 при 75%, к краю — спектр 35% */
+  &::after {
+    background:
+      radial-gradient(33% 14% at 50% 10%, rgb(255 255 255 / 0.55), transparent 55%),
+      linear-gradient(90deg, var(--spectrum));
+    mask:
+      radial-gradient(33% 14% at 50% 10%, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.35) 55%, transparent),
+      linear-gradient(to bottom, transparent, #000 18%);
+    mask-composite: intersect;
+  }
 }
 
 /* Hero режет только по бокам: свет пола и свет за машиной уходят в следующий блок, а не
