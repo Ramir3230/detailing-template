@@ -139,6 +139,9 @@ describe("active studio data", () => {
     expect(svg, "в знаке растр или текст").not.toMatch(/<image\b|<text\b/);
     // Знак — фигура рядом с надписью: широкий оттеснил бы её к кнопке меню в шапке телефона
     expect(mark.width / mark.height, "знак шире 3:2").toBeLessThanOrEqual(1.5);
+    // Шапка 375 со знаком (замер 15.10.2026): 10 знаков встают и из самых широких букв, 12
+    // с пробелом переносятся, без пробела выталкивают кнопку меню за край
+    expect(studio.logo.length, "надпись рядом со знаком длиннее 10 знаков").toBeLessThanOrEqual(10);
   });
 
   it("has every studio text in each published language", () => {
