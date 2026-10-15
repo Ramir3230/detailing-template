@@ -5,6 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // <img> внутри ImageResponse иконки — не картинка страницы. Правило само освобождает
+  // такие файлы, но на Windows узнаёт путь неверно (меняет только первый «\»): директива
+  // в файле нужна локально и «лишняя» в CI на Linux — поэтому выключено здесь, для обеих
+  {
+    files: ["app/icon.tsx"],
+    rules: { "@next/next/no-img-element": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

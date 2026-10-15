@@ -34,7 +34,6 @@ export default function Icon() {
         }}
       >
         {mark && svg ? (
-          // eslint-disable-next-line @next/next/no-img-element -- картинка внутри ImageResponse, не страницы
           <img
             src={`data:image/svg+xml;base64,${svg}`}
             width={Math.round(mark.width * scale)}
