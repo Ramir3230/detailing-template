@@ -7,7 +7,7 @@ import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
 import type { Lang } from "@/lib/i18n";
 import type { GroupWithPage } from "@/lib/nav";
-import { classDescriptions } from "@/lib/price-list";
+import { classDescriptions, classPriced } from "@/lib/price-list";
 
 /*
  * Середина страницы группы: переключатель классов, карточки услуг, до/после и частые
@@ -19,19 +19,26 @@ import { classDescriptions } from "@/lib/price-list";
  * колонку, и после вопросов без расхождения порядка чтения с порядком на экране.
  */
 export function GroupContent({ group, lang, dict }: { group: GroupWithPage; lang: Lang; dict: Dictionary }) {
+  // Без цены по классу в группе переключатель ничего не меняет — его нет
+  const picker = classPriced([group]);
+
   return (
     <ClassScope className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12 lg:pt-12 lg:pb-24">
       <div className="contents lg:sticky lg:top-6 lg:block lg:max-w-95 lg:flex-[1_1_300px]">
-        {/* Подпись над переключателем — для глаз: у радиогруппы та же подпись для диктора */}
-        <p aria-hidden="true" className="caps-label hidden lg:block">
-          {dict.prices.classLabel}
-        </p>
-        <ClassPicker
-          label={dict.prices.classLabel}
-          descriptions={classDescriptions(studio.carClasses, lang)}
-          className="mt-5 lg:mt-3"
-        />
-        <div className="hidden lg:mt-6 lg:block">
+        {picker && (
+          <>
+            {/* Подпись над переключателем — для глаз: у радиогруппы та же подпись для диктора */}
+            <p aria-hidden="true" className="caps-label hidden lg:block">
+              {dict.prices.classLabel}
+            </p>
+            <ClassPicker
+              label={dict.prices.classLabel}
+              descriptions={classDescriptions(studio.carClasses, lang)}
+              className="mt-5 lg:mt-3"
+            />
+          </>
+        )}
+        <div className={`hidden lg:block ${picker ? "lg:mt-6" : ""}`}>
           <AdviceCard group={group} lang={lang} dict={dict} place="aside" />
         </div>
       </div>
@@ -39,8 +46,11 @@ export function GroupContent({ group, lang, dict }: { group: GroupWithPage; lang
       {/* Телефон: фокус с клавиатуры в основной колонке не прячется под шапку с липким
           переключателем. Не на всей рамке: сам переключатель уже на виду, и запас
           прокрутки дёргал бы страницу при каждой стрелке */}
-      <div className="contents max-lg:[&_:is(a,button,input,summary)]:scroll-mt-36 lg:block lg:min-w-0 lg:flex-[999_1_560px]">
-        <div className="mt-2 lg:mt-0">
+      <div
+        className={`contents ${picker ? "max-lg:[&_:is(a,button,input,summary)]:scroll-mt-36" : "max-lg:[&_:is(a,button,input,summary)]:scroll-mt-20"} lg:block lg:min-w-0 lg:flex-[999_1_560px]`}
+      >
+        {/* Без переключателя карточки отходят от вводного абзаца на его отступ */}
+        <div className={`${picker ? "mt-2" : "mt-5"} lg:mt-0`}>
           <ServiceCards group={group} lang={lang} dict={dict} />
         </div>
         <GroupBeforeAfter group={group} lang={lang} dict={dict} />

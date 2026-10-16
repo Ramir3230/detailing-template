@@ -9,7 +9,7 @@ export const pl: Dictionary = {
   nav: { services: "Usługi", about: "O nas", contact: "Kontakt" },
   menu: { services: "Usługi", studio: "Studio" },
   call: { label: "Zadzwoń" },
-  hero: { checkPrice: "Sprawdź cenę", orCall: "lub zadzwoń:" },
+  hero: { checkPrice: "Sprawdź cenę", seeServices: "Zobacz usługi", orCall: "lub zadzwoń:" },
   messengers: { telegram: "Telegram", whatsapp: "WhatsApp", instagram: "Instagram", facebook: "Facebook" },
   status: {
     open: "Otwarte",
@@ -44,6 +44,8 @@ export const pl: Dictionary = {
     pickLong: "Wybierz klasę swojego auta — w każdym wierszu zostanie jedna cena.",
     classLabel: "Klasa samochodu",
     individualQuote: "Wycena indywidualna",
+    titleQuote: "Usługi",
+    quoteHint: "Cenę liczymy dla Twojego auta — zapytaj o wycenę.",
   },
   reviews: {
     title: "Opinie",
@@ -95,6 +97,7 @@ export const pl: Dictionary = {
     metaTitle: "Nie ma takiej strony — {studio}",
     title: "Nie ma takiej strony",
     text: "Adres mógł się zmienić. Ceny wszystkich usług i kontakt są na stronie głównej.",
+    textQuote: "Adres mógł się zmienić. Wszystkie usługi i kontakt są na stronie głównej.",
   },
   photoExample: "Zdjęcie przykładowe",
   newTab: "otwiera się w nowej karcie",

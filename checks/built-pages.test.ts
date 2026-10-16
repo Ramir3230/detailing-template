@@ -1,11 +1,13 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { studio } from "@/content/studio";
 import type { Service } from "@/content/types";
 import { getDictionary } from "@/dictionaries";
 import { defaultCarClass } from "@/lib/car-class";
+import { spectrumStops } from "@/lib/car-volume";
 import { homePairServices } from "@/lib/compare";
+import { messengerHref } from "@/lib/contact";
 import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
 import { defaultLang, fill, langs, localePath, t, type Lang } from "@/lib/i18n";
@@ -20,6 +22,7 @@ import {
   sectionIds,
   servicesPath,
 } from "@/lib/nav";
+import { classPriced, quoteOnly } from "@/lib/price-list";
 import { isPublished, publishedLangs } from "@/lib/seo";
 
 /*
@@ -185,6 +188,32 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(prices).toContain(escaped(glue(t(studio.priceNote, lang), lang)));
   });
 
+  it("shows the class switch only when a price depends on the class", () => {
+    const prices = markup(lang).match(/<section\b[^>]*id="cennik"[\s\S]*?<\/section>/)?.[0] ?? "";
+    expect(prices.includes('role="radiogroup"'), "переключатель классов").toBe(classPriced(studio.services));
+  });
+
+  it("on request: no prices in the list, the way to a quote and the hero button to the services", () => {
+    const dict = getDictionary(lang);
+    const html = markup(lang);
+    const quote = quoteOnly(studio.services);
+    expect(html).toContain(escaped(quote ? dict.hero.seeServices : dict.hero.checkPrice));
+    expect(html).not.toContain(escaped(quote ? dict.hero.checkPrice : dict.hero.seeServices));
+    if (!quote) return;
+
+    const prices = html.match(/<section\b[^>]*id="cennik"[\s\S]*?<\/section>/)?.[0] ?? "";
+    // Слово цены «indywidualnie» — только в строке студии о цене, если она его говорит сама
+    const note = escaped(glue(t(studio.priceNote, lang), lang));
+    expect(prices.replace(note, "")).not.toContain(escaped(dict.price.individual));
+    expect(prices).toContain(escaped(glue(dict.prices.titleQuote, lang)));
+    expect(prices).toContain(escaped(glue(dict.prices.quoteHint, lang)));
+    expect(prices).toContain(escaped(dict.prices.individualQuote));
+    for (const messenger of studio.messengers) expect(prices).toContain(`href="${escaped(messengerHref(messenger))}"`);
+    // Под кадром до/после — только сумма: «indywidualnie» там не показываем
+    const pairs = html.match(new RegExp(`<section\\b[^>]*>(?:(?!</section>)[\\s\\S])*${escaped(dict.beforeAfter.title)}[\\s\\S]*?</section>`))?.[0] ?? "";
+    expect(pairs).not.toContain(escaped(dict.price.individual));
+  });
+
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
     const services = homePairServices(studio.services);
     expectLazyPhotos(lang, [...pairPhotos(services), ...(studio.address.photo ? [studio.address.photo.src] : [])]);
@@ -200,6 +229,45 @@ describe.each(langs)("built home page /%s", (lang) => {
     for (const src of pairPhotos(rest).filter((file) => !shown.has(file))) {
       for (const text of [src, encodeURIComponent(src)]) expect(html, `кадр ${src} на главной`).not.toContain(text);
     }
+  });
+
+  it("ships the spectrum floor neon in the built CSS: next dev once dropped a new utility", () => {
+    const dir = join(process.cwd(), ".next", "static", "chunks");
+    const css = readdirSync(dir)
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => readFileSync(join(dir, file), "utf-8"))
+      .join("");
+    // Разлив и горячее пятно — псевдоэлементы со спектром (app/globals.css)
+    for (const part of ["before", "after"]) {
+      expect(css).toMatch(new RegExp(`\\.glow-floor-spectrum:+${part}\\{[^}]*var\\(--spectrum\\)`));
+    }
+  });
+
+  it("lights the floor neon with the theme spectrum exactly when the theme has one", () => {
+    const { html } = page(lang);
+    const { spectrum } = studio.theme;
+    expect(html.includes("glow-floor-spectrum"), "неон пола спектром").toBe(Boolean(spectrum));
+    const root = html.match(/<html\b[^>]*>/)?.[0] ?? "";
+    if (spectrum) expect(root).toContain(`--spectrum:${spectrumStops(spectrum)}`);
+    else expect(root).not.toContain("--spectrum");
+  });
+
+  it("puts the studio mark before the logo wherever the logo stands", () => {
+    const mark = studio.logoMark;
+    const marks = tags(markup(lang), /<img\b[^>]*>/g).filter((tag) => mark && tag.includes(`src="${mark.src}"`));
+    // Шапка, меню, hero — погашенный и горящий слои — и подвал
+    expect(marks).toHaveLength(mark ? 5 : 0);
+    for (const tag of marks) {
+      // Имя студии стоит рядом текстом: знак для диктора — украшение
+      expect(tag).toContain('alt=""');
+      // Знак на первом экране — в hero телефона и в шапке десктопа
+      expect(tag).not.toContain('loading="lazy"');
+    }
+  });
+
+  it("draws the tab icon once at build time", () => {
+    // Иконку со знаком сборка рисует заранее: асинхронное чтение файла это сорвало бы
+    expect(existsSync(join(process.cwd(), ".next", "server", "app", "icon.body")), "иконка не пререндерена").toBe(true);
   });
 
   it("has one main heading", () => {
@@ -246,6 +314,10 @@ describe.each(groupPages)("built group page /$route", ({ lang, group, route }) =
 
   it("leads search and the language switch to this page", () =>
     expectLanguageLinks(route, lang, groupPagePath(group.slug)));
+
+  it("shows the class switch only when a price of the group depends on the class", () => {
+    expect(markup(route).includes('role="radiogroup"'), "переключатель классов").toBe(classPriced([group]));
+  });
 
   it("has one main heading — the group — and the group in the tab title", () => {
     const { html, head } = page(route);
@@ -485,12 +557,17 @@ function expectNotFoundPage(route: string, lang: Lang) {
   const dict = getDictionary(lang);
   const data = flight(route);
   expect(data).toContain(`"lang":"${lang}"`);
-  for (const [name, color] of Object.entries(studio.theme)) expect(data).toContain(`"--${name}":"${color}"`);
+  // Спектр — одной переменной стопами градиента, как его ставит корневой layout
+  for (const [name, color] of Object.entries(studio.theme)) {
+    expect(data).toContain(`"--${name}":"${typeof color === "string" ? color : spectrumStops(color)}"`);
+  }
   expect(data).toContain(`"children":"${fill(dict.notFound.metaTitle, { studio: studio.name })}"`);
 
   const body = data.split("\n").find((row) => row.includes(`"children":"${glue(dict.notFound.title, lang)}"`));
   expect(body, `${route}: нет заголовка страницы 404`).toBeDefined();
-  expect(body).toContain(glue(dict.notFound.text, lang));
+  const quote = quoteOnly(studio.services);
+  expect(body).toContain(glue(quote ? dict.notFound.textQuote : dict.notFound.text, lang));
+  expect(body).toContain(`"children":"${quote ? dict.hero.seeServices : dict.hero.checkPrice}"`);
   expect(body).toContain(`"href":"${localePath(lang, servicesPath)}"`);
   expect(body).toContain(`"href":"tel:${studio.phone}"`);
 }

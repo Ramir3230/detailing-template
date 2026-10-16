@@ -10,6 +10,7 @@ import { telHref } from "@/lib/contact";
 import { formatPhone, formatRating, formatReviewsInGoogle, glue } from "@/lib/format";
 import { fill, t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
+import { quoteOnly } from "@/lib/price-list";
 
 type Props = { lang: Lang; dict: Dictionary };
 
@@ -31,6 +32,8 @@ const riseLater =
  */
 export function Hero({ lang, dict }: Props) {
   const { rating } = studio;
+  // Прайс по запросу: цены в разделе нет — кнопка ведёт смотреть услуги
+  const toServices = quoteOnly(studio.services) ? dict.hero.seeServices : dict.hero.checkPrice;
 
   return (
     <HeroStage id={sectionIds.hero} className="relative clip-x">
@@ -40,8 +43,9 @@ export function Hero({ lang, dict }: Props) {
             Оба слоя — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает */}
         <div className="text-center lg:hidden">
           <div className="grid text-30 short:text-24">
-            <Logo unlit className="col-start-1 row-start-1" />
-            <Logo aria-hidden="true" className="ignite-logo col-start-1 row-start-1" />
+            {/* Знак студии — над надписью: рядом с ней крупная надпись в колонку не встаёт */}
+            <Logo unlit stacked className="col-start-1 row-start-1 items-center" />
+            <Logo aria-hidden="true" stacked className="ignite-logo col-start-1 row-start-1 items-center" />
           </div>
           {studio.logoCaption && (
             // Слева поле на ширину разрядки: она висит и справа от последней буквы
@@ -67,7 +71,7 @@ export function Hero({ lang, dict }: Props) {
             <div className={`hidden lg:block ${riseLater}`}>
               <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4 low:mt-6">
                 <ScrollLink target={sectionIds.services} className={`${mainButton} inline-flex px-7`}>
-                  {dict.hero.checkPrice}
+                  {toServices}
                   <ArrowDownIcon size={16} />
                 </ScrollLink>
                 <a href={telHref(studio.phone)} className="py-3 text-15 text-muted transition-colors hover:text-fg">
@@ -118,6 +122,7 @@ export function Hero({ lang, dict }: Props) {
             />
             <HeroCar
               car={studio.hero.car}
+              spectrum={studio.theme.spectrum}
               className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:hero-car-fit"
             />
           </div>
@@ -127,7 +132,7 @@ export function Hero({ lang, dict }: Props) {
           target={sectionIds.services}
           className={`relative z-10 mx-auto mt-5 inline-flex items-center gap-2 py-3 font-medium after:absolute after:inset-x-0 after:bottom-2 after:h-px after:bg-accent lg:hidden ${riseLater}`}
         >
-          {dict.hero.checkPrice}
+          {toServices}
           <ArrowDownIcon size={16} />
         </ScrollLink>
       </div>

@@ -19,7 +19,8 @@ export type Dictionary = {
   menu: { services: string; studio: string };
   call: { label: string };
   /** orCall — «lub zadzwoń:» перед номером на десктопе. */
-  hero: { checkPrice: string; orCall: string };
+  /** seeServices — кнопка hero при прайсе по запросу: цен в разделе нет. */
+  hero: { checkPrice: string; seeServices: string; orCall: string };
   messengers: Record<Messenger["kind"], string>;
   status: {
     open: string;
@@ -48,6 +49,10 @@ export type Dictionary = {
     pickLong: string;
     classLabel: string;
     individualQuote: string;
+    /** Прайс по запросу — заголовок раздела: цен в нём нет. */
+    titleQuote: string;
+    /** Прайс по запросу — подсказка под заголовком вместо выбора класса. */
+    quoteHint: string;
   };
   reviews: {
     title: string;
@@ -123,6 +128,8 @@ export type Dictionary = {
     metaTitle: string;
     title: string;
     text: string;
+    /** Текст при прайсе по запросу: без «цен». */
+    textQuote: string;
   };
   /** Подпись под одиночным кадром, сделанным ИИ: фото входа, кадры O nas. */
   photoExample: string;

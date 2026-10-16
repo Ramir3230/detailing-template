@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { approach, rotation } from "./car-volume";
+import { approach, rotation, spectrumStops } from "./car-volume";
+
+describe("spectrumStops", () => {
+  it("spreads the spectrum across the car, not the 124% floor layer", () => {
+    expect(spectrumStops(["#000000", "#ffffff"])).toBe("#000000 9.68%, #ffffff 90.32%");
+    expect(spectrumStops(["#000000", "#888888", "#ffffff"])).toBe("#000000 9.68%, #888888 50.00%, #ffffff 90.32%");
+  });
+});
 
 /* Матрица по столбцам, как в GLSL */
 function apply(m: Float32Array, [x, y, z]: [number, number, number]): number[] {
