@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
+import { spectrumStops } from "@/lib/car-volume";
 import { isLang, langs, t } from "@/lib/i18n";
 import { isPublished, siteUrl } from "@/lib/seo";
 import "../globals.css";
@@ -52,12 +53,13 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   };
 }
 
-/* Четыре цвета темы студии; производные считает app/globals.css. */
+/* Четыре цвета темы студии и её спектр неона, если есть; производные считает app/globals.css. */
 const themeVars = {
   "--bg": studio.theme.bg,
   "--fg": studio.theme.fg,
   "--muted": studio.theme.muted,
   "--accent": studio.theme.accent,
+  ...(studio.theme.spectrum && { "--spectrum": spectrumStops(studio.theme.spectrum) }),
 } as CSSProperties;
 
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {

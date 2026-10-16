@@ -4,19 +4,26 @@ import type { ServiceGroup, Studio } from "@/content/types";
 /*
  * Студия в форме демо — для второго прогона `npm run check` в CI: без страниц групп и
  * O nas, в другом цвете, без фото входа и карты и без следов Afterdark. Демо собираются
- * из main, и шаблон обязан собирать такую студию, а не только Afterdark.
+ * из main, и шаблон обязан собирать такую студию, а не только Afterdark. Прайс — по
+ * запросу, как у студии без цен: прайс с ценами по классу проверяет прогон на Afterdark.
+ * Логотип — со знаком (public/logo), неон пола — спектром: у Afterdark ни того, ни другого.
  *
  * Тексты — Afterdark с другим названием: здесь проверяется форма данных, а не слова.
  */
 const renamed = JSON.parse(JSON.stringify(afterdark).replace(/Afterdark/g, "Nocturne")) as Studio;
 
-/* Группа без страницы: на главной видна только её первая пара до/после — остальные убраны */
+/* Группа без страницы: на главной видна только её первая пара до/после — остальные убраны.
+   Цены — по запросу */
 function withoutPage({ slug, name, services }: ServiceGroup): ServiceGroup {
   const first = services.findIndex(({ beforeAfter }) => beforeAfter);
   return {
     slug,
     name,
-    services: services.map((service, i) => (i === first ? service : { ...service, beforeAfter: undefined })),
+    services: services.map((service, i) => ({
+      ...service,
+      price: { kind: "individual" },
+      beforeAfter: i === first ? service.beforeAfter : undefined,
+    })),
   };
 }
 
@@ -24,7 +31,14 @@ const phone = "+48500100200";
 
 export const studio: Studio = {
   ...renamed,
-  theme: { bg: "#07080a", fg: "#f3f4f6", muted: "#8b9099", accent: "#ff6a3d" },
+  logoMark: { src: "/logo/nocturne.svg", width: 100, height: 100 },
+  theme: {
+    bg: "#07080a",
+    fg: "#f3f4f6",
+    muted: "#8b9099",
+    accent: "#ff6a3d",
+    spectrum: ["#ff6a3d", "#ff2d95", "#7a3dff"],
+  },
   phone,
   messengers: [
     { kind: "telegram", phone },
@@ -50,6 +64,10 @@ export const studio: Studio = {
   },
   address: { street: "ul. Przykładowa 12", area: "Warszawa-Mokotów" },
   services: renamed.services.map(withoutPage),
+  priceNote: {
+    pl: "Cenę podajemy po obejrzeniu auta: zależy od stanu lakieru i wybranych usług.",
+    ru: "Цену называем после осмотра машины: она зависит от состояния лака и выбранных услуг.",
+  },
   rating: { value: 4.8, count: 37 },
   reviews: [
     {

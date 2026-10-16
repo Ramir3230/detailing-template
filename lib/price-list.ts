@@ -32,6 +32,20 @@ export type PriceGroup = {
   rows: PriceRow[];
 };
 
+/**
+ * Есть ли цена, которая зависит от класса. Нет ни одной — переключатель классов ничего не
+ * меняет, и его нет.
+ */
+export const classPriced = (groups: readonly ServiceGroup[]) =>
+  groups.some(({ services }) => services.some(({ price }) => price.kind === "byClass"));
+
+/**
+ * Прайс по запросу: ни одной суммы, все цены «indywidualnie». Тогда раздел — список
+ * услуг без цен и путь к wycenie (DESIGN.md, «Прайс»).
+ */
+export const quoteOnly = (groups: readonly ServiceGroup[]) =>
+  groups.every(({ services }) => services.every(({ price }) => price.kind === "individual"));
+
 /*
  * Прайс для переключателя в браузере: тексты уже на языке страницы, цены всех четырёх
  * классов и длительность уже отформатированы. Браузер только выбирает класс,

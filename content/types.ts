@@ -176,14 +176,37 @@ export type HeroCar = {
   underglow?: Underglow;
 };
 
-/** Четыре цвета темы; всё остальное выводится из них в app/globals.css. */
-export type Theme = { bg: string; fg: string; muted: string; accent: string };
+/**
+ * Знак студии перед надписью логотипа (DESIGN.md, «Знак студии»): SVG на прозрачном фоне
+ * в public/logo/, путь от public/ и размер из его viewBox. Надпись остаётся текстом —
+ * буквы внутри знака в шапке не прочесть.
+ */
+export type LogoMark = { src: string; width: number; height: number };
+
+/**
+ * Четыре цвета темы; производные выводятся из них в app/globals.css. Спектр — отдельно:
+ * необязательный свет неона пола, не производная от четырёх.
+ */
+export type Theme = {
+  bg: string;
+  fg: string;
+  muted: string;
+  accent: string;
+  /**
+   * Спектр неона пола — от 2 до 8 цветов слева направо (DESIGN.md, «Спектр неона»): у
+   * студии, чей бренд — переход цветов, а не один. Только свет: текст, кнопки и
+   * свечения остаются цвета accent.
+   */
+  spectrum?: readonly [string, string, ...string[]];
+};
 
 export type Studio = {
   /** Полное название: «©», заголовок вкладки. */
   name: string;
-  /** Логотип-заглушка надписью, прописными. */
+  /** Логотип надписью, прописными. */
   logo: string;
+  /** Знак перед надписью; нет — логотип только надписью, иконка вкладки — его буквой. */
+  logoMark?: LogoMark;
   /** Подпись под логотипом в hero, разрядкой: «Detailing». */
   logoCaption?: string;
   /** «Studio detailingu» — подпись под логотипом в подвале. */

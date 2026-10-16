@@ -29,7 +29,9 @@ export async function Footer({ lang, dict }: Props) {
       <div className="wrap">
         <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-10">
           <div className="col-span-2 lg:col-span-1">
-            <Logo className="text-18 lg:text-20" />
+            {/* Знак — над надписью: колонка подвала на десктопе от 206 px, рядом со знаком
+                надпись в девять знаков переносилась */}
+            <Logo stacked className="items-start text-18 lg:text-20" />
             <p className="mt-2 text-14 text-muted lg:mt-3 lg:text-15">
               {t(studio.tagline, lang)}
               <span className="lg:hidden"> · {studio.address.area}</span>
