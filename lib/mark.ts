@@ -12,7 +12,6 @@ const tubeAttributes = {
   "stroke-linejoin": "strokeLinejoin",
   "stroke-miterlimit": "strokeMiterlimit",
   "stroke-opacity": "strokeOpacity",
-  opacity: "opacity",
 } as const;
 
 type TubeAttribute = (typeof tubeAttributes)[keyof typeof tubeAttributes];
@@ -31,17 +30,35 @@ export type MarkShapes =
 const shapePattern = /<(path|circle|ellipse|line|polyline|polygon|rect)\b([^>]*?)\/?>/g;
 const attributePattern = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 
+/* Атрибуты корня, которые трубок не касаются. Остальные (обводку, заливку) трубки картинки
+   в шапке наследуют, а трубки hero — нет */
+const rootAttributes = /^(xmlns(:[\w-]+)?|viewBox|width|height|version|xml:space)$/;
+
+/* То, что трубка картинки в шапке берёт не из своих атрибутов: группы, стили, градиенты,
+   обрезка. Контур внутри clipPath или symbol разбор принял бы за трубку */
+const outsideTubes =
+  /<(g|style|use|defs|clipPath|mask|symbol|pattern|marker|linearGradient|radialGradient|filter)\b|\s(transform|style|class)\s*=/;
+
+/* Цвет трубки — как цвета темы: currentColor в hero стал бы цветом текста, url() — пустотой */
+const hexColor = /^#[0-9a-f]{3}([0-9a-f]{3})?$/i;
+
 function attributesOf(source: string): Map<string, string> {
   return new Map([...source.matchAll(attributePattern)].map(([, name, double, single]) => [name, double ?? single]));
 }
 
+const invalid = (reason: string): MarkShapes => ({ kind: "invalid", reason });
+
 /**
- * Из чего знак: трубки, заливка или смесь, которую hero не повторит. Трубка — <path> с
- * fill="none" и цветом stroke. Атрибуты трубки копируются в hero по одному, поэтому у
- * знака из трубок нет групп, стилей и transform: их обводка в hero потерялась бы, и знак
- * в hero вышел бы не таким, как картинка в шапке.
+ * Из чего знак: трубки, заливка или то, что hero не повторит. Трубка — <path> с
+ * fill="none", hex-цветом stroke и одним контуром: свет бежит по ней от начала к концу.
+ * Атрибуты трубки копируются в hero по одному, поэтому у знака из трубок нет групп,
+ * стилей, transform и обводки у корня: в hero они потерялись бы, и знак вышел бы не
+ * таким, как картинка в шапке.
  */
-export function markShapes(svg: string): MarkShapes {
+export function markShapes(file: string): MarkShapes {
+  // Закомментированный контур картинка не рисует — и разбор его не видит
+  const svg = file.replace(/<!--[\s\S]*?-->/g, "");
+  const root = attributesOf(svg.match(/<svg\b([^>]*)>/)?.[1] ?? "");
   const shapes = [...svg.matchAll(shapePattern)].map(([, tag, attributes]) => ({
     tag,
     attributes: attributesOf(attributes),
@@ -49,24 +66,32 @@ export function markShapes(svg: string): MarkShapes {
   const isTube = ({ tag, attributes }: (typeof shapes)[number]) =>
     tag === "path" && attributes.get("fill") === "none" && (attributes.get("stroke") ?? "none") !== "none";
   const tubes = shapes.filter(isTube);
-  if (tubes.length === 0) return { kind: "fill" };
-  if (tubes.length !== shapes.length) {
-    return { kind: "invalid", reason: "трубки вперемешку с заливкой или фигурами не из <path>" };
+  if (tubes.length === 0) {
+    // fill="none" у корня — трубки без своего fill (так экспортирует Figma): без причины
+    // знак молча загорелся бы целиком
+    return root.get("fill") === "none"
+      ? invalid('fill="none" у корня <svg> в hero не переносится — перенеси на каждую трубку')
+      : { kind: "fill" };
   }
-  if (/<(g|style|use|defs)\b|\s(transform|style|class)\s*=/.test(svg)) {
-    return { kind: "invalid", reason: "у знака из трубок нет групп, стилей и transform — только <path> со своими атрибутами" };
+  if (tubes.length !== shapes.length) return invalid("трубки вперемешку с заливкой или фигурами не из <path>");
+  const rootExtra = [...root.keys()].find((name) => !rootAttributes.test(name));
+  if (rootExtra) return invalid(`атрибут корня <svg> ${rootExtra} в hero не переносится — перенеси на каждую трубку`);
+  if (outsideTubes.test(svg)) {
+    return invalid("у знака из трубок нет групп, стилей, градиентов и transform — только <path> со своими атрибутами");
   }
-
-  const viewBox = attributesOf(svg.match(/<svg\b([^>]*)>/)?.[1] ?? "").get("viewBox");
-  if (!viewBox) return { kind: "invalid", reason: "у знака нет viewBox" };
+  const viewBox = root.get("viewBox");
+  if (!viewBox) return invalid("у знака нет viewBox");
 
   const parsed: Tube[] = [];
   for (const { attributes } of tubes) {
     const tube: Tube = { d: attributes.get("d") ?? "" };
-    if (!tube.d) return { kind: "invalid", reason: "у трубки нет контура d" };
+    if (!tube.d) return invalid("у трубки нет контура d");
+    // Несколько контуров в одном d свет пробегал бы разом, а не от начала к концу
+    if ((tube.d.match(/[Mm]/g) ?? []).length !== 1) return invalid("одна трубка — один контур: в d один moveto");
+    if (!hexColor.test(attributes.get("stroke") ?? "")) return invalid("цвет трубки — hex: #rrggbb");
     for (const [name, value] of attributes) {
       if (name === "d" || name === "fill") continue;
-      if (!(name in tubeAttributes)) return { kind: "invalid", reason: `атрибут трубки ${name} в hero не переносится` };
+      if (!(name in tubeAttributes)) return invalid(`атрибут трубки ${name} в hero не переносится`);
       tube[tubeAttributes[name as keyof typeof tubeAttributes]] = value;
     }
     parsed.push(tube);
