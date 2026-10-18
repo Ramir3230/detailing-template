@@ -27,6 +27,10 @@ describe("markShapes", () => {
     // Без fill="none" у самого контура — заливка, даже с обводкой
     expect(markShapes(svg('<path d="M0 0 H10" stroke="#fff"/>'))).toEqual({ kind: "fill" });
     expect(markShapes(svg('<path d="M0 0 H10" fill="none" stroke="none"/>'))).toEqual({ kind: "fill" });
+    // Экспорт Figma: fill="none" у корня, у каждого контура своя заливка
+    expect(markShapes(svg('<path d="M0 0 H10 V10 Z" fill="#ff6a3d"/>', 'viewBox="0 0 100 80" fill="none"'))).toEqual({
+      kind: "fill",
+    });
   });
 
   it("refuses tubes the hero would draw unlike the header", () => {

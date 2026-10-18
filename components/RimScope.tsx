@@ -3,7 +3,7 @@
 import { createContext, use, useState, type ReactNode } from "react";
 import { usePicked } from "@/components/ClassScope";
 import { GearSwitch } from "@/components/GearSwitch";
-import { RimPrice } from "@/components/Price";
+import { RimRollingPrice } from "@/components/Price";
 import type { RimSize } from "@/content/types";
 import type { RimRow } from "@/lib/price-list";
 import { defaultRim, rimFraction } from "@/lib/rims";
@@ -93,7 +93,7 @@ export function RimPicker({ sizes, label }: { sizes: readonly RimSize[]; label: 
 /** Цена за колесо на выбранном размере — справа в строке. */
 export function RimRowPrice({ rim, order }: { rim: RimRow; order: number }) {
   const { at } = use(RimContext);
-  return <RimPrice rim={rim} at={at} order={order} />;
+  return <RimRollingPrice rim={rim} at={at} order={order} />;
 }
 
 /**
