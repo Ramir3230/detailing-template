@@ -72,9 +72,14 @@ export function startingPriceParts(price: Price, words: Dictionary["price"]): Pr
   return priceParts(shown, "S", words);
 }
 
-/** Самая низкая цена в группе — для «od …» в меню. Нет ни одной с числом — null. */
+/**
+ * Самая низкая цена в группе — для «od …» в меню. Нет ни одной с числом — null. У группы с
+ * ценой по диску — только по ней: доплата за датчик в той же группе дала бы шиномонтажу
+ * «od 5 zł».
+ */
 export function lowestAmount(services: readonly Service[]): number | null {
-  const amounts = services.flatMap(({ price }) => {
+  const byRim = services.filter(({ price }) => price.kind === "byRim");
+  const amounts = (byRim.length ? byRim : services).flatMap(({ price }) => {
     switch (price.kind) {
       case "byClass":
         return [Math.min(price.S, price.M, price.L)];

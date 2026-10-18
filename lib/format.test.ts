@@ -108,8 +108,10 @@ describe("lowestAmount", () => {
     ).toBe(120);
   });
 
-  it("takes the smallest rim of a price by rim", () => {
+  it("takes the smallest rim of a price by rim, and only rim prices in such a group", () => {
     expect(lowestAmount([service({ kind: "byRim", rims: { R16: 45, R15: 40 } }), service({ kind: "fixed", amount: 60 })])).toBe(40);
+    // Доплата за датчик — не цена шиномонтажа: «od 5 zł» в меню врало бы
+    expect(lowestAmount([service({ kind: "byRim", rims: { R16: 45, R15: 40 } }), service({ kind: "fixed", amount: 5 })])).toBe(40);
   });
 
   it("ignores individual prices and returns null when nothing has a number", () => {

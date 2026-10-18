@@ -96,11 +96,14 @@ export function RimRowPrice({ rim, order }: { rim: RimRow; order: number }) {
   return <RimPrice rim={rim} at={at} order={order} />;
 }
 
-/** «Za koło · komplet 4 szt.: 180 zł» — под названием; проявляется, когда передача встала. */
+/**
+ * «Za koło · komplet 4 szt.: 180 zł» — под названием; проявляется, когда передача встала.
+ * Объявляется диктору при смене размера, как описание класса.
+ */
 export function RimSet({ rim }: { rim: RimRow }) {
   const { at } = use(RimContext);
   return (
-    <span className="text-13 leading-note text-muted lg:text-14">
+    <span aria-live="polite" className="text-13 leading-note text-muted lg:text-14">
       <span
         key={at}
         className="block [[data-animate]_&]:animate-[fade-rise_0.22s_var(--ease-warm)_var(--engage)_both]"

@@ -1,7 +1,7 @@
 import type { CarClass, Price, RimSize, ServiceGroup, Text } from "@/content/types";
 import type { Dictionary } from "@/dictionaries/types";
 import { carClasses } from "@/lib/car-class";
-import { formatAmount, formatDuration, glue, priceParts, type PriceParts } from "@/lib/format";
+import { NBSP, formatAmount, formatDuration, glue, priceParts, type PriceParts } from "@/lib/format";
 import { fill, localePath, t, type Lang } from "@/lib/i18n";
 import { groupPagePath, hasGroupPage } from "@/lib/nav";
 import { rollColumns, splitAmount, type RollColumn } from "@/lib/odometer";
@@ -122,8 +122,13 @@ function rimRow(price: RimPrice, dict: Pick<Dictionary, "price" | "prices">): Ri
   return {
     amounts: formatted,
     sets: amounts.map((amount) =>
-      fill(dict.prices.rimSet, { count: String(RIM_SET), amount: formatAmount(amount * RIM_SET, dict.price) }),
+      keepTogether(
+        fill(dict.prices.rimSet, { count: String(RIM_SET), amount: formatAmount(amount * RIM_SET, dict.price) }),
+      ),
     ),
     rolling: strips ? { ...strips, suffix: split[0].suffix } : undefined,
   };
 }
+
+/* Число не отрывается от «szt.», разделитель «·» — от слова перед ним */
+const keepTogether = (text: string) => text.replace(/(\d) /g, `$1${NBSP}`).replace(/ ·/g, `${NBSP}·`);

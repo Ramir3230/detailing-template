@@ -55,7 +55,7 @@ export type Dictionary = {
     quoteHint: string;
     /** Переключатель размера диска — для диктора: на кнопках только «R15». */
     rimLabel: string;
-    /** Под ценой за колесо: «Za koło · komplet 4 szt.: {amount}». */
+    /** Под ценой за колесо: «Za koło · komplet {count} szt.: {amount}». */
     rimSet: string;
   };
   reviews: {

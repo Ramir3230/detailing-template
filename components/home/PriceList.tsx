@@ -97,7 +97,8 @@ export function PriceList({ heading, groups, picker, priced, footer, whatsInclud
                   </div>
                   {priced &&
                     (row.rim ? (
-                      <RimRowPrice rim={row.rim} order={firstRow[groupIndex] + rowIndex} />
+                      // Меняется только эта группа: волна лент — от её первой строки
+                      <RimRowPrice rim={row.rim} order={rowIndex} />
                     ) : (
                       <ClassPrice
                         prices={row.prices}

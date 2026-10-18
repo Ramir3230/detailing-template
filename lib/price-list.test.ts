@@ -105,7 +105,10 @@ describe("rim prices", () => {
     const [group] = priceList([tyres], "pl", pl);
     expect(group.rims).toEqual(["R15", "R16", "R17"]);
     expect(group.rows[0].rim?.amounts).toEqual([zl(40), zl(45), zl(50)]);
-    expect(group.rows[0].rim?.sets).toEqual([40, 45, 50].map((amount) => `Za koło · komplet 4 szt.: ${zl(amount * 4)}`));
+    // Число не отрывается от «szt.», «·» — от слова перед ним
+    expect(group.rows[0].rim?.sets).toEqual(
+      [40, 45, 50].map((amount) => `Za koło${NBSP}· komplet 4${NBSP}szt.: ${zl(amount * 4)}`),
+    );
     expect(group.rows[0].rim?.rolling).toEqual({
       columns: ["digit", "digit"],
       positions: [
@@ -122,7 +125,7 @@ describe("rim prices", () => {
   it("shows «od» the smallest rim where there is no rim switch: the group page, the menu", () => {
     const [group] = priceList([tyres], "ru", ru);
     expect(group.rows[0].prices.M).toEqual({ kind: "amount", prefix: `от${NBSP}`, amount: zl(40) });
-    expect(group.rows[0].rim?.sets[0]).toBe(`За колесо · комплект из 4: ${zl(160)}`);
+    expect(group.rows[0].rim?.sets[0]).toBe(`За колесо${NBSP}· комплект из 4: ${zl(160)}`);
   });
 
   it("is no reason for the class switch, and no price on request", () => {
