@@ -1,6 +1,7 @@
 import type { CarClass, Duration, Price, Service } from "@/content/types";
 import type { Dictionary, PluralForms } from "@/dictionaries/types";
 import { fill, type Lang } from "@/lib/i18n";
+import { rimAmounts, type RimPrice } from "@/lib/rims";
 
 /** Неразрывный пробел: между числом и «zł», после «od», после однобуквенных слов. */
 export const NBSP = "\u00A0";
@@ -52,12 +53,18 @@ export function priceParts(
       };
     case "individual":
       return { kind: "individual", text: words.individual };
+    // Размер диска выбирает переключатель прайса главной: без него — «od» самой низкой
+    case "byRim":
+      return priceParts({ kind: "from", amount: lowestRim(price) }, carClass, words);
   }
 }
 
+const lowestRim = (price: RimPrice) => Math.min(...rimAmounts(price).map(({ amount }) => amount));
+
 /**
  * Цена услуги без выбранного класса — под парой до/после: у цены по классу «od» самой
- * низкой из классов. Остальные виды от класса не зависят.
+ * низкой из классов, у цены по диску — самой низкой из размеров. Остальные виды от
+ * класса не зависят.
  */
 export function startingPriceParts(price: Price, words: Dictionary["price"]): PriceParts {
   const shown: Price =
@@ -74,6 +81,8 @@ export function lowestAmount(services: readonly Service[]): number | null {
       case "fixed":
       case "from":
         return [price.amount];
+      case "byRim":
+        return [lowestRim(price)];
       case "individual":
         return [];
     }

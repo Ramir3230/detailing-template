@@ -3,7 +3,8 @@ import type { Studio } from "@/content/types";
 
 /*
  * Автосервис — для третьего прогона `npm run check` в CI: цены «od» и фиксированные без
- * классов (переключателя нет), знак из неоновых трубок (зажигание hero рисует его кодом),
+ * классов (переключателя классов нет), шиномонтаж с ценой по размеру диска (свой
+ * переключатель над группой), знак из неоновых трубок (зажигание hero рисует его кодом),
  * только польский. Как и студия в форме демо — без страниц групп, O nas, фото входа и
  * карты. Выдуманная: здесь проверяется форма данных, а не слова.
  */
@@ -63,6 +64,17 @@ export const studio: Studio = {
       services: [
         { name: { pl: "Diagnostyka komputerowa" }, price: { kind: "fixed", amount: 120 } },
         { name: { pl: "Serwis klimatyzacji" }, price: { kind: "from", amount: 200 } },
+      ],
+    },
+    {
+      slug: "wulkanizacja",
+      name: { pl: "Wulkanizacja" },
+      services: [
+        {
+          name: { pl: "Wymiana opon z wyważeniem" },
+          price: { kind: "byRim", rims: { R15: 45, R16: 50, R17: 55, R18: 60, R19: 70 } },
+        },
+        { name: { pl: "Czujnik ciśnienia TPMS" }, note: { pl: "Dopłata za sztukę" }, price: { kind: "fixed", amount: 10 } },
       ],
     },
   ],

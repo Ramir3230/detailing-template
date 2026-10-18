@@ -6,6 +6,9 @@ export type Text = { pl: string; ru?: string };
 
 export type CarClass = "S" | "M" | "L" | "XL";
 
+/** Размер диска в дюймах: «R15». */
+export type RimSize = `R${13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24}`;
+
 /**
  * Цена услуги. Других видов нет: цена, которая не ложится ни в один, — вопрос к
  * владельцу, а не строка в данных.
@@ -17,7 +20,13 @@ export type Price =
   | { kind: "fixed"; amount: number }
   /** «od …»: окончательная зависит от машины. */
   | { kind: "from"; amount: number }
-  | { kind: "individual" };
+  | { kind: "individual" }
+  /**
+   * За одно колесо по размеру диска — шиномонтаж (DESIGN.md, «Прайс»): размеры подряд, от 2
+   * до 6, у всех таких услуг группы одни и те же. Прайс главной выбирает размер
+   * переключателем, остальные места показывают «od» самой низкой.
+   */
+  | { kind: "byRim"; rims: Partial<Record<RimSize, number>> };
 
 /** «1 dzień», «3–4 dni», «2 godziny». */
 export type Duration = { unit: "hour" | "day"; min: number; max?: number };

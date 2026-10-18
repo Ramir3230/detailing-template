@@ -46,6 +46,8 @@ export const pl: Dictionary = {
     individualQuote: "Wycena indywidualna",
     titleQuote: "Usługi",
     quoteHint: "Cenę liczymy dla Twojego auta — zapytaj o wycenę.",
+    rimLabel: "Rozmiar felgi",
+    rimSet: "Za koło · komplet {count} szt.: {amount}",
   },
   reviews: {
     title: "Opinie",

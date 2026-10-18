@@ -23,7 +23,8 @@ import {
   sectionIds,
   servicesPath,
 } from "@/lib/nav";
-import { classPriced, quoteOnly } from "@/lib/price-list";
+import { classPriced, priceList, quoteOnly } from "@/lib/price-list";
+import { defaultRim } from "@/lib/rims";
 import { isPublished, publishedLangs } from "@/lib/seo";
 
 /*
@@ -189,9 +190,33 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(prices).toContain(escaped(glue(t(studio.priceNote, lang), lang)));
   });
 
+  /* Переключатели прайса по подписи для диктора: классов и размера диска */
+  const switches = (prices: string, label: string) =>
+    tags(prices, /<div\b[^>]*role="radiogroup"[^>]*>/g).filter((tag) => tag.includes(`aria-label="${escaped(label)}"`));
+
   it("shows the class switch only when a price depends on the class", () => {
     const prices = markup(lang).match(/<section\b[^>]*id="cennik"[\s\S]*?<\/section>/)?.[0] ?? "";
-    expect(prices.includes('role="radiogroup"'), "переключатель классов").toBe(classPriced(studio.services));
+    const { prices: words } = getDictionary(lang);
+    expect(switches(prices, words.classLabel), "переключатель классов").toHaveLength(classPriced(studio.services) ? 1 : 0);
+  });
+
+  it("shows a rim switch over each group priced by rim, the middle size picked", () => {
+    const prices = markup(lang).match(/<section\b[^>]*id="cennik"[\s\S]*?<\/section>/)?.[0] ?? "";
+    const dict = getDictionary(lang);
+    const groups = priceList(studio.services, lang, dict).filter(({ rims }) => rims);
+    expect(switches(prices, dict.prices.rimLabel)).toHaveLength(groups.length);
+    for (const { slug, rims = [], rows } of groups) {
+      const block = prices.match(new RegExp(`<div\\b[^>]*id="${slug}"[\\s\\S]*?</ul>`))?.[0] ?? "";
+      const at = defaultRim(rims.length);
+      const checked = block.match(/<button\b[^>]*aria-checked="true"[^>]*>([^<]*)<\/button>/)?.[1];
+      expect(checked, `${slug}: выбранный размер`).toBe(rims[at]);
+      // Цена за колесо и комплект — на выбранном размере, в разметке до скриптов
+      for (const { rim } of rows) {
+        if (!rim) continue;
+        expect(block).toContain(escaped(rim.amounts[at]));
+        expect(block).toContain(escaped(rim.sets[at]));
+      }
+    }
   });
 
   it("on request: no prices in the list, the way to a quote and the hero button to the services", () => {
