@@ -110,6 +110,9 @@ export const studio: Studio = {
     pl: "[Jak studio liczy cenę: kiedy podaje ostateczną przy „od”, co z XL.]",
     ru: "[Как студия считает цену: когда называет окончательную у «от», что с XL.]",
   },
+  /* Отзывов у студии нет — убрать rating, reviews: [] и дать whyUs: ролик или фото
+     владельца и причины его словами (DESIGN.md, «Почему мы»; образец —
+     checks/workshop-fixture) */
   rating: { value: 0, count: 0, url: "[https://maps.app.goo.gl/… — opinie w Google]" },
   reviews: [{ author: "[Imię N.]", text: { pl: "[Opinia z Google dosłownie, bez tłumaczenia]" }, source: "google" }],
 };
