@@ -163,7 +163,7 @@ export function RollingPrice({
  * Цена за колесо на выбранном размере диска: лентами счётчика, как цена по классу, а
  * где лентами не показать — просто строкой.
  */
-export function RimPrice({ rim, at, order }: { rim: RimRow; at: number; order: number }) {
+export function RimRollingPrice({ rim, at, order }: { rim: RimRow; at: number; order: number }) {
   if (!rim.rolling) return <Price parts={{ kind: "amount", amount: rim.amounts[at] }} />;
   return (
     <span className={counter("row")}>

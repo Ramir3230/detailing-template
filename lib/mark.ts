@@ -67,9 +67,13 @@ export function markShapes(file: string): MarkShapes {
     tag === "path" && attributes.get("fill") === "none" && (attributes.get("stroke") ?? "none") !== "none";
   const tubes = shapes.filter(isTube);
   if (tubes.length === 0) {
-    // fill="none" у корня — трубки без своего fill (так экспортирует Figma): без причины
-    // знак молча загорелся бы целиком
-    return root.get("fill") === "none"
+    // Контур с обводкой без своего fill под fill="none" у корня — трубка, которой hero не
+    // узнает: без причины знак молча загорелся бы целиком. Figma ставит fill="none" на
+    // корень и у знака с заливкой — там у каждого контура свой fill, и он заливка
+    const inheritsNone = shapes.some(
+      ({ attributes }) => !attributes.has("fill") && (attributes.get("stroke") ?? "none") !== "none",
+    );
+    return root.get("fill") === "none" && inheritsNone
       ? invalid('fill="none" у корня <svg> в hero не переносится — перенеси на каждую трубку')
       : { kind: "fill" };
   }
