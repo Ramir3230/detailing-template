@@ -269,8 +269,9 @@ describe.each(langs)("built home page /%s", (lang) => {
     expect(videos[0]).toContain('preload="none"');
     expect(videos[0]).not.toMatch(/\sautoplay/i);
     expect(videos[0]).toMatch(/\splaysinline/i);
-    const sources = tags(html, /<source\b[^>]*>/g).filter((tag) => tag.includes(`src="${media.video.src}"`));
-    expect(sources, "нет <source> ролика").toHaveLength(1);
+    // Файл — в src самого <video>: со сбоем загрузки play() отклоняется, обложка возвращается
+    expect(videos[0]).toContain(`src="${media.video.src}"`);
+    expect(tags(html, /<source\b[^>]*>/g), "<source> вместо src у <video>").toEqual([]);
     const tracks = tags(html, /<track\b[^>]*>/g);
     const captions = media.video.captions.find((item) => item.lang === lang)?.src;
     expect(tracks.map((tag) => tag.match(/\ssrc="([^"]*)"/)?.[1])).toEqual(captions ? [captions] : []);
