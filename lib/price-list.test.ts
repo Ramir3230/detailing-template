@@ -3,6 +3,7 @@ import type { Price, ServiceGroup } from "@/content/types";
 import { pl } from "@/dictionaries/pl";
 import { ru } from "@/dictionaries/ru";
 import { parseCarClass } from "@/lib/car-class";
+import { NBSP } from "@/lib/format";
 import { classPriced, priceList, quoteOnly } from "@/lib/price-list";
 import { storyDuration } from "@/lib/stories";
 
@@ -86,6 +87,50 @@ describe("price list modes", () => {
     expect(quoteOnly(withPrices({ kind: "individual" }, { kind: "individual" }))).toBe(true);
     expect(quoteOnly(withPrices({ kind: "individual" }, { kind: "from", amount: 900 }))).toBe(false);
     expect(quoteOnly(groups)).toBe(false);
+  });
+});
+
+describe("rim prices", () => {
+  const tyres: ServiceGroup = {
+    slug: "wulkanizacja",
+    name: { pl: "Wulkanizacja" },
+    services: [
+      { name: { pl: "Wymiana opon" }, price: { kind: "byRim", rims: { R17: 50, R15: 40, R16: 45 } } },
+      { name: { pl: "Czujnik ciśnienia" }, price: { kind: "fixed", amount: 5 } },
+    ],
+  };
+  const zl = (amount: number) => `${amount}${NBSP}zł`;
+
+  it("gives the group its rim sizes in order and each rim row its prices", () => {
+    const [group] = priceList([tyres], "pl", pl);
+    expect(group.rims).toEqual(["R15", "R16", "R17"]);
+    expect(group.rows[0].rim?.amounts).toEqual([zl(40), zl(45), zl(50)]);
+    // Число не отрывается от «szt.», «·» — от слова перед ним
+    expect(group.rows[0].rim?.sets).toEqual(
+      [40, 45, 50].map((amount) => `Za koło${NBSP}· komplet 4${NBSP}szt.: ${zl(amount * 4)}`),
+    );
+    expect(group.rows[0].rim?.rolling).toEqual({
+      columns: ["digit", "digit"],
+      positions: [
+        [4, 0],
+        [4, 5],
+        [5, 0],
+      ],
+      suffix: `${NBSP}zł`,
+    });
+    expect(group.rows[1].rim).toBeUndefined();
+    expect(priceList(groups, "pl", pl)[0].rims).toBeUndefined();
+  });
+
+  it("shows «od» the smallest rim where there is no rim switch: the group page, the menu", () => {
+    const [group] = priceList([tyres], "ru", ru);
+    expect(group.rows[0].prices.M).toEqual({ kind: "amount", prefix: `от${NBSP}`, amount: zl(40) });
+    expect(group.rows[0].rim?.sets[0]).toBe(`За колесо${NBSP}· комплект из 4: ${zl(160)}`);
+  });
+
+  it("is no reason for the class switch, and no price on request", () => {
+    expect(classPriced([tyres])).toBe(false);
+    expect(quoteOnly([tyres])).toBe(false);
   });
 });
 

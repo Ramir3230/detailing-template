@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { basename, join } from "node:path";
+import type { CSSProperties, SVGProps } from "react";
 import { mainButton } from "@/components/CallButton";
 import { ArrowDownIcon, StarIcon } from "@/components/icons";
-import { Logo } from "@/components/Logo";
+import { Logo, markHeight } from "@/components/Logo";
 import { OpenStatus } from "@/components/OpenStatus";
 import { ScrollLink } from "@/components/ScrollLink";
 import { HeroCar, HeroStage } from "@/components/home/HeroStage";
@@ -10,6 +13,7 @@ import { telHref } from "@/lib/contact";
 import { formatPhone, formatRating, formatReviewsInGoogle, glue } from "@/lib/format";
 import { fill, t, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
+import { markShapes, tubeStrikes, tubeTimings } from "@/lib/mark";
 import { quoteOnly } from "@/lib/price-list";
 
 type Props = { lang: Lang; dict: Dictionary };
@@ -19,6 +23,20 @@ type Props = { lang: Lang; dict: Dictionary };
 const rise = "animate-[hero-rise_0.4s_var(--ease-warm)_both] in-data-ignited:animate-none";
 const riseLater =
   "animate-[hero-rise_0.4s_var(--ease-warm)_0.15s_both] in-data-ignited:animate-none";
+
+/*
+ * Знак студии из трубок — для зажигания (DESIGN.md, «Знак студии»); знак с заливкой или
+ * без знака — null. Читается синхронно и только из public/logo/, как в иконке вкладки
+ * (app/icon.tsx): асинхронное чтение Next с Cache Components не пререндерит.
+ */
+function tubeMark() {
+  const mark = studio.logoMark;
+  if (!mark) return null;
+  const shapes = markShapes(readFileSync(join(process.cwd(), "public", "logo", basename(mark.src)), "utf-8"));
+  return shapes.kind === "tubes" ? { ...shapes, aspect: `${mark.width} / ${mark.height}` } : null;
+}
+
+const ms = (seconds: number) => `${Math.round(seconds * 1000)}ms`;
 
 /*
  * Hero главной (DESIGN.md, «Hero и шапка»).
@@ -34,18 +52,63 @@ export function Hero({ lang, dict }: Props) {
   const { rating } = studio;
   // Прайс по запросу: цены в разделе нет — кнопка ведёт смотреть услуги
   const toServices = quoteOnly(studio.services) ? dict.hero.seeServices : dict.hero.checkPrice;
+  const tubes = tubeMark();
+  const timings = tubes && tubeTimings(tubes.tubes.length);
 
   return (
     <HeroStage id={sectionIds.hero} className="relative clip-x">
       {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh */}
       <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between wrap pt-10 pb-6 short:pt-6 short:pb-4 lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12 low:py-6">
         {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания.
-            Оба слоя — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает */}
+            Слои — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает. Знак из
+            трубок — третьим слоем между ними: по нему пробегает свет, потом знак и надпись
+            загораются порознь */}
         <div className="text-center lg:hidden">
           <div className="grid text-30 short:text-24">
             {/* Знак студии — над надписью: рядом с ней крупная надпись в колонку не встаёт */}
             <Logo unlit stacked className="col-start-1 row-start-1 items-center" />
-            <Logo aria-hidden="true" stacked className="ignite-logo col-start-1 row-start-1 items-center" />
+            {tubes && timings && (
+              <Logo
+                aria-hidden="true"
+                stacked
+                className="col-start-1 row-start-1 items-center"
+                drawn={
+                  // relative: погашенный знак под ним с фильтром — свой слой наложения, и
+                  // без него поднялся бы над трубками
+                  <svg
+                    viewBox={tubes.viewBox}
+                    className={`relative ${markHeight(true)} w-auto`}
+                    style={{ aspectRatio: tubes.aspect }}
+                  >
+                    {tubes.tubes.map((tube, i) => (
+                      <path
+                        key={i}
+                        {...(tube as SVGProps<SVGPathElement>)}
+                        fill="none"
+                        pathLength={1}
+                        className="ignite-tube"
+                        style={
+                          {
+                            "--tube-delay": ms(timings[i].delay),
+                            "--tube-run": ms(timings[i].run),
+                          } as CSSProperties
+                        }
+                      />
+                    ))}
+                  </svg>
+                }
+              />
+            )}
+            <Logo
+              aria-hidden="true"
+              stacked
+              className={`${tubes ? "ignite-logo-split" : "ignite-logo"} col-start-1 row-start-1 items-center`}
+              style={
+                tubes
+                  ? ({ "--mark-strike": ms(tubeStrikes.mark), "--word-strike": ms(tubeStrikes.word) } as CSSProperties)
+                  : undefined
+              }
+            />
           </div>
           {studio.logoCaption && (
             // Слева поле на ширину разрядки: она висит и справа от последней буквы

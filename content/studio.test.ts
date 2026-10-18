@@ -6,6 +6,8 @@ import { afterdark } from "@/content/studios/afterdark";
 import type { Photo, Studio, Text } from "@/content/types";
 import { SPECTRUM_MAX } from "@/lib/car-volume";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
+import { markShapes } from "@/lib/mark";
+import { RIMS_MAX, inches, rimAmounts } from "@/lib/rims";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
 import { publishedLangs } from "@/lib/seo";
@@ -42,8 +44,32 @@ describe("active studio data", () => {
     for (const group of studio.services) {
       for (const { price } of group.services) {
         const amounts =
-          price.kind === "byClass" ? [price.S, price.M, price.L] : "amount" in price ? [price.amount] : [];
+          price.kind === "byClass"
+            ? [price.S, price.M, price.L]
+            : price.kind === "byRim"
+              ? rimAmounts(price).map(({ amount }) => amount)
+              : "amount" in price
+                ? [price.amount]
+                : [];
         for (const amount of amounts) expect(Number.isInteger(amount) && amount > 0).toBe(true);
+      }
+    }
+  });
+
+  it("has rim prices the switch can show: sizes in a row, the same across the group", () => {
+    for (const group of studio.services) {
+      const rims = group.services.flatMap(({ price }) =>
+        price.kind === "byRim" ? [rimAmounts(price).map(({ size }) => size)] : [],
+      );
+      for (const sizes of rims) {
+        expect(sizes.length, `${group.slug}: один размер диска — это цена fixed`).toBeGreaterThanOrEqual(2);
+        // Рядом с колесом на 375 кнопки размеров не уже 44 px
+        expect(sizes.length, `${group.slug}: размеров диска больше, чем встаёт в ряд`).toBeLessThanOrEqual(RIMS_MAX);
+        // Пропуск в ряду переключатель показал бы так, будто размера нет вовсе
+        const gaps = sizes.slice(1).filter((size, i) => inches(size) !== inches(sizes[i]) + 1);
+        expect(gaps, `${group.slug}: размеры диска не подряд`).toEqual([]);
+        // Переключатель у группы один: у всех её услуг по диску одни размеры
+        expect(sizes, `${group.slug}: разные размеры диска в одной группе`).toEqual(rims[0]);
       }
     }
   });
@@ -137,6 +163,10 @@ describe("active studio data", () => {
     // Контуры, а не растр в обёртке SVG и не буквы: надпись стоит рядом текстом, а иконка
     // без шрифта нарисовала бы на месте букв пустоту
     expect(svg, "в знаке растр или текст").not.toMatch(/<image\b|<text\b/);
+    // Знак из трубок hero рисует кодом по одному <path>: то, что там вышло бы не так, как
+    // картинка в шапке, — ошибка с причиной (DESIGN.md, «Знак студии»)
+    const shapes = markShapes(svg);
+    expect(shapes.kind === "invalid" ? shapes.reason : "", "знак из трубок").toBe("");
     // Знак — фигура рядом с надписью: широкий оттеснил бы её к кнопке меню в шапке телефона
     expect(mark.width / mark.height, "знак шире 3:2").toBeLessThanOrEqual(1.5);
     // Шапка 375 со знаком (замер 15.10.2026): 10 знаков встают и из самых широких букв, 12
