@@ -79,5 +79,24 @@ export const studio: Studio = {
       source: "example",
     },
   ],
+  /* «Почему мы» с фото рядом с отзывами: карточки «первые отзывы» при отзывах нет, даже со ссылкой */
+  whyUs: {
+    points: [
+      { pl: "Myjemy i polerujemy tylko ręcznie.", ru: "Моем и полируем только вручную." },
+      { pl: "Termin ustalamy od razu przez telefon.", ru: "Время согласуем сразу по телефону." },
+      { pl: "Po pracy pokazujemy efekt w świetle lamp.", ru: "После работы показываем результат под лампами." },
+    ],
+    media: {
+      kind: "photo",
+      photo: {
+        src: "/o-nas/hala.webp",
+        width: 1040,
+        height: 1300,
+        alt: { pl: "Hala studia Nocturne w świetle lamp", ru: "Зал студии Nocturne под лампами" },
+        ai: true,
+      },
+    },
+    reviewUrl: "https://www.google.com/maps/search/?api=1&query=Nocturne+Detailing",
+  },
   about: undefined,
 };

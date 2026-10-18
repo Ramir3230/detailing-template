@@ -153,6 +153,13 @@
     outline-offset: 2px;
   }
 
+  /* Субтитры ролика «Почему мы»: плашка bg 70%, текст fg. Место в кадре задаёт их файл */
+  video::cue {
+    background-color: color-mix(in srgb, var(--bg) 70%, transparent);
+    color: var(--fg);
+    font-family: var(--font-sans);
+  }
+
   /* Открытое меню на весь экран: фон под ним не прокручивается */
   html:has(dialog[open]) {
     overflow: hidden;

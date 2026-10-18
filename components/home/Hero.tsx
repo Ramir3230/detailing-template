@@ -148,7 +148,7 @@ export function Hero({ lang, dict }: Props) {
                   заранее. Поле нажатия рейтинга (44 px) заходит на строку статуса —
                   relative ставит ссылку поверх неё */}
               <div className="mt-10 flex flex-col items-start gap-2 text-14 text-muted low:mt-6">
-                {studio.reviews.length > 0 && (
+                {studio.reviews.length > 0 && rating && (
                   <ScrollLink
                     target={sectionIds.reviews}
                     className="relative -my-3 inline-flex items-center gap-1 py-3 transition-colors hover:text-fg"
