@@ -415,7 +415,9 @@ function expectFrame(photo: Photo) {
 
 /*
  * MP4, который браузер начнёт играть, не скачав целиком (DESIGN.md, «Фотографии»): индекс
- * moov раньше данных mdat, видео H.264 (avc1) — его играют все браузеры, HEVC — нет.
+ * moov раньше данных mdat, видео H.264 (avc1) — его играют все браузеры, HEVC — нет, звук
+ * AAC. Кадр 4:5 и не шире 720: рамка его не режет, и субтитры встают одинаково в Chromium и
+ * Safari — тот кладёт их по кадру ролика, а не по рамке.
  */
 function expectPlayableMp4(file: Buffer) {
   const boxes: string[] = [];
@@ -434,6 +436,19 @@ function expectPlayableMp4(file: Buffer) {
     boxes.indexOf("mdat"),
   );
   expect(file.includes("avc1"), "видео не H.264").toBe(true);
+  if (file.includes("soun")) expect(file.includes("mp4a"), "звук не AAC").toBe(true);
+  // Размер кадра — из tkhd дорожки видео: ширина и высота 16.16 в конце коробки, у звука нули
+  const frames: { width: number; height: number }[] = [];
+  for (let at = file.indexOf("tkhd"); at > 0; at = file.indexOf("tkhd", at + 4)) {
+    const end = at + 4 + (file[at + 4] === 1 ? 88 : 76);
+    if (end + 8 > file.length) continue;
+    frames.push({ width: file.readUInt32BE(end) / 65536, height: file.readUInt32BE(end + 4) / 65536 });
+  }
+  const frame = frames.find(({ width }) => width > 0);
+  expect(frame, "нет дорожки видео").toBeDefined();
+  if (!frame) return;
+  expect(frame.width * 5, `кадр ролика ${frame.width}×${frame.height} не 4:5`).toBe(frame.height * 4);
+  expect(frame.width, "ролик шире 720").toBeLessThanOrEqual(720);
 }
 
 /* Тексты студии с путём до каждого: «services[1].faq[0].answer». */
