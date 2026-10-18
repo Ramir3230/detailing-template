@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import type { CarClass } from "@/content/types";
 import { NBSP, type PriceParts } from "@/lib/format";
-import { stripSymbols } from "@/lib/odometer";
-import type { Rolling } from "@/lib/price-list";
+import { stripSymbols, type RollColumn } from "@/lib/odometer";
+import type { RimRow, Rolling } from "@/lib/price-list";
 
 /*
  * Цена и название услуги — одни для строки прайса главной, карточки страницы группы и
@@ -66,9 +66,60 @@ export function Price({ parts, size = "row" }: { parts: PriceParts; size?: Price
 }
 
 /*
+ * Цифры цены лентами счётчика: каждая лента стоит на своём символе, при смене цены
+ * прокручивается к новому за 0,42 с, правая — первой, строки — лёгкой волной сверху вниз.
+ * Только для глаза: диктор слышит текущую цену рядом.
+ */
+function Ribbons({
+  columns,
+  positions,
+  suffix,
+  order,
+  className,
+}: {
+  columns: readonly RollColumn[];
+  positions: readonly number[];
+  suffix: string;
+  order: number;
+  className: string;
+}) {
+  // Сколько цифр правее колонки: правая лента трогается первой.
+  const fromRight = columns.map((_, i) => columns.slice(i + 1).filter((column) => column === "digit").length);
+  return (
+    <span aria-hidden="true" className={`col-start-1 row-start-1 inline-flex select-none ${className}`}>
+      {columns.map((column, i) => {
+        if (column === "separator") return <span key={i}>{NBSP}</span>;
+        return (
+          <span key={i} className="inline-block h-[1lh] overflow-hidden">
+            <span
+              className="block [[data-animate]_&]:transition-transform [[data-animate]_&]:duration-[420ms] [[data-animate]_&]:delay-[calc(var(--engage)+var(--roll-delay))] [[data-animate]_&]:ease-warm"
+              style={
+                {
+                  transform: `translateY(calc(${-positions[i]} * 1lh))`,
+                  "--roll-delay": `${fromRight[i] * 35 + order * 12}ms`,
+                } as CSSProperties
+              }
+            >
+              {stripSymbols.map((symbol, s) => (
+                <span key={s} className="block h-[1lh] text-center">
+                  {symbol}
+                </span>
+              ))}
+            </span>
+          </span>
+        );
+      })}
+      {suffix}
+    </span>
+  );
+}
+
+const counter = (size: PriceSize) =>
+  `grid shrink-0 justify-items-end ${sizes[size].amount} leading-heading font-medium whitespace-nowrap tabular-nums`;
+
+/*
  * Цена по классу лентами счётчика: когда передача встала, цифры прокручиваются к новой
- * цене, правая — первой. При XL цифры стоят на цене L и гаснут, проявляется
- * «indywidualnie». Глазу видны ленты, диктор слышит только текущую цену.
+ * цене. При XL цифры стоят на цене L и гаснут, проявляется «indywidualnie».
  */
 export function RollingPrice({
   rolling,
@@ -86,44 +137,16 @@ export function RollingPrice({
 }) {
   const parts = prices[selected];
   const individual = selected === "XL";
-  const positions = rolling.positions[individual ? "L" : selected];
-  // Сколько цифр правее колонки: правая лента трогается первой.
-  const fromRight = rolling.columns.map(
-    (_, i) => rolling.columns.slice(i + 1).filter((column) => column === "digit").length,
-  );
 
   return (
-    <span
-      className={`grid shrink-0 justify-items-end ${sizes[size].amount} leading-heading font-medium whitespace-nowrap tabular-nums`}
-    >
-      <span
-        aria-hidden="true"
-        className={`col-start-1 row-start-1 inline-flex select-none ${individual ? `opacity-0 ${leaving}` : arriving}`}
-      >
-        {rolling.columns.map((column, i) => {
-          if (column === "separator") return <span key={i}>{NBSP}</span>;
-          return (
-            <span key={i} className="inline-block h-[1lh] overflow-hidden">
-              <span
-                className="block [[data-animate]_&]:transition-transform [[data-animate]_&]:duration-[420ms] [[data-animate]_&]:delay-[calc(var(--engage)+var(--roll-delay))] [[data-animate]_&]:ease-warm"
-                style={
-                  {
-                    transform: `translateY(calc(${-positions[i]} * 1lh))`,
-                    "--roll-delay": `${fromRight[i] * 35 + order * 12}ms`,
-                  } as CSSProperties
-                }
-              >
-                {stripSymbols.map((symbol, s) => (
-                  <span key={s} className="block h-[1lh] text-center">
-                    {symbol}
-                  </span>
-                ))}
-              </span>
-            </span>
-          );
-        })}
-        {rolling.suffix}
-      </span>
+    <span className={counter(size)}>
+      <Ribbons
+        columns={rolling.columns}
+        positions={rolling.positions[individual ? "L" : selected]}
+        suffix={rolling.suffix}
+        order={order}
+        className={individual ? `opacity-0 ${leaving}` : arriving}
+      />
       {/* По центру строки цифр: мельче их, а прижатая кверху стояла бы выше названия */}
       <span
         aria-hidden="true"
@@ -132,6 +155,26 @@ export function RollingPrice({
         {prices.XL.kind === "individual" ? prices.XL.text : ""}
       </span>
       <span className="sr-only">{parts.kind === "amount" ? parts.amount : parts.text}</span>
+    </span>
+  );
+}
+
+/**
+ * Цена за колесо на выбранном размере диска: лентами счётчика, как цена по классу, а
+ * где лентами не показать — просто строкой.
+ */
+export function RimRollingPrice({ rim, at, order }: { rim: RimRow; at: number; order: number }) {
+  if (!rim.rolling) return <Price parts={{ kind: "amount", amount: rim.amounts[at] }} />;
+  return (
+    <span className={counter("row")}>
+      <Ribbons
+        columns={rim.rolling.columns}
+        positions={rim.rolling.positions[at]}
+        suffix={rim.rolling.suffix}
+        order={order}
+        className=""
+      />
+      <span className="sr-only">{rim.amounts[at]}</span>
     </span>
   );
 }

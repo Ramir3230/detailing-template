@@ -56,6 +56,7 @@ export function Prices({ lang, dict }: { lang: Lang; dict: Dictionary }) {
           )
         }
         whatsIncluded={dict.group.whatsIncluded}
+        rimLabel={dict.prices.rimLabel}
       />
     </section>
   );
