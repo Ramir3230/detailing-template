@@ -39,8 +39,26 @@ describe("markShapes", () => {
       svg(`<path d="M0 0 H10" fill="none" stroke="#fff" filter="url(#glow)"/>`),
       svg('<path fill="none" stroke="#fff"/>'),
       svg(tube, ""),
+      // Обводку корня трубки картинки наследуют, а трубки hero — нет
+      svg(tube, 'viewBox="0 0 100 80" stroke-width="5" stroke-linecap="round"'),
+      // Экспорт Figma: fill="none" у корня, у контуров своего нет
+      svg('<path d="M0 0 H10" stroke="#fff"/>', 'viewBox="0 0 100 80" fill="none"'),
+      svg('<path d="M0 0 H10" fill="none" stroke="currentColor"/>'),
+      svg('<linearGradient id="g"/><path d="M0 0 H10" fill="none" stroke="url(#g)"/>'),
+      svg(`<clipPath id="c">${tube}</clipPath>${tube}`),
+      // opacity трубки hero перекрыло бы зажиганием — есть stroke-opacity
+      svg('<path d="M0 0 H10" fill="none" stroke="#fff" opacity="0.5"/>'),
+      // Два контура в одной трубке свет пробегал бы разом
+      svg('<path d="M0 0 H10 M0 5 H10" fill="none" stroke="#fff"/>'),
     ].map((file) => markShapes(file));
     for (const shapes of reasons) expect(shapes.kind).toBe("invalid");
+  });
+
+  it("reads past commented-out shapes: the picture does not draw them either", () => {
+    const shapes = markShapes(
+      svg('<!-- <path d="M0 5 H10" fill="#fff"/> --><path d="M0 0 H10" fill="none" stroke="#fff"/>'),
+    );
+    expect(shapes).toEqual({ kind: "tubes", viewBox: "0 0 100 80", tubes: [{ d: "M0 0 H10", stroke: "#fff" }] });
   });
 });
 
