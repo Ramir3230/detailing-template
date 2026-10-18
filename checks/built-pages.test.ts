@@ -10,6 +10,7 @@ import { homePairServices } from "@/lib/compare";
 import { messengerHref } from "@/lib/contact";
 import { formatDayRange, formatDuration, glue, priceParts } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
+import { markShapes } from "@/lib/mark";
 import { defaultLang, fill, langs, localePath, t, type Lang } from "@/lib/i18n";
 import {
   aboutCallId,
@@ -263,6 +264,27 @@ describe.each(langs)("built home page /%s", (lang) => {
       // Знак на первом экране — в hero телефона и в шапке десктопа
       expect(tag).not.toContain('loading="lazy"');
     }
+  });
+
+  it("draws a tube mark in the hero tube by tube; a filled one lights up whole", () => {
+    const mark = studio.logoMark;
+    const shapes = mark ? markShapes(readFileSync(join(process.cwd(), "public", mark.src), "utf-8")) : null;
+    const html = markup(lang);
+    const tubes = tags(html, /<path\b[^>]*class="ignite-tube"[^>]*>/g);
+    if (shapes?.kind !== "tubes") {
+      expect(tubes).toEqual([]);
+      expect(html).not.toContain("ignite-logo-split");
+      return;
+    }
+    // Каждая трубка — в порядке файла, длиной 1 для бегущего света и со своим моментом
+    expect(tubes.map((tag) => tag.match(/\sd="([^"]*)"/)?.[1])).toEqual(shapes.tubes.map(({ d }) => d));
+    for (const tag of tubes) {
+      expect(tag).toContain('pathLength="1"');
+      expect(tag).toContain('fill="none"');
+      expect(tag).toMatch(/--tube-delay:\d+ms;--tube-run:\d+ms/);
+    }
+    // Горящий слой зажигает знак и надпись порознь
+    expect(tags(html, /<span\b[^>]*class="[^"]*ignite-logo-split[^"]*"[^>]*>/g)).toHaveLength(1);
   });
 
   it("draws the tab icon once at build time", () => {
