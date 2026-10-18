@@ -46,6 +46,8 @@ export const ru: Dictionary = {
     individualQuote: "Индивидуальный расчёт",
     titleQuote: "Услуги",
     quoteHint: "Цену считаем под вашу машину — спросите расчёт.",
+    rimLabel: "Размер диска",
+    rimSet: "За колесо · комплект из {count}: {amount}",
   },
   reviews: {
     title: "Отзывы",

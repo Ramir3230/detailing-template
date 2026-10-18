@@ -76,6 +76,12 @@ describe("startingPriceParts", () => {
     });
   });
 
+  it("gives a price by rim as «od» the smallest rim: no rim switch there", () => {
+    expect(startingPriceParts({ kind: "byRim", rims: { R17: 50, R15: 40, R16: 45 } }, pl.price)).toEqual(
+      startingPriceParts({ kind: "from", amount: 40 }, pl.price),
+    );
+  });
+
   it("keeps the other kinds as the price list shows them", () => {
     expect(startingPriceParts({ kind: "fixed", amount: 300 }, pl.price)).toEqual({
       kind: "amount",
@@ -100,6 +106,10 @@ describe("lowestAmount", () => {
         service({ kind: "from", amount: 1500 }),
       ]),
     ).toBe(120);
+  });
+
+  it("takes the smallest rim of a price by rim", () => {
+    expect(lowestAmount([service({ kind: "byRim", rims: { R16: 45, R15: 40 } }), service({ kind: "fixed", amount: 60 })])).toBe(40);
   });
 
   it("ignores individual prices and returns null when nothing has a number", () => {

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ClassPicker, ClassPrice, ClassScope } from "@/components/ClassScope";
 import { useCarClass } from "@/components/ClassSwitch";
 import { ServiceName } from "@/components/Price";
+import { RimPicker, RimRowPrice, RimScope, RimSet } from "@/components/RimScope";
 import { ClockIcon, PhoneIcon } from "@/components/icons";
 import type { CarClass } from "@/content/types";
 import type { PriceGroup } from "@/lib/price-list";
@@ -26,6 +27,8 @@ type Props = {
   /** Под списком: строка о том, как студия считает цену, или карточка wyceny — рисует сервер. */
   footer: ReactNode;
   whatsIncluded: string;
+  /** Переключатель размера диска — для диктора. */
+  rimLabel: string;
 };
 
 /*
@@ -33,9 +36,10 @@ type Props = {
  * липнет под шапкой (64 px), пока на экране прайс. Десктоп (от 1024) — переключатель
  * в липкой боковой колонке слева, список справа. На телефоне колонка «растворяется»
  * (display: contents), чтобы липкий блок жил в границах всей секции. Без цены по классу
- * переключателя нет, у прайса по запросу нет и колонки цен (DESIGN.md, «Прайс»).
+ * переключателя нет, у прайса по запросу нет и колонки цен (DESIGN.md, «Прайс»). У группы
+ * с ценой по диску над списком — свой переключатель размера.
  */
-export function PriceList({ heading, groups, picker, priced, footer, whatsIncluded }: Props) {
+export function PriceList({ heading, groups, picker, priced, footer, whatsIncluded, rimLabel }: Props) {
   const selected = useCarClass();
   // Номер строки во всём прайсе: счётчики трогаются лёгкой волной сверху вниз.
   const firstRow = groups.map((_, i) =>
@@ -70,22 +74,8 @@ export function PriceList({ heading, groups, picker, priced, footer, whatsInclud
       </div>
 
       <div className="mt-5 flex flex-col gap-7 lg:mt-0 lg:min-w-0 lg:flex-[999_1_560px] lg:gap-10">
-        {groups.map((group, groupIndex) => (
-          <div key={group.slug} id={group.slug} className={`${scrollMargin} lg:scroll-mt-6`}>
-            <div className="flex items-baseline justify-between gap-3 pb-2">
-              <h3 className="caps-label">{group.name}</h3>
-              {/* Главная отвечает «сколько», страница группы — «что за эти деньги» */}
-              {group.page && (
-                <Link
-                  href={group.page}
-                  className="-my-3 inline-flex min-h-11 shrink-0 items-center text-13 whitespace-nowrap text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg lg:text-14"
-                >
-                  {whatsIncluded}
-                  {/* Диктор в списке ссылок различает четыре «Co wchodzi» по группе */}
-                  <span className="sr-only">: {group.name}</span>
-                </Link>
-              )}
-            </div>
+        {groups.map((group, groupIndex) => {
+          const list = (
             <ul>
               {group.rows.map((row, rowIndex) => (
                 <li
@@ -97,6 +87,7 @@ export function PriceList({ heading, groups, picker, priced, footer, whatsInclud
                     {row.note && (
                       <span className="text-13 leading-note text-muted lg:text-14">{row.note}</span>
                     )}
+                    {row.rim && <RimSet rim={row.rim} />}
                     {row.duration && (
                       <span className="flex items-center gap-2 text-13 leading-note text-muted lg:text-14">
                         <ClockIcon size={14} />
@@ -104,18 +95,47 @@ export function PriceList({ heading, groups, picker, priced, footer, whatsInclud
                       </span>
                     )}
                   </div>
-                  {priced && (
-                    <ClassPrice
-                      prices={row.prices}
-                      rolling={row.rolling}
-                      order={firstRow[groupIndex] + rowIndex}
-                    />
-                  )}
+                  {priced &&
+                    (row.rim ? (
+                      <RimRowPrice rim={row.rim} order={firstRow[groupIndex] + rowIndex} />
+                    ) : (
+                      <ClassPrice
+                        prices={row.prices}
+                        rolling={row.rolling}
+                        order={firstRow[groupIndex] + rowIndex}
+                      />
+                    ))}
                 </li>
               ))}
             </ul>
-          </div>
-        ))}
+          );
+          return (
+            <div key={group.slug} id={group.slug} className={`${scrollMargin} lg:scroll-mt-6`}>
+              <div className="flex items-baseline justify-between gap-3 pb-2">
+                <h3 className="caps-label">{group.name}</h3>
+                {/* Главная отвечает «сколько», страница группы — «что за эти деньги» */}
+                {group.page && (
+                  <Link
+                    href={group.page}
+                    className="-my-3 inline-flex min-h-11 shrink-0 items-center text-13 whitespace-nowrap text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg lg:text-14"
+                  >
+                    {whatsIncluded}
+                    {/* Диктор в списке ссылок различает четыре «Co wchodzi» по группе */}
+                    <span className="sr-only">: {group.name}</span>
+                  </Link>
+                )}
+              </div>
+              {group.rims ? (
+                <RimScope sizes={group.rims}>
+                  <RimPicker sizes={group.rims} label={rimLabel} />
+                  {list}
+                </RimScope>
+              ) : (
+                list
+              )}
+            </div>
+          );
+        })}
         {footer}
       </div>
     </ClassScope>
