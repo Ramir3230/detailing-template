@@ -6,6 +6,7 @@ import { afterdark } from "@/content/studios/afterdark";
 import type { Photo, Studio, Text } from "@/content/types";
 import { SPECTRUM_MAX } from "@/lib/car-volume";
 import { homePairServices, maxGroupPairs } from "@/lib/compare";
+import { markShapes } from "@/lib/mark";
 import { messengerHref, telHref } from "@/lib/contact";
 import { hasGroupPage, sectionIds } from "@/lib/nav";
 import { publishedLangs } from "@/lib/seo";
@@ -137,6 +138,10 @@ describe("active studio data", () => {
     // Контуры, а не растр в обёртке SVG и не буквы: надпись стоит рядом текстом, а иконка
     // без шрифта нарисовала бы на месте букв пустоту
     expect(svg, "в знаке растр или текст").not.toMatch(/<image\b|<text\b/);
+    // Знак из трубок hero рисует кодом по одному <path>: то, что там вышло бы не так, как
+    // картинка в шапке, — ошибка с причиной (DESIGN.md, «Знак студии»)
+    const shapes = markShapes(svg);
+    expect(shapes.kind === "invalid" ? shapes.reason : "", "знак из трубок").toBe("");
     // Знак — фигура рядом с надписью: широкий оттеснил бы её к кнопке меню в шапке телефона
     expect(mark.width / mark.height, "знак шире 3:2").toBeLessThanOrEqual(1.5);
     // Шапка 375 со знаком (замер 15.10.2026): 10 знаков встают и из самых широких букв, 12
