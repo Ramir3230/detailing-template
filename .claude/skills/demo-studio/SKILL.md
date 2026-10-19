@@ -86,8 +86,10 @@ description: Персональное демо сайта для реально�
   `word_timestamps=True`: по словам режутся реплики). Ролик — до 4:5 и 720×900, H.264 и
   AAC, индекс в начале файла, два прохода по 480 кбит/с, ≈4,5 МБ на минуту:
 
-      ffmpeg -i <рилс>.mp4 -vf "crop=1080:1350:0:285,scale=720:900:flags=lanczos" -c:v libx264 -preset slow -b:v 480k -pass 1 -an -f mp4 NUL
-      ffmpeg -i <рилс>.mp4 -vf "crop=1080:1350:0:285,scale=720:900:flags=lanczos" -c:v libx264 -preset slow -b:v 480k -pass 2 -c:a aac -b:a 96k -movflags +faststart demos/<студия>/public/wideo/<студия>.mp4
+      ffmpeg -i <рилс>.mp4 -vf "crop=1080:1350:0:285,scale=720:900:flags=lanczos" -c:v libx264 -preset slow -b:v 480k -pass 1 -passlogfile demos/<студия>/source/reels/<студия> -an -f mp4 NUL
+      ffmpeg -i <рилс>.mp4 -vf "crop=1080:1350:0:285,scale=720:900:flags=lanczos" -c:v libx264 -preset slow -b:v 480k -pass 2 -passlogfile demos/<студия>/source/reels/<студия> -c:a aac -b:a 96k -movflags +faststart demos/<студия>/public/wideo/<студия>.mp4
+
+  Лог двух проходов (`-passlogfile`) — в source/reels, а не в корне шаблона.
 
   Обложка — кадр рилса без вшитых надписей (у рилса они посередине: брать область над
   ними), 4:5, 1040×1300 WebP. Ролик не на языке страницы — субтитры

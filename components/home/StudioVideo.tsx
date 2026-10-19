@@ -34,14 +34,20 @@ export function StudioVideo({ src, poster, captions, play }: Props) {
   }, [state]);
 
   function start() {
+    const element = video.current;
+    if (!element) return;
     keepFocus.current = document.activeElement === button.current;
     setState("loading");
+    // После сбоя загрузки play() отклоняется сразу, не качая файл заново: сначала load()
+    if (element.error) element.load();
     // Запуск по нажатию — звук разрешён. Файл не играется — снова обложка
-    video.current?.play().catch(() => setState("poster"));
+    element.play().catch(() => setState("poster"));
   }
 
   return (
-    <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-surface lg:rounded-card-lg">
+    // Без overflow-hidden: контур фокуса кнопки на весь кадр лежит снаружи и иначе обрезался
+    // бы. Углы держат сами ролик и обложка
+    <div className="relative aspect-[4/5] rounded-card bg-surface lg:rounded-card-lg">
       <video
         ref={video}
         src={src}
@@ -50,7 +56,7 @@ export function StudioVideo({ src, poster, captions, play }: Props) {
         controls={state === "playing"}
         aria-label={poster.alt}
         onPlaying={() => setState("playing")}
-        className="absolute inset-0 size-full object-cover"
+        className="absolute inset-0 size-full rounded-[inherit] object-cover"
       >
         {captions && (
           <track kind="subtitles" src={captions.src} srcLang={captions.lang} label={captions.label} default />
@@ -66,7 +72,7 @@ export function StudioVideo({ src, poster, captions, play }: Props) {
             alt=""
             sizes={frameSizes}
             loading="lazy"
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full rounded-[inherit] object-cover"
           />
           {/* Нажимается весь кадр, как рилс; круг стеклом — знак, что это ролик */}
           <button
@@ -77,7 +83,7 @@ export function StudioVideo({ src, poster, captions, play }: Props) {
             aria-busy={state === "loading"}
             className="group absolute inset-0 grid place-items-center rounded-[inherit]"
           >
-            <span className="glass-float flex size-16 items-center justify-center rounded-full text-fg transition-colors group-hover:text-accent group-aria-busy:animate-pulse">
+            <span className="glass-float flex size-16 items-center justify-center rounded-full text-fg transition-colors group-hover:text-accent group-aria-busy:animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]">
               <PlayIcon size={28} />
             </span>
           </button>

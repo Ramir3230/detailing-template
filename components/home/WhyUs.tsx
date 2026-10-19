@@ -65,7 +65,7 @@ export function WhyUs({ lang, dict }: { lang: Lang; dict: Dictionary }) {
               href={reviewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-full border border-line-strong px-5 text-15 font-medium transition-colors hover:border-accent-border"
+              className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-full border border-line-strong px-4 text-15 font-medium transition-colors hover:border-accent-border"
             >
               {words.firstReview.action}
               <span className="sr-only"> ({dict.newTab})</span>

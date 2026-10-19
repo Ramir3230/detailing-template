@@ -420,29 +420,33 @@ function expectFrame(photo: Photo) {
  * Safari — тот кладёт их по кадру ролика, а не по рамке.
  */
 function expectPlayableMp4(file: Buffer) {
-  const boxes: string[] = [];
+  const boxes: { type: string; start: number; length: number }[] = [];
   for (let at = 0; at + 8 <= file.length; ) {
     const size = file.readUInt32BE(at);
-    boxes.push(file.toString("ascii", at + 4, at + 8));
     // 1 — размер в 64 битах сразу за типом, 0 — коробка до конца файла
     const length = size === 1 ? Number(file.readBigUInt64BE(at + 8)) : size === 0 ? file.length - at : size;
+    boxes.push({ type: file.toString("ascii", at + 4, at + 8), start: at, length });
     if (length < 8) break;
     at += length;
   }
-  expect(boxes[0], "не MP4: первая коробка не ftyp").toBe("ftyp");
-  expect(boxes, "нет индекса moov").toContain("moov");
-  expect(boxes, "нет данных mdat").toContain("mdat");
-  expect(boxes.indexOf("moov"), "индекс moov после данных — ffmpeg -movflags +faststart").toBeLessThan(
-    boxes.indexOf("mdat"),
+  const types = boxes.map(({ type }) => type);
+  expect(types[0], "не MP4: первая коробка не ftyp").toBe("ftyp");
+  expect(types, "нет индекса moov").toContain("moov");
+  expect(types, "нет данных mdat").toContain("mdat");
+  expect(types.indexOf("moov"), "индекс moov после данных — ffmpeg -movflags +faststart").toBeLessThan(
+    types.indexOf("mdat"),
   );
-  expect(file.includes("avc1"), "видео не H.264").toBe(true);
-  if (file.includes("soun")) expect(file.includes("mp4a"), "звук не AAC").toBe(true);
+  // Кодеки — в самом индексе: в ftyp «avc1» бывает просто совместимым брендом
+  const moov = boxes[types.indexOf("moov")];
+  const index = file.subarray(moov.start, moov.start + moov.length);
+  expect(index.includes("avc1"), "видео не H.264").toBe(true);
+  if (index.includes("soun")) expect(index.includes("mp4a"), "звук не AAC").toBe(true);
   // Размер кадра — из tkhd дорожки видео: ширина и высота 16.16 в конце коробки, у звука нули
   const frames: { width: number; height: number }[] = [];
-  for (let at = file.indexOf("tkhd"); at > 0; at = file.indexOf("tkhd", at + 4)) {
-    const end = at + 4 + (file[at + 4] === 1 ? 88 : 76);
-    if (end + 8 > file.length) continue;
-    frames.push({ width: file.readUInt32BE(end) / 65536, height: file.readUInt32BE(end + 4) / 65536 });
+  for (let at = index.indexOf("tkhd"); at >= 0; at = index.indexOf("tkhd", at + 4)) {
+    const end = at + 4 + (index[at + 4] === 1 ? 88 : 76);
+    if (end + 8 > index.length) continue;
+    frames.push({ width: index.readUInt32BE(end) / 65536, height: index.readUInt32BE(end + 4) / 65536 });
   }
   const frame = frames.find(({ width }) => width > 0);
   expect(frame, "нет дорожки видео").toBeDefined();
