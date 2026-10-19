@@ -9,6 +9,11 @@ type Props = {
   /** Маршрут в Google Maps: есть — карта нажимается, как «Trasa». */
   routeUrl?: string;
   dict: Dictionary;
+  /**
+   * Карта на месте фото входа в контактах главной (DESIGN.md, «Контакты»): 4:3 и узкий
+   * файл на всех ширинах — широкий в колонке 520 вышел бы полоской.
+   */
+  frame?: boolean;
   className: string;
 };
 
@@ -25,12 +30,13 @@ const cssSize = ({ width, height }: MapFile) => `${width / 2}px ${height / 2}px`
 /*
  * Карта страницы Kontakt (DESIGN.md, «Страница Kontakt»): улицы цветом темы по маске из
  * файла, булавка акцентом в середине — там, где центр карты. Телефон и планшет — 4:3,
- * десктоп — 8:3 на ширину контейнера.
+ * десктоп — 8:3 на ширину контейнера. В кадре контактов главной — 4:3 везде.
  */
-export function ContactMap({ map, label, routeUrl, dict, className }: Props) {
+export function ContactMap({ map, label, routeUrl, dict, frame = false, className }: Props) {
+  const wide = frame ? map.narrow : map.wide;
   const files = {
-    "--map-wide": `url(${map.wide.src})`,
-    "--map-wide-size": cssSize(map.wide),
+    "--map-wide": `url(${wide.src})`,
+    "--map-wide-size": cssSize(wide),
     "--map-narrow": `url(${map.narrow.src})`,
     "--map-narrow-size": cssSize(map.narrow),
   } as CSSProperties;
@@ -40,7 +46,7 @@ export function ContactMap({ map, label, routeUrl, dict, className }: Props) {
       role="img"
       aria-label={label}
       style={files}
-      className="relative aspect-[4/3] overflow-hidden rounded-card border border-line bg-surface transition-colors group-hover:border-accent-border lg:aspect-[8/3] lg:rounded-card-lg"
+      className={`relative aspect-[4/3] overflow-hidden rounded-card border border-line bg-surface transition-colors group-hover:border-accent-border lg:rounded-card-lg ${frame ? "[content-visibility:auto]" : "lg:aspect-[8/3]"}`}
     >
       <div aria-hidden="true" className="map-ink absolute inset-0" />
       <div aria-hidden="true" className="map-pin-glow absolute top-1/2 left-1/2 size-40 -translate-1/2" />

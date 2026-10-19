@@ -278,6 +278,23 @@ describe.each(langs)("built home page /%s", (lang) => {
     for (const tag of tracks) expect(tag).toMatch(/\sdefault[\s=/>]/);
   });
 
+  it("puts the map in place of the entrance photo when there is none, loaded near the screen", () => {
+    const { photo, map } = studio.address;
+    const contacts = markup(lang).match(new RegExp(`<section\\b[^>]*id="${sectionIds.contact}"[\\s\\S]*?</section>`))?.[0] ?? "";
+    expect(contacts, "нет секции контактов").not.toBe("");
+    const maps = tags(contacts, /<div\b[^>]*role="img"[^>]*>/g);
+    expect(maps, "карта в контактах главной").toHaveLength(!photo && map ? 1 : 0);
+    if (photo || !map) return;
+    // Узкий файл на всех ширинах: широкий в колонке 520 вышел бы полоской
+    expect(maps[0]).toContain(`url(${map.narrow.src})`);
+    expect(maps[0]).not.toContain(`url(${map.wide.src})`);
+    // Маску CSS не отложить атрибутом loading — откладывает content-visibility
+    expect(maps[0]).toContain("[content-visibility:auto]");
+    expect(contacts).toContain('href="https://www.openstreetmap.org/copyright"');
+    const preloads = tags(page(lang).head, /<link\b[^>]*>/g).filter((tag) => tag.includes("/mapa/"));
+    expect(preloads, "карта в preload").toEqual([]);
+  });
+
   it("without reviews shows neither the rating nor the reviews, and invites the first one", () => {
     const html = markup(lang);
     const reviewed = studio.reviews.length > 0;
@@ -499,6 +516,8 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
       expect(visible).not.toContain("openstreetmap.org");
       return;
     }
+    // Карта одна: блок контактов под ней не ставит вторую на место фото входа
+    expect(tags(visible, /<div\b[^>]*role="img"[^>]*>/g), "карт на странице Kontakt").toHaveLength(1);
     // Файлы — переменными для маски CSS: в разметке, а не скриптом после загрузки
     for (const file of [map.wide, map.narrow]) expect(visible).toContain(`url(${file.src})`);
     expect(visible).toContain('href="https://www.openstreetmap.org/copyright"');

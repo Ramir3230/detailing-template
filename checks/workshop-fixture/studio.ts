@@ -7,7 +7,8 @@ import type { Studio } from "@/content/types";
  * переключатель над группой), знак из неоновых трубок (зажигание hero рисует его кодом),
  * только польский. Только открылся: отзывов и рейтинга нет, вместо них «Почему мы» с
  * роликом владельца на русском и польскими субтитрами. Как и студия в форме демо — без
- * страниц групп, O nas, фото входа и карты. Выдуманная: здесь проверяется форма данных, а
+ * страниц групп, O nas и фото входа, но с картой: она встаёт на место фото в контактах
+ * главной. Выдуманная: здесь проверяется форма данных, а
  * не слова; ролик и обложка — цветной квадрат на тёмном фоне из ffmpeg (lavfi color и
  * drawbox, H.264 с -movflags +faststart), несколько КБ.
  */
@@ -33,7 +34,16 @@ export const studio: Studio = {
   },
   phone,
   messengers: [{ kind: "whatsapp", phone }],
-  address: { street: "ul. Warsztatowa 7", area: "Warszawa-Ursus" },
+  address: {
+    street: "ul. Warsztatowa 7",
+    area: "Warszawa-Ursus",
+    /* Без фото входа: карта встаёт на его место в контактах главной. Файлы — карта
+       Afterdark под своим именем, маршрута нет — карта не нажимается */
+    map: {
+      wide: { src: "/mapa/iskra.webp", width: 2272, height: 960 },
+      narrow: { src: "/mapa/iskra-narrow.webp", width: 1280, height: 960 },
+    },
+  },
   hours: [
     { open: "08:00", close: "18:00" },
     { open: "08:00", close: "18:00" },
