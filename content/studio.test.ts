@@ -99,7 +99,16 @@ describe("active studio data", () => {
     expect(studio.priceNote.pl.trim()).not.toBe("");
   });
 
+  it("has a rating exactly when it has reviews: a studio without them shows neither", () => {
+    // DESIGN.md, «Студия без отзывов»: рейтинг без отзывов звал бы к разделу, которого нет,
+    // а отзывы без рейтинга остались бы без строки со ссылкой на Google
+    expect(Boolean(studio.rating), "рейтинг есть тогда и только тогда, когда есть отзывы").toBe(
+      studio.reviews.length > 0,
+    );
+  });
+
   it("has a real rating: Google stars from above 0 to 5 and a whole review count", () => {
+    if (!studio.rating) return;
     // Hero и отзывы показывают его числом — «0,0» у заготовки демо вышло бы на страницу
     const { value, count } = studio.rating;
     expect(value > 0 && value <= 5, `рейтинг ${value}`).toBe(true);
@@ -107,7 +116,7 @@ describe("active studio data", () => {
   });
 
   it("has https links for the route and the Google reviews", () => {
-    for (const url of [studio.address.routeUrl, studio.rating.url]) {
+    for (const url of [studio.address.routeUrl, studio.rating?.url, studio.whyUs?.reviewUrl]) {
       if (url) expect(new URL(url).protocol).toBe("https:");
     }
   });
@@ -121,7 +130,7 @@ describe("active studio data", () => {
 
   it("leaves no demo leftovers once the site is open for search", () => {
     if (!studio.indexed) return;
-    expect(studio.rating.url).toBeTruthy();
+    if (studio.rating) expect(studio.rating.url).toBeTruthy();
     // Домен клиента: без него canonical может уйти на голый домен с перенаправлением
     expect(studio.url).toBeTruthy();
     expect(studio.reviews.every((review) => review.source === "google")).toBe(true);
@@ -334,6 +343,45 @@ describe("active studio data", () => {
     for (const { paragraphs } of about.chapters) unique(paragraphs.map(({ pl }) => pl));
   });
 
+  it("has why us filled in, if there is one: three or four short points and its frame", () => {
+    const { whyUs } = studio;
+    if (!whyUs) return;
+    // DESIGN.md, «Почему мы»: пункт до 90 знаков — на 375 px не больше трёх строк
+    expect(whyUs.points.length).toBeGreaterThanOrEqual(3);
+    expect(whyUs.points.length).toBeLessThanOrEqual(4);
+    for (const point of whyUs.points) {
+      for (const text of [point.pl, point.ru ?? ""]) expect(text.length, text).toBeLessThanOrEqual(90);
+    }
+    // По польскому тексту React различает пункты
+    expect(new Set(whyUs.points.map(({ pl }) => pl)).size).toBe(whyUs.points.length);
+    if (whyUs.media.kind === "photo") {
+      expectFrame(whyUs.media.photo);
+      return;
+    }
+    const { video } = whyUs.media;
+    expectFrame(video.poster);
+    expect(video.src).toMatch(/^\/[\w\-/]+\.mp4$/);
+    const file = join(process.cwd(), "public", video.src);
+    expect(existsSync(file), `нет файла ролика public${video.src}`).toBe(true);
+    expectPlayableMp4(readFileSync(file));
+    // Дорожка на язык одна: страница берёт первую
+    const langs = video.captions.map(({ lang }) => lang);
+    expect(new Set(langs).size, "две дорожки субтитров на одном языке").toBe(langs.length);
+    for (const lang of publishedLangs) {
+      const captions = video.captions.find((item) => item.lang === lang)?.src;
+      // Ролик на другом языке без субтитров на странице не понять
+      if (lang !== video.lang) expect(captions, `${lang}: нет субтитров к ролику`).toBeDefined();
+      if (!captions) continue;
+      expect(captions).toMatch(/^\/[\w\-/]+\.vtt$/);
+      const path = join(process.cwd(), "public", captions);
+      expect(existsSync(path), `нет файла субтитров public${captions}`).toBe(true);
+      const vtt = readFileSync(path, "utf-8");
+      // Без «WEBVTT» в начале браузер дорожку молча не покажет
+      expect(vtt.startsWith("WEBVTT"), `${captions}: не WebVTT`).toBe(true);
+      expect(vtt, `${captions}: ни одной реплики`).toMatch(/\d\d:\d\d\.\d{3} --> /);
+    }
+  });
+
   it("has the map files in the size the data claims, enough for the map block on 2x", () => {
     const { map } = studio.address;
     if (!map) return;
@@ -363,6 +411,48 @@ function expectFrame(photo: Photo) {
   expect(photo.width * 5).toBe(photo.height * 4);
   expect(photo.width).toBeGreaterThanOrEqual(1040);
   expect(photo.alt.pl.trim()).not.toBe("");
+}
+
+/*
+ * MP4, который браузер начнёт играть, не скачав целиком (DESIGN.md, «Фотографии»): индекс
+ * moov раньше данных mdat, видео H.264 (avc1) — его играют все браузеры, HEVC — нет, звук
+ * AAC. Кадр 4:5 и не шире 720: рамка его не режет, и субтитры встают одинаково в Chromium и
+ * Safari — тот кладёт их по кадру ролика, а не по рамке.
+ */
+function expectPlayableMp4(file: Buffer) {
+  const boxes: { type: string; start: number; length: number }[] = [];
+  for (let at = 0; at + 8 <= file.length; ) {
+    const size = file.readUInt32BE(at);
+    // 1 — размер в 64 битах сразу за типом, 0 — коробка до конца файла
+    const length = size === 1 ? Number(file.readBigUInt64BE(at + 8)) : size === 0 ? file.length - at : size;
+    boxes.push({ type: file.toString("ascii", at + 4, at + 8), start: at, length });
+    if (length < 8) break;
+    at += length;
+  }
+  const types = boxes.map(({ type }) => type);
+  expect(types[0], "не MP4: первая коробка не ftyp").toBe("ftyp");
+  expect(types, "нет индекса moov").toContain("moov");
+  expect(types, "нет данных mdat").toContain("mdat");
+  expect(types.indexOf("moov"), "индекс moov после данных — ffmpeg -movflags +faststart").toBeLessThan(
+    types.indexOf("mdat"),
+  );
+  // Кодеки — в самом индексе: в ftyp «avc1» бывает просто совместимым брендом
+  const moov = boxes[types.indexOf("moov")];
+  const index = file.subarray(moov.start, moov.start + moov.length);
+  expect(index.includes("avc1"), "видео не H.264").toBe(true);
+  if (index.includes("soun")) expect(index.includes("mp4a"), "звук не AAC").toBe(true);
+  // Размер кадра — из tkhd дорожки видео: ширина и высота 16.16 в конце коробки, у звука нули
+  const frames: { width: number; height: number }[] = [];
+  for (let at = index.indexOf("tkhd"); at >= 0; at = index.indexOf("tkhd", at + 4)) {
+    const end = at + 4 + (index[at + 4] === 1 ? 88 : 76);
+    if (end + 8 > index.length) continue;
+    frames.push({ width: index.readUInt32BE(end) / 65536, height: index.readUInt32BE(end + 4) / 65536 });
+  }
+  const frame = frames.find(({ width }) => width > 0);
+  expect(frame, "нет дорожки видео").toBeDefined();
+  if (!frame) return;
+  expect(frame.width * 5, `кадр ролика ${frame.width}×${frame.height} не 4:5`).toBe(frame.height * 4);
+  expect(frame.width, "ролик шире 720").toBeLessThanOrEqual(720);
 }
 
 /* Тексты студии с путём до каждого: «services[1].faq[0].answer». */

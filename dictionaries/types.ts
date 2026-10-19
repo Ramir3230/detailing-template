@@ -95,6 +95,15 @@ export type Dictionary = {
     /** Подпись под парами, где хоть один кадр сделан ИИ. */
     examples: string;
   };
+  whyUs: {
+    title: string;
+    /** Кнопка на обложке ролика — для диктора: на ней только ▶. */
+    play: string;
+    /** Дорожка субтитров на языке страницы — в меню плеера. */
+    captions: string;
+    /** Карточка под пунктами, пока у студии нет отзывов. */
+    firstReview: { title: string; text: string; action: string };
+  };
   contact: { title: string; route: string };
   contactPage: {
     /** Подставляется {studio}: заголовок вкладки страницы Kontakt. */

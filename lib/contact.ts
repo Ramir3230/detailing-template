@@ -1,5 +1,10 @@
 import type { Messenger } from "@/content/types";
 
+/** Адрес одной строкой — подпись карты и описание страницы Kontakt: «ul. …, Warszawa-…». */
+export function addressLine({ street, area }: { street: string; area: string }): string {
+  return `${street}, ${area}`;
+}
+
 export function telHref(phone: string): string {
   return `tel:${phone}`;
 }

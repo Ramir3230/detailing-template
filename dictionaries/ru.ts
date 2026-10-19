@@ -75,6 +75,16 @@ export const ru: Dictionary = {
     compare: "{service}: сравнение до и после",
     examples: "Фото для примера",
   },
+  whyUs: {
+    title: "Почему мы",
+    play: "Смотреть видео",
+    captions: "Русские субтитры",
+    firstReview: {
+      title: "Первые отзывы впереди",
+      text: "После визита напишите, как всё прошло, — ваш отзыв в Google поможет другим водителям.",
+      action: "Написать отзыв",
+    },
+  },
   contact: { title: "Контакты", route: "Маршрут" },
   contactPage: {
     metaTitle: "Контакты — {studio}",

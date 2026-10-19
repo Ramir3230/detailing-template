@@ -15,9 +15,10 @@ const ratingLinkClass =
   "-my-3 inline-flex items-center gap-1 py-3 text-14 text-muted underline decoration-accent underline-offset-4 transition-colors hover:text-fg";
 
 export function Reviews({ lang, dict }: { lang: Lang; dict: Dictionary }) {
-  if (!studio.reviews.length) return null;
-  const words = dict.reviews;
+  // Без отзывов нет и рейтинга: раздела нет (DESIGN.md, «Студия без отзывов»)
   const { rating } = studio;
+  if (!studio.reviews.length || !rating) return null;
+  const words = dict.reviews;
   const ratingText = formatReviewsInGoogle(rating.count, words, lang);
 
   const stories = studio.reviews.map((review) => {

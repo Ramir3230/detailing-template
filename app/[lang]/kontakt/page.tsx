@@ -5,13 +5,13 @@ import { ContactMap } from "@/components/contact/ContactMap";
 import { FloatingCall } from "@/components/FloatingCall";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
-import { telHref } from "@/lib/contact";
+import { addressLine, telHref } from "@/lib/contact";
 import { formatPhone } from "@/lib/format";
 import { fill, isLang } from "@/lib/i18n";
 import { contactPagePath, sectionIds } from "@/lib/nav";
 import { alternates } from "@/lib/seo";
 
-const address = `${studio.address.street}, ${studio.address.area}`;
+const address = addressLine(studio.address);
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/kontakt">): Promise<Metadata> {
   const { lang } = await params;

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CallButton } from "@/components/CallButton";
+import { ContactMap } from "@/components/contact/ContactMap";
 import { HoursList } from "@/components/contact/HoursList";
 import { FramePhoto } from "@/components/FramePhoto";
 import { ArrowIcon } from "@/components/icons";
@@ -7,9 +8,10 @@ import { Messengers } from "@/components/Messengers";
 import { OpenStatus } from "@/components/OpenStatus";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
+import { addressLine } from "@/lib/contact";
 import { formatDayRange, formatTimeRange } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
-import type { Lang } from "@/lib/i18n";
+import { fill, type Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 
 type Props = {
@@ -22,16 +24,21 @@ type Props = {
    * первом экране телефона — самый крупный кадр, ждать прокрутки ему незачем.
    */
   photoLoading?: "lazy" | "eager";
+  /**
+   * Без фото входа — карта на его месте (DESIGN.md, «Контакты»): на главной. На странице
+   * Kontakt карта уже стоит над блоком, второй там не нужно.
+   */
+  mapInPlace?: boolean;
 };
 
 /*
  * Контакты — одни на главной и на странице Kontakt. Телефон — одна колонка, как на
  * холсте: фото входа под заголовком. Десктоп с фото — фото до 520 слева, всё остальное
  * справа, до 536, по центру его высоты: 520, 80 и 536 — ровно контейнер, правый край на
- * линии прайса и до/после, как у ComparePairs. Без фото две колонки: слева заголовок и адрес, справа часы,
- * звонок и мессенджеры.
+ * линии прайса и до/после, как у ComparePairs. Карта на месте фото стоит так же. Без фото
+ * и карты две колонки: слева заголовок и адрес, справа часы, звонок и мессенджеры.
  */
-export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: Props) {
+export function ContactDetails({ lang, dict, heading, photoLoading = "lazy", mapInPlace = false }: Props) {
   const { address } = studio;
   const rows = groupHours(studio.hours).map(({ from, to, hours }) => ({
     from,
@@ -75,17 +82,24 @@ export function ContactDetails({ lang, dict, heading, photoLoading = "lazy" }: P
 
   // Без заголовка блок начинается сразу с фото или адреса: отступ сверху ему не нужен
   const after = heading ? "mt-6" : "";
+  const frame = `${after} lg:col-start-1 lg:row-span-full lg:mt-0 lg:self-center`;
+  const media = address.photo ? (
+    <FramePhoto photo={address.photo} lang={lang} caption={dict.photoExample} loading={photoLoading} className={frame} />
+  ) : mapInPlace && address.map ? (
+    <ContactMap
+      map={address.map}
+      label={fill(dict.contactPage.map, { address: addressLine(address) })}
+      routeUrl={address.routeUrl}
+      dict={dict}
+      frame
+      className={frame}
+    />
+  ) : null;
 
-  return address.photo ? (
+  return media ? (
     <div className="wrap lg:grid lg:grid-cols-[minmax(0,520px)_minmax(0,536px)] lg:grid-rows-[1fr_auto_auto_auto_1fr] lg:gap-x-20">
       {heading && <div className="lg:col-start-2 lg:row-start-2">{heading}</div>}
-      <FramePhoto
-        photo={address.photo}
-        lang={lang}
-        caption={dict.photoExample}
-        loading={photoLoading}
-        className={`${after} lg:col-start-1 lg:row-span-full lg:mt-0 lg:self-center`}
-      />
+      {media}
       <div className={`mt-4 lg:col-start-2 lg:row-start-3 ${heading ? "lg:mt-7" : "lg:mt-0"}`}>
         {place}
       </div>

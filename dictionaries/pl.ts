@@ -75,6 +75,16 @@ export const pl: Dictionary = {
     compare: "{service}: porównanie przed i po",
     examples: "Zdjęcia przykładowe",
   },
+  whyUs: {
+    title: "Dlaczego my",
+    play: "Odtwórz film",
+    captions: "Polskie napisy",
+    firstReview: {
+      title: "Pierwsze opinie przed nami",
+      text: "Po wizycie napisz, jak było — Twoja opinia w Google pomoże innym kierowcom.",
+      action: "Napisz opinię",
+    },
+  },
   contact: { title: "Kontakt", route: "Trasa" },
   contactPage: {
     metaTitle: "Kontakt — {studio}",
