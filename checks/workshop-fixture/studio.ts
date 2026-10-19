@@ -37,8 +37,10 @@ export const studio: Studio = {
   address: {
     street: "ul. Warsztatowa 7",
     area: "Warszawa-Ursus",
-    /* Без фото входа: карта встаёт на его место в контактах главной. Файлы — карта
-       Afterdark под своим именем, маршрута нет — карта не нажимается */
+    /* Без фото входа: карта встаёт на его место в контактах главной и ведёт на маршрут
+       (карту без маршрута на странице Kontakt держит Afterdark). Файлы — карта Afterdark
+       под своим именем */
+    routeUrl: "https://www.google.com/maps/dir/?api=1&destination=Iskra+Auto+Serwis%2C+Warsztatowa+7%2C+Warszawa",
     map: {
       wide: { src: "/mapa/iskra.webp", width: 2272, height: 960 },
       narrow: { src: "/mapa/iskra-narrow.webp", width: 1280, height: 960 },

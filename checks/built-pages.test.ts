@@ -288,9 +288,22 @@ describe.each(langs)("built home page /%s", (lang) => {
     // Узкий файл на всех ширинах: широкий в колонке 520 вышел бы полоской
     expect(maps[0]).toContain(`url(${map.narrow.src})`);
     expect(maps[0]).not.toContain(`url(${map.wide.src})`);
-    // Маску CSS не отложить атрибутом loading — откладывает content-visibility
+    // Маску CSS не отложить атрибутом loading — откладывает content-visibility (в Chromium;
+    // Safari и Firefox берут файл сразу). Класс — и правило в собранном CSS: класс без
+    // правила уже бывал (.claude/gotchas.md)
     expect(maps[0]).toContain("[content-visibility:auto]");
+    const dir = join(process.cwd(), ".next", "static", "chunks");
+    const css = readdirSync(dir)
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => readFileSync(join(dir, file), "utf-8"))
+      .join("");
+    expect(css).toContain(".\\[content-visibility\\:auto\\]{content-visibility:auto}");
     expect(contacts).toContain('href="https://www.openstreetmap.org/copyright"');
+    // Карта нажимается ровно тогда, когда есть маршрут, — и ведёт на него
+    const link = contacts.match(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*?role="img"/)?.[0];
+    const { routeUrl } = studio.address;
+    if (routeUrl) expect(link, "карта не ведёт на маршрут").toContain(`href="${escaped(routeUrl)}"`);
+    else expect(link, "карта — ссылка без маршрута в данных").toBeUndefined();
     const preloads = tags(page(lang).head, /<link\b[^>]*>/g).filter((tag) => tag.includes("/mapa/"));
     expect(preloads, "карта в preload").toEqual([]);
   });

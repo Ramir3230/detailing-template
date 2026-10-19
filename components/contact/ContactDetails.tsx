@@ -8,6 +8,7 @@ import { Messengers } from "@/components/Messengers";
 import { OpenStatus } from "@/components/OpenStatus";
 import { studio } from "@/content/studio";
 import type { Dictionary } from "@/dictionaries/types";
+import { addressLine } from "@/lib/contact";
 import { formatDayRange, formatTimeRange } from "@/lib/format";
 import { groupHours } from "@/lib/hours";
 import { fill, type Lang } from "@/lib/i18n";
@@ -87,7 +88,7 @@ export function ContactDetails({ lang, dict, heading, photoLoading = "lazy", map
   ) : mapInPlace && address.map ? (
     <ContactMap
       map={address.map}
-      label={fill(dict.contactPage.map, { address: `${address.street}, ${address.area}` })}
+      label={fill(dict.contactPage.map, { address: addressLine(address) })}
       routeUrl={address.routeUrl}
       dict={dict}
       frame
