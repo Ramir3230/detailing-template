@@ -4,7 +4,7 @@ import type { Dictionary } from "@/dictionaries/types";
 import type { Lang } from "@/lib/i18n";
 import { sectionIds } from "@/lib/nav";
 
-/* Контакты главной: заголовок со статусом внутри блока, как на холсте. */
+/* Контакты главной: заголовок со статусом внутри блока, как на холсте; без фото входа — карта на его месте. */
 export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
   return (
     <section
@@ -14,6 +14,7 @@ export function Contact({ lang, dict }: { lang: Lang; dict: Dictionary }) {
       <ContactDetails
         lang={lang}
         dict={dict}
+        mapInPlace
         heading={
           <>
             <SectionTitle>{dict.contact.title}</SectionTitle>

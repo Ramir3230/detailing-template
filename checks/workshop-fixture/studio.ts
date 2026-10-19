@@ -5,8 +5,12 @@ import type { Studio } from "@/content/types";
  * Автосервис — для третьего прогона `npm run check` в CI: цены «od» и фиксированные без
  * классов (переключателя классов нет), шиномонтаж с ценой по размеру диска (свой
  * переключатель над группой), знак из неоновых трубок (зажигание hero рисует его кодом),
- * только польский. Как и студия в форме демо — без страниц групп, O nas, фото входа и
- * карты. Выдуманная: здесь проверяется форма данных, а не слова.
+ * только польский. Только открылся: отзывов и рейтинга нет, вместо них «Почему мы» с
+ * роликом владельца на русском и польскими субтитрами. Как и студия в форме демо — без
+ * страниц групп, O nas и фото входа, но с картой: она встаёт на место фото в контактах
+ * главной. Выдуманная: здесь проверяется форма данных, а
+ * не слова; ролик и обложка — цветной квадрат на тёмном фоне из ffmpeg (lavfi color и
+ * drawbox, H.264 с -movflags +faststart), несколько КБ.
  */
 const phone = "+48500300400";
 
@@ -30,7 +34,18 @@ export const studio: Studio = {
   },
   phone,
   messengers: [{ kind: "whatsapp", phone }],
-  address: { street: "ul. Warsztatowa 7", area: "Warszawa-Ursus" },
+  address: {
+    street: "ul. Warsztatowa 7",
+    area: "Warszawa-Ursus",
+    /* Без фото входа: карта встаёт на его место в контактах главной и ведёт на маршрут
+       (карту без маршрута на странице Kontakt держит Afterdark). Файлы — карта Afterdark
+       под своим именем */
+    routeUrl: "https://www.google.com/maps/dir/?api=1&destination=Iskra+Auto+Serwis%2C+Warsztatowa+7%2C+Warszawa",
+    map: {
+      wide: { src: "/mapa/iskra.webp", width: 2272, height: 960 },
+      narrow: { src: "/mapa/iskra-narrow.webp", width: 1280, height: 960 },
+    },
+  },
   hours: [
     { open: "08:00", close: "18:00" },
     { open: "08:00", close: "18:00" },
@@ -79,17 +94,28 @@ export const studio: Studio = {
     },
   ],
   priceNote: { pl: "Ceny „od” są orientacyjne — ostateczną podamy po obejrzeniu auta." },
-  rating: { value: 4.7, count: 52 },
-  reviews: [
-    {
-      author: "Marek W.",
-      text: { pl: "Szybka diagnoza i uczciwa cena. Auto odebrane tego samego dnia." },
-      source: "example",
+  reviews: [],
+  whyUs: {
+    points: [
+      { pl: "Przy każdej wizycie sprawdzamy hamulce, zawieszenie i silnik." },
+      { pl: "Kosztorys przed naprawą, protokół po niej." },
+      { pl: "Naprawiamy auta wszystkich marek." },
+    ],
+    media: {
+      kind: "video",
+      video: {
+        src: "/wideo/iskra.mp4",
+        poster: {
+          src: "/wideo/iskra.webp",
+          width: 1040,
+          height: 1300,
+          alt: { pl: "Właściciel warsztatu Iskra przed bramą" },
+          ai: false,
+        },
+        lang: "ru",
+        captions: [{ lang: "pl", src: "/wideo/iskra-pl.vtt" }],
+      },
     },
-    {
-      author: "Ola K.",
-      text: { pl: "Klimatyzacja znowu chłodzi, wszystko wytłumaczone bez ściemy." },
-      source: "example",
-    },
-  ],
+    reviewUrl: "https://www.google.com/maps/search/?api=1&query=Iskra+Auto+Serwis",
+  },
 };

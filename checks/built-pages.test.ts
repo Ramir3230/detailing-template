@@ -242,7 +242,82 @@ describe.each(langs)("built home page /%s", (lang) => {
 
   it("loads the photos below the hero lazily: they never compete with the hero car", () => {
     const services = homePairServices(studio.services);
-    expectLazyPhotos(lang, [...pairPhotos(services), ...(studio.address.photo ? [studio.address.photo.src] : [])]);
+    const media = studio.whyUs?.media;
+    // Кадр «Почему мы» — фото или обложка ролика
+    const whyUs = media ? [media.kind === "photo" ? media.photo.src : media.video.poster.src] : [];
+    expectLazyPhotos(lang, [
+      ...pairPhotos(services),
+      ...whyUs,
+      ...(studio.address.photo ? [studio.address.photo.src] : []),
+    ]);
+  });
+
+  it("shows why us exactly when the studio has it, with every point", () => {
+    const html = markup(lang);
+    const { whyUs } = studio;
+    expect(html.includes(escaped(getDictionary(lang).whyUs.title)), "блок «Почему мы»").toBe(Boolean(whyUs));
+    for (const point of whyUs?.points ?? []) expect(html).toContain(escaped(glue(t(point, lang), lang)));
+  });
+
+  it("waits for a tap to load the studio video, subtitles in the page language on", () => {
+    const html = markup(lang);
+    const media = studio.whyUs?.media;
+    const videos = tags(html, /<video\b[^>]*>/g);
+    expect(videos).toHaveLength(media?.kind === "video" ? 1 : 0);
+    if (media?.kind !== "video") return;
+    // Ни байта ролика до нажатия, звук сам не включается, iPhone не уходит на весь экран
+    expect(videos[0]).toContain('preload="none"');
+    expect(videos[0]).not.toMatch(/\sautoplay/i);
+    expect(videos[0]).toMatch(/\splaysinline/i);
+    // Файл — в src самого <video>: со сбоем загрузки play() отклоняется, обложка возвращается
+    expect(videos[0]).toContain(`src="${media.video.src}"`);
+    expect(tags(html, /<source\b[^>]*>/g), "<source> вместо src у <video>").toEqual([]);
+    const tracks = tags(html, /<track\b[^>]*>/g);
+    const captions = media.video.captions.find((item) => item.lang === lang)?.src;
+    expect(tracks.map((tag) => tag.match(/\ssrc="([^"]*)"/)?.[1])).toEqual(captions ? [captions] : []);
+    for (const tag of tracks) expect(tag).toMatch(/\sdefault[\s=/>]/);
+  });
+
+  it("puts the map in place of the entrance photo when there is none, loaded near the screen", () => {
+    const { photo, map } = studio.address;
+    const contacts = markup(lang).match(new RegExp(`<section\\b[^>]*id="${sectionIds.contact}"[\\s\\S]*?</section>`))?.[0] ?? "";
+    expect(contacts, "нет секции контактов").not.toBe("");
+    const maps = tags(contacts, /<div\b[^>]*role="img"[^>]*>/g);
+    expect(maps, "карта в контактах главной").toHaveLength(!photo && map ? 1 : 0);
+    if (photo || !map) return;
+    // Узкий файл на всех ширинах: широкий в колонке 520 вышел бы полоской
+    expect(maps[0]).toContain(`url(${map.narrow.src})`);
+    expect(maps[0]).not.toContain(`url(${map.wide.src})`);
+    // Маску CSS не отложить атрибутом loading — откладывает content-visibility (в Chromium;
+    // Safari и Firefox берут файл сразу). Класс — и правило в собранном CSS: класс без
+    // правила уже бывал (.claude/gotchas.md)
+    expect(maps[0]).toContain("[content-visibility:auto]");
+    const dir = join(process.cwd(), ".next", "static", "chunks");
+    const css = readdirSync(dir)
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => readFileSync(join(dir, file), "utf-8"))
+      .join("");
+    expect(css).toContain(".\\[content-visibility\\:auto\\]{content-visibility:auto}");
+    expect(contacts).toContain('href="https://www.openstreetmap.org/copyright"');
+    // Карта нажимается ровно тогда, когда есть маршрут, — и ведёт на него
+    const link = contacts.match(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*?role="img"/)?.[0];
+    const { routeUrl } = studio.address;
+    if (routeUrl) expect(link, "карта не ведёт на маршрут").toContain(`href="${escaped(routeUrl)}"`);
+    else expect(link, "карта — ссылка без маршрута в данных").toBeUndefined();
+    const preloads = tags(page(lang).head, /<link\b[^>]*>/g).filter((tag) => tag.includes("/mapa/"));
+    expect(preloads, "карта в preload").toEqual([]);
+  });
+
+  it("without reviews shows neither the rating nor the reviews, and invites the first one", () => {
+    const html = markup(lang);
+    const reviewed = studio.reviews.length > 0;
+    // Раздел отзывов и строка рейтинга в hero, которая к нему прокручивает
+    expect(html.includes(`id="${sectionIds.reviews}"`), "раздел отзывов").toBe(reviewed);
+    expect(html.includes(`href="#${sectionIds.reviews}"`), "строка рейтинга в hero").toBe(reviewed);
+    const url = studio.whyUs?.reviewUrl;
+    const card = html.includes(escaped(getDictionary(lang).whyUs.firstReview.title));
+    expect(card, "карточка «первые отзывы»").toBe(!reviewed && Boolean(url));
+    if (card && url) expect(html).toContain(`href="${escaped(url)}"`);
   });
 
   it("leaves the pairs beyond the first of each group to their group pages", () => {
@@ -454,6 +529,8 @@ describe.each(langs)("built contact page /%s/kontakt", (lang) => {
       expect(visible).not.toContain("openstreetmap.org");
       return;
     }
+    // Карта одна: блок контактов под ней не ставит вторую на место фото входа
+    expect(tags(visible, /<div\b[^>]*role="img"[^>]*>/g), "карт на странице Kontakt").toHaveLength(1);
     // Файлы — переменными для маски CSS: в разметке, а не скриптом после загрузки
     for (const file of [map.wide, map.narrow]) expect(visible).toContain(`url(${file.src})`);
     expect(visible).toContain('href="https://www.openstreetmap.org/copyright"');

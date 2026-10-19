@@ -7,6 +7,7 @@ import { Hero } from "@/components/home/Hero";
 import { Prices } from "@/components/home/Prices";
 import { ReloadAtHero } from "@/components/home/ReloadAtHero";
 import { Reviews } from "@/components/home/Reviews";
+import { WhyUs } from "@/components/home/WhyUs";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
 import { telHref } from "@/lib/contact";
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]">): Promis
   return { alternates: alternates(lang, "/") };
 }
 
-/* Главная: hero, прайс, до/после, отзывы, контакты и плавающий звонок между hero и контактами. */
+/* Главная: hero, прайс, до/после, «почему мы», отзывы, контакты и плавающий звонок между hero и контактами. */
 export default async function Home({ params }: PageProps<"/[lang]">) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
@@ -33,6 +34,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
       <Hero lang={lang} dict={dict} />
       <Prices lang={lang} dict={dict} />
       <BeforeAfter lang={lang} dict={dict} />
+      <WhyUs lang={lang} dict={dict} />
       <Reviews lang={lang} dict={dict} />
       <Contact lang={lang} dict={dict} />
       <FloatingCall

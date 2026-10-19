@@ -17,5 +17,5 @@ export const config = {
      расширениям. Адрес с другой точкой — старый `.html` или `.php` — получает 404 студии,
      а не стандартную Next. Новый маршрут в корне app/ или новый тип файла в public/ —
      добавить сюда, иначе адрес перепишется в /pl/… и отдаст 404. */
-  matcher: ["/((?!_next/|_vercel/|api/|icon$|apple-icon$|.*\\.(?:webp|png|jpe?g|svg|ico|txt|xml|webmanifest)$).*)"],
+  matcher: ["/((?!_next/|_vercel/|api/|icon$|apple-icon$|.*\\.(?:webp|png|jpe?g|svg|ico|txt|xml|webmanifest|mp4|vtt)$).*)"],
 };
