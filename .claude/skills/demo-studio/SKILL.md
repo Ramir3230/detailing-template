@@ -80,7 +80,7 @@ description: Персональное демо сайта для реально�
 - Рилс для `whyUs` — в `demos/<студия>/source/reels/` (в git не кладётся, ссылку и id
   записать в README там же):
 
-      python -m yt_dlp -o "%(id)s.%(ext)s" https://www.instagram.com/reel/<id>/
+      python -m yt_dlp -o "demos/<студия>/source/reels/%(id)s.%(ext)s" https://www.instagram.com/reel/<id>/
 
   Речь — faster-whisper `large-v3` на процессоре (`language="ru"` или `"pl"`,
   `word_timestamps=True`: по словам режутся реплики). Ролик — до 4:5 и 720×900, H.264 и
