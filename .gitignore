@@ -52,6 +52,8 @@ yarn-error.log*
 !/content/studios/afterdark.ts
 # знак реальной студии — тоже: у Afterdark его нет, знак тестовой студии — в checks/
 /public/logo/
+# ролик реальной студии (лицо и голос владельца) — тоже: у Afterdark ролика нет
+/public/wideo/
 
 # python: скрипт вырезки машины hero
 __pycache__/
