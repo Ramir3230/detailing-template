@@ -23,7 +23,9 @@ the project's rules, not by guesswork:
   GitHub Actions on every push ([check.yml](.github/workflows/check.yml)).
 - **Review.** A separate review agent reads every block of work before it is merged into `main`.
 
-Project documents are in Russian, my working language with the agent.
+Project documents and code comments are in Russian, my working language with the agent.
+Shared Claude Code settings (deny reading `.env*`, a hook that stops pushes to `main`) live in
+the parent folder of my projects, outside this repo.
 
 ## Run
 
