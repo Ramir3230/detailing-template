@@ -42,7 +42,8 @@ const ms = (seconds: number) => `${Math.round(seconds * 1000)}ms`;
  * Hero главной (DESIGN.md, «Hero и шапка»).
  * Телефон: на высоту экрана, без навигации — логотип, заголовок, машина, «Sprawdź cenę»;
  * свободная высота делится поровну над и под средней группой. Ниже 600 px высотой всё
- * сжимается, чтобы hero влез целиком.
+ * сжимается, чтобы hero влез целиком; с полосой образца считается высота под ней, а на
+ * самом низком экране машина ещё и встаёт по высоте (hero-car-fit-strip).
  * Десктоп: логотип несёт шапка; текст слева, машина справа на всё оставшееся место.
  * Hero с шапкой — не ниже экрана: шапка (--spacing-header) и линия под ней; с полосой
  * образца — экран под ней (DESIGN.md, «Полоса образца»). Машина не
@@ -188,7 +189,7 @@ export function Hero({ lang, dict }: Props) {
             <HeroCar
               car={studio.hero.car}
               spectrum={studio.theme.spectrum}
-              className="mx-auto w-[92%] short:w-[80%] lg:mx-0 lg:w-full lg:hero-car-fit"
+              className="mx-auto w-[92%] short:w-[80%] short:hero-car-fit-strip lg:mx-0 lg:w-full lg:hero-car-fit"
             />
           </div>
         </div>

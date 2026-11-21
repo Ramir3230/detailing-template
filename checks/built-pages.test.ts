@@ -799,7 +799,7 @@ describe.each(showcaseRoutes)("built showcase strip on /%s", (route) => {
     const html = markup(route);
     const strips = tags(html, /<section\b[^>]*aria-labelledby="showcase-label"[^>]*>[\s\S]*?<\/section>/g);
     expect(strips).toHaveLength(1);
-    const [strip] = strips;
+    const [strip = ""] = strips;
     // Видна только с data-showcase на <html>: без него display: none (правило — ниже)
     const classes = strip.match(/class="([^"]*)"/)?.[1].split(" ") ?? [];
     expect(classes).toEqual(expect.arrayContaining(["hidden", "in-data-showcase:flex", "sticky", "top-0"]));
@@ -860,5 +860,20 @@ describe("built showcase mark", () => {
     expect(css).toMatch(/html\{[^}]*--strip-h:0px[^}]*\}/);
     expect(css).toMatch(/html\[data-showcase\]\{--strip-h:var\(--spacing-strip\);scroll-padding-top:var\(--strip-h\)\}/);
     expect(css.match(/--strip-h:/g), "высоту полосы задают только эти два правила").toHaveLength(2);
+  });
+
+  it("draws the strip in its own font: the font variable resolves on the strip, where it is set", () => {
+    const dir = join(process.cwd(), ".next", "static", "chunks");
+    const css = readdirSync(dir)
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => readFileSync(join(dir, file), "utf-8"))
+      .join("");
+    // --font-inter ставит класс next/font на самой полосе. Через переменную темы на корне
+    // шрифт разрешился бы там, где его нет, и полоса молча вышла бы шрифтом студии
+    expect(css).toMatch(/\.font-strip\{font-family:var\(--font-inter\)/);
+    const fontClass = css.match(/\.([\w-]+)\{--font-inter:/)?.[1];
+    expect(fontClass, "в CSS нет класса шрифта полосы").toBeDefined();
+    const strip = markup(defaultLang).match(/<section\b[^>]*aria-labelledby="showcase-label"[^>]*>/)?.[0] ?? "";
+    expect(strip.match(/class="([^"]*)"/)?.[1].split(" ")).toContain(fontClass);
   });
 });
