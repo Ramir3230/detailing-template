@@ -31,7 +31,7 @@ export function ShowcaseStrip({ showcase, dict }: Props) {
   return (
     <section
       aria-labelledby="showcase-label"
-      className={`${inter.variable} sticky top-0 z-40 hidden h-strip items-center justify-between gap-3 border-b border-strip-line bg-strip px-4 font-strip font-semibold in-data-showcase:flex lg:px-14`}
+      className={`${inter.variable} sticky top-0 z-40 hidden h-(--strip-h) items-center justify-between gap-3 border-b border-strip-line bg-strip px-4 font-strip font-semibold in-data-showcase:flex lg:px-14`}
     >
       <p
         id="showcase-label"

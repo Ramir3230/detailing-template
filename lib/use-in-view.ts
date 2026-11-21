@@ -25,7 +25,9 @@ export function useInView(id: string, { initial, top = 0, restartOn }: Options):
     // Скрытый элемент — со страницы, которую Next держит в DOM после ухода с неё
     const element = document.getElementById(id);
     if (!element || !element.getClientRects().length) return;
-    // Отметку образца встроенный скрипт ставит до гидрации: полоса к этому моменту уже есть
+    // Отметку образца встроенный скрипт ставит до гидрации, а где он не исполнился (404,
+    // Strict Mode) — useLayoutEffect в ShowcaseMark: он идёт раньше этого эффекта. Перевод
+    // ShowcaseMark на useEffect оставил бы здесь высоту полосы 0
     const observer = new IntersectionObserver(
       ([entry]) => setSeen({ on: restartOn, visible: entry.isIntersecting }),
       { threshold: [0], rootMargin: `-${top + stripHeight()}px 0px 0px 0px` },
