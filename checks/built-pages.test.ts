@@ -115,6 +115,15 @@ function expectLazyPhotos(route: string, srcs: readonly string[]) {
   }
 }
 
+/* Весь собранный CSS страниц */
+function builtCss(): string {
+  const dir = join(process.cwd(), ".next", "static", "chunks");
+  return readdirSync(dir)
+    .filter((file) => file.endsWith(".css"))
+    .map((file) => readFileSync(join(dir, file), "utf-8"))
+    .join("");
+}
+
 /* Разметка без скриптов: в данных для гидрации те же тексты лежат пропсами */
 const markup = (route: string) => page(route).html.replace(/<script\b[\s\S]*?<\/script>/g, "");
 
@@ -293,11 +302,7 @@ describe.each(langs)("built home page /%s", (lang) => {
     // Safari и Firefox берут файл сразу). Класс — и правило в собранном CSS: класс без
     // правила уже бывал (.claude/gotchas.md)
     expect(maps[0]).toContain("[content-visibility:auto]");
-    const dir = join(process.cwd(), ".next", "static", "chunks");
-    const css = readdirSync(dir)
-      .filter((file) => file.endsWith(".css"))
-      .map((file) => readFileSync(join(dir, file), "utf-8"))
-      .join("");
+    const css = builtCss();
     expect(css).toContain(".\\[content-visibility\\:auto\\]{content-visibility:auto}");
     expect(contacts).toContain('href="https://www.openstreetmap.org/copyright"');
     // Карта нажимается ровно тогда, когда есть маршрут, — и ведёт на него
@@ -334,11 +339,7 @@ describe.each(langs)("built home page /%s", (lang) => {
   });
 
   it("ships the spectrum floor neon in the built CSS: next dev once dropped a new utility", () => {
-    const dir = join(process.cwd(), ".next", "static", "chunks");
-    const css = readdirSync(dir)
-      .filter((file) => file.endsWith(".css"))
-      .map((file) => readFileSync(join(dir, file), "utf-8"))
-      .join("");
+    const css = builtCss();
     // Разлив и горячее пятно — псевдоэлементы со спектром (app/globals.css)
     for (const part of ["before", "after"]) {
       expect(css).toMatch(new RegExp(`\\.glow-floor-spectrum:+${part}\\{[^}]*var\\(--spectrum\\)`));
@@ -756,11 +757,7 @@ function runReturnScript(script: string, mark: string) {
 
 /* Файлы шрифта полосы из собранного CSS: @font-face с font-family Inter */
 const interFiles = () => {
-  const dir = join(process.cwd(), ".next", "static", "chunks");
-  const css = readdirSync(dir)
-    .filter((file) => file.endsWith(".css"))
-    .map((file) => readFileSync(join(dir, file), "utf-8"))
-    .join("");
+  const css = builtCss();
   return tags(css, /@font-face\{[^}]*font-family:\s*"?Inter"?;[^}]*\}/g).flatMap((rule) =>
     tags(rule, /url\([^)]*\)/g).map((url) => url.replace(/^url\(["']?|["']?\)$/g, "").split("/").pop() ?? url),
   );
@@ -849,25 +846,17 @@ describe("built showcase mark", () => {
   });
 
   it("hides the strip and changes no size without the mark: both hang on the one attribute", () => {
-    const dir = join(process.cwd(), ".next", "static", "chunks");
-    const css = readdirSync(dir)
-      .filter((file) => file.endsWith(".css"))
-      .map((file) => readFileSync(join(dir, file), "utf-8"))
-      .join("");
+    const css = builtCss();
     expect(css).toMatch(/:where\(\[data-showcase\]\) \.in-data-showcase\\:flex\{display:flex\}/);
     expect(css).toMatch(/\.hidden\{display:none\}/);
     // Высота полосы — 0 на <html> без отметки, её высота — только с отметкой
     expect(css).toMatch(/html\{[^}]*--strip-h:0px[^}]*\}/);
-    expect(css).toMatch(/html\[data-showcase\]\{--strip-h:var\(--spacing-strip\);scroll-padding-top:var\(--strip-h\)\}/);
+    expect(css).toMatch(/html\[data-showcase\]\{--strip-h:52px;scroll-padding-top:var\(--strip-h\)\}/);
     expect(css.match(/--strip-h:/g), "высоту полосы задают только эти два правила").toHaveLength(2);
   });
 
   it("draws the strip in its own font: the font variable resolves on the strip, where it is set", () => {
-    const dir = join(process.cwd(), ".next", "static", "chunks");
-    const css = readdirSync(dir)
-      .filter((file) => file.endsWith(".css"))
-      .map((file) => readFileSync(join(dir, file), "utf-8"))
-      .join("");
+    const css = builtCss();
     // --font-inter ставит класс next/font на самой полосе. Через переменную темы на корне
     // шрифт разрешился бы там, где его нет, и полоса молча вышла бы шрифтом студии
     expect(css).toMatch(/\.font-strip\{font-family:var\(--font-inter\)/);
