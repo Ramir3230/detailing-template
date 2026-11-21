@@ -41,9 +41,10 @@ type PickerProps = {
 
 /*
  * Переключатель классов и описание выбранного. Телефон — переключатель липнет под шапкой
- * (64 px); вырез экрана его не касается: страница не заходит под него (без
- * viewport-fit=cover), а шапка липнет выше. Десктоп (от 1024) — в потоке своей колонки,
- * липнет уже она. Описание держит высоту двух строк — список под ним не прыгает.
+ * (64 px; с полосой образца — под шапкой под ней); вырез экрана его не касается: страница
+ * не заходит под него (без viewport-fit=cover), а шапка липнет выше. Десктоп (от 1024) — в
+ * потоке своей колонки, липнет уже она. Описание держит высоту двух строк — список под
+ * ним не прыгает.
  */
 export function ClassPicker({ label, descriptions, xlNote, className }: PickerProps) {
   const selected = useCarClass();
@@ -52,7 +53,7 @@ export function ClassPicker({ label, descriptions, xlNote, className }: PickerPr
   return (
     <>
       <div
-        className={`sticky top-16 z-10 -mx-6 bg-bg px-6 py-2 lg:static lg:mx-0 lg:bg-transparent lg:p-0 ${className}`}
+        className={`sticky top-strip-16 z-10 -mx-6 bg-bg px-6 py-2 lg:static lg:mx-0 lg:bg-transparent lg:p-0 ${className}`}
       >
         <ClassSwitch label={label} onPick={picked} />
         {selected === "XL" && xlNote}

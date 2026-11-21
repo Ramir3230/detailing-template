@@ -31,6 +31,8 @@ const phone = "+48500100200";
 
 export const studio: Studio = {
   ...renamed,
+  /* Полоса образца — только у Afterdark (DESIGN.md, «Полоса образца»): у демо её нет */
+  showcase: undefined,
   logoMark: { src: "/logo/nocturne.svg", width: 100, height: 100 },
   theme: {
     bg: "#07080a",

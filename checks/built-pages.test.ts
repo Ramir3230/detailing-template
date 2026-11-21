@@ -26,6 +26,7 @@ import {
 import { classPriced, priceList, quoteOnly } from "@/lib/price-list";
 import { defaultRim } from "@/lib/rims";
 import { isPublished, publishedLangs } from "@/lib/seo";
+import { returnHref } from "@/lib/showcase";
 
 /*
  * Проверки собранных страниц: то, чего не видят tsc, eslint и модульные тесты, а сломать
@@ -112,6 +113,15 @@ function expectLazyPhotos(route: string, srcs: readonly string[]) {
     const preloads = tags(html, /<link\b[^>]*>/g).filter((tag) => tag.includes(file));
     expect(preloads, `кадр ${decodeURIComponent(file)} в preload`).toEqual([]);
   }
+}
+
+/* Весь собранный CSS страниц */
+function builtCss(): string {
+  const dir = join(process.cwd(), ".next", "static", "chunks");
+  return readdirSync(dir)
+    .filter((file) => file.endsWith(".css"))
+    .map((file) => readFileSync(join(dir, file), "utf-8"))
+    .join("");
 }
 
 /* Разметка без скриптов: в данных для гидрации те же тексты лежат пропсами */
@@ -292,11 +302,7 @@ describe.each(langs)("built home page /%s", (lang) => {
     // Safari и Firefox берут файл сразу). Класс — и правило в собранном CSS: класс без
     // правила уже бывал (.claude/gotchas.md)
     expect(maps[0]).toContain("[content-visibility:auto]");
-    const dir = join(process.cwd(), ".next", "static", "chunks");
-    const css = readdirSync(dir)
-      .filter((file) => file.endsWith(".css"))
-      .map((file) => readFileSync(join(dir, file), "utf-8"))
-      .join("");
+    const css = builtCss();
     expect(css).toContain(".\\[content-visibility\\:auto\\]{content-visibility:auto}");
     expect(contacts).toContain('href="https://www.openstreetmap.org/copyright"');
     // Карта нажимается ровно тогда, когда есть маршрут, — и ведёт на него
@@ -333,11 +339,7 @@ describe.each(langs)("built home page /%s", (lang) => {
   });
 
   it("ships the spectrum floor neon in the built CSS: next dev once dropped a new utility", () => {
-    const dir = join(process.cwd(), ".next", "static", "chunks");
-    const css = readdirSync(dir)
-      .filter((file) => file.endsWith(".css"))
-      .map((file) => readFileSync(join(dir, file), "utf-8"))
-      .join("");
+    const css = builtCss();
     // Разлив и горячее пятно — псевдоэлементы со спектром (app/globals.css)
     for (const part of ["before", "after"]) {
       expect(css).toMatch(new RegExp(`\\.glow-floor-spectrum:+${part}\\{[^}]*var\\(--spectrum\\)`));
@@ -706,4 +708,162 @@ describe.each(langs)("built 404 page /%s/404", (lang) => {
 
   it("is the studio's 404: theme, language, text, the way to prices and the call", () =>
     expectNotFoundPage(route, lang));
+});
+
+/*
+ * Полоса образца (DESIGN.md, «Полоса образца»). У студии с полем showcase — на каждой
+ * странице, скрытая до отметки; у остальных её нет вовсе. Скрипты в страницу уходят
+ * текстом функций после сборки, поэтому проверяются исполнением того, что лежит в HTML.
+ */
+const showcaseRoutes = [
+  ...langs,
+  ...langs.map((lang) => `${lang}${contactPagePath}`),
+  ...(studio.about ? langs.map((lang) => `${lang}${aboutPagePath}`) : []),
+  ...groupPages.map(({ route }) => route),
+];
+
+/* Встроенные скрипты (без src и не данные для гидрации), в тексте которых есть это */
+const inlineScripts = (html: string, text: string) =>
+  [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
+    .filter(([, attributes, body]) => !/\ssrc=/.test(attributes) && !body.startsWith("self.__next_f"))
+    .map(([, , body]) => body)
+    .filter((body) => body.includes(text));
+
+/* Скрипт отметки из <head> на адресе: что он поставил на <html> и куда сменил адрес */
+function runMarkScript(script: string, href: string, stored?: string) {
+  const items = new Map<string, string>(stored === undefined ? [] : [["showcase", stored]]);
+  const attributes = new Map<string, string>();
+  const replaced: string[] = [];
+  const win = {
+    location: { href },
+    history: { state: null, replaceState: (_state: unknown, _title: string, url: string) => replaced.push(url) },
+    sessionStorage: { getItem: (key: string) => items.get(key) ?? null, setItem: (key: string, value: string) => items.set(key, value) },
+    document: { documentElement: { setAttribute: (name: string, value: string) => attributes.set(name, value) } },
+  };
+  new Function("window", script)(win);
+  return { mark: attributes.get("data-showcase"), replaced };
+}
+
+/* Скрипт после ссылки возврата: её адрес при отметке на <html> */
+function runReturnScript(script: string, mark: string) {
+  const link = { href: "server", setAttribute: (_name: string, value: string) => (link.href = value) };
+  const doc = {
+    documentElement: { getAttribute: (name: string) => (name === "data-showcase" ? mark : null) },
+    getElementById: (id: string) => (id === "showcase-return" ? link : null),
+  };
+  new Function("document", script)(doc);
+  return link.href;
+}
+
+/* Файлы шрифта полосы из собранного CSS: @font-face с font-family Inter */
+const interFiles = () => {
+  const css = builtCss();
+  return tags(css, /@font-face\{[^}]*font-family:\s*"?Inter"?;[^}]*\}/g).flatMap((rule) =>
+    tags(rule, /url\([^)]*\)/g).map((url) => url.replace(/^url\(["']?|["']?\)$/g, "").split("/").pop() ?? url),
+  );
+};
+
+describe.each(showcaseRoutes)("built showcase strip on /%s", (route) => {
+  const { showcase } = studio;
+  const lang = route.split("/")[0] as Lang;
+
+  it("never preloads the strip font: the file comes only with the strip on screen", () => {
+    const files = interFiles();
+    expect(files.length, "в собранном CSS нет шрифта полосы — проверка ничего не проверит").toBeGreaterThan(0);
+    const meta = readFileSync(built(route).replace(/\.html$/, ".meta"), "utf-8");
+    for (const file of files) {
+      expect(page(route).html, `${file} в HTML`).not.toContain(file);
+      expect(meta, `${file} в заголовке Link`).not.toContain(file);
+    }
+  });
+
+  if (!showcase) {
+    it("has no strip at all: neither markup nor scripts", () => {
+      const { html } = page(route);
+      for (const text of ["data-showcase", "showcase-label", "showcase-return"]) expect(html).not.toContain(text);
+    });
+    return;
+  }
+
+  it("marks the visit in the head, before the page is drawn", () => {
+    const { html, head } = page(route);
+    expect(inlineScripts(head, "data-showcase"), "скрипт отметки в <head>").toHaveLength(1);
+    // Второй — после ссылки возврата; больше скриптов полосы нет
+    expect(inlineScripts(html, "data-showcase")).toHaveLength(2);
+  });
+
+  it("serves the strip hidden until the mark, first in the body, in the page language", () => {
+    const html = markup(route);
+    const strips = tags(html, /<section\b[^>]*aria-labelledby="showcase-label"[^>]*>[\s\S]*?<\/section>/g);
+    expect(strips).toHaveLength(1);
+    const [strip = ""] = strips;
+    // Видна только с data-showcase на <html>: без него display: none (правило — ниже)
+    const classes = strip.match(/class="([^"]*)"/)?.[1].split(" ") ?? [];
+    expect(classes).toEqual(expect.arrayContaining(["hidden", "in-data-showcase:flex", "sticky", "top-0"]));
+    // Первая в порядке Tab: раньше шапки и всего остального
+    expect(html.indexOf(strip)).toBeLessThan(html.indexOf("<header"));
+    expect(tags(html.slice(html.indexOf("<body"), html.indexOf(strip)), /<(a|button|input)\b/g)).toEqual([]);
+    const dict = getDictionary(lang);
+    expect(strip).toContain(`id="showcase-label"`);
+    expect(strip).toContain(escaped(dict.showcase.label));
+    expect(strip).toContain(escaped(dict.showcase.back));
+    // Из сервера — на первый язык портфолио; на язык отметки ссылку переводит скрипт
+    expect(tags(strip, /<a\b[^>]*>/g)).toEqual([
+      expect.stringContaining(`id="showcase-return" href="${returnHref(showcase, showcase.langs[0])}"`),
+    ]);
+  });
+
+  it("points the case link to the language of the mark right after the link", () => {
+    const { html } = page(route);
+    const after = html.slice(html.indexOf('id="showcase-return"'));
+    const script = after.match(/^[^>]*>[\s\S]*?<\/a><script\b[^>]*>([\s\S]*?)<\/script>/)?.[1];
+    expect(script, "нет скрипта сразу после ссылки возврата").toBeDefined();
+    for (const mark of showcase.langs) expect(runReturnScript(script ?? "", mark)).toBe(returnHref(showcase, mark));
+    expect(runReturnScript(script ?? "", "x")).toBe("server");
+  });
+});
+
+/* Только у студии с полем образца: пустой набор vitest в CI считает ошибкой */
+const markedShowcase = studio.showcase;
+if (markedShowcase) describe("built showcase mark", () => {
+  const showcase = markedShowcase;
+  const [script = ""] = inlineScripts(page(defaultLang).head, "data-showcase");
+
+  it("shows the strip to a visitor from the portfolio and takes the mark out of the address", () => {
+    for (const from of showcase.langs) {
+      expect(runMarkScript(script, `https://demo.example/?from=${from}`)).toEqual({ mark: from, replaced: ["/"] });
+    }
+    expect(runMarkScript(script, "https://demo.example/ru/kontakt?from=uk#mapa").replaced).toEqual(["/ru/kontakt#mapa"]);
+  });
+
+  it("shows no strip on a direct visit or with a foreign mark, and leaves the address alone", () => {
+    for (const href of ["https://demo.example/", "https://demo.example/?from=x", "https://demo.example/?from="]) {
+      expect(runMarkScript(script, href), href).toEqual({ mark: undefined, replaced: [] });
+    }
+  });
+
+  it("keeps the strip for the rest of the tab", () => {
+    expect(runMarkScript(script, "https://demo.example/kontakt", "uk")).toEqual({ mark: "uk", replaced: [] });
+  });
+
+  it("hides the strip and changes no size without the mark: both hang on the one attribute", () => {
+    const css = builtCss();
+    expect(css).toMatch(/:where\(\[data-showcase\]\) \.in-data-showcase\\:flex\{display:flex\}/);
+    expect(css).toMatch(/\.hidden\{display:none\}/);
+    // Высота полосы — 0 на <html> без отметки, её высота — только с отметкой
+    expect(css).toMatch(/html\{[^}]*--strip-h:0px[^}]*\}/);
+    expect(css).toMatch(/html\[data-showcase\]\{--strip-h:52px;scroll-padding-top:var\(--strip-h\)\}/);
+    expect(css.match(/--strip-h:/g), "высоту полосы задают только эти два правила").toHaveLength(2);
+  });
+
+  it("draws the strip in its own font: the font variable resolves on the strip, where it is set", () => {
+    const css = builtCss();
+    // --font-inter ставит класс next/font на самой полосе. Через переменную темы на корне
+    // шрифт разрешился бы там, где его нет, и полоса молча вышла бы шрифтом студии
+    expect(css).toMatch(/\.font-strip\{font-family:var\(--font-inter\)/);
+    const fontClass = css.match(/\.([\w-]+)\{--font-inter:/)?.[1];
+    expect(fontClass, "в CSS нет класса шрифта полосы").toBeDefined();
+    const strip = markup(defaultLang).match(/<section\b[^>]*aria-labelledby="showcase-label"[^>]*>/)?.[0] ?? "";
+    expect(strip.match(/class="([^"]*)"/)?.[1].split(" ")).toContain(fontClass);
+  });
 });

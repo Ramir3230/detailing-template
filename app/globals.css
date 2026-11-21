@@ -1,7 +1,18 @@
 @import "tailwindcss";
 
-/* Телефон ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается */
-@custom-variant short (@media (height < 600px) and (width < 64rem));
+/* Hero телефона ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается. С
+   полосой образца hero ниже окна на её высоту, и порог окна выше на столько же: 652 —
+   600 + 52 (высота полосы, html[data-showcase] ниже), меняются вместе */
+@custom-variant short {
+  @media (height < 600px) and (width < 64rem) {
+    @slot;
+  }
+  @media (height < 652px) and (width < 64rem) {
+    :where(html[data-showcase]) & {
+      @slot;
+    }
+  }
+}
 
 /* Десктоп ниже 800 px высотой — ноутбук с панелями браузера: hero сжимается, чтобы
    строки рейтинга и статуса и неон под машиной остались на первом экране */
@@ -56,14 +67,14 @@
   --text-64: 64px;
   --text-72: 72px;
   --text-hero: clamp(32px, 3.6vw, 52px);
-  /* На низком окне десктопа заголовок получает то, что осталось от экрана после шапки с
-     линией под ней, полей 48 и колонки без заголовка 321 (вводный текст в три строки,
-     кнопки, рейтинг и статус) — 369; остаток делят четыре строки по 1.3. Мельчает,
-     только когда колонка иначе не влезает. Строки заголовка и вводного текста держит
-     content/studio.test.ts */
+  /* На низком окне десктопа заголовок получает то, что осталось от экрана после полосы
+     образца, если она есть, шапки с линией под ней, полей 48 и колонки без заголовка 321
+     (вводный текст в три строки, кнопки, рейтинг и статус) — 369; остаток делят четыре
+     строки по 1.3. Мельчает, только когда колонка иначе не влезает. Строки заголовка и
+     вводного текста держит content/studio.test.ts */
   --text-hero-low: clamp(
     32px,
-    min(3.6vw, calc((100svh - var(--spacing-header) - 1px - 369px) / 5.2)),
+    min(3.6vw, calc((100svh - var(--strip-h) - var(--spacing-header) - 1px - 369px) / 5.2)),
     52px
   );
 
@@ -98,6 +109,18 @@
   /* Линия и ручка шторки до/после — белые при любой теме: читаются на любом фото */
   --color-slider: #fff;
 
+  /* Полоса образца — цвета портфолио автора, не студии: читается пометкой поверх сайта
+     (DESIGN.md, «Цвета базы вне темы»). Копия токенов DESIGN портфолио — bg, line-strong,
+     fg, accent, plate, on-accent, shadow-plate: поменялись там — поправить здесь */
+  --color-strip: #0b0c10;
+  --color-strip-line: rgb(255 255 255 / 0.24);
+  --color-strip-text: #a3a9b1;
+  --color-strip-accent: #fff;
+  --color-strip-plate: #f4f5f7;
+  --color-strip-on-plate: #0b0c10;
+  --shadow-strip-plate: 0 0 44px rgb(255 255 255 / 0.28);
+  --tracking-strip: 0.1em;
+
   /* Десктоп: контейнер с полями 32 (wrap). Копия — 536 у колонок до/после (ComparePairs),
      контактов (ContactDetails) и глав O nas (AboutChapter): 1200 − 2×32 − 520 − 80.
      Меняются вместе */
@@ -128,6 +151,10 @@
   --color-accent-badge: color-mix(in srgb, var(--accent) 45%, transparent);
   --color-accent-mark: color-mix(in srgb, var(--accent) 50%, transparent);
   --color-accent-border: color-mix(in srgb, var(--accent) 70%, transparent);
+
+  /* Шрифт полосы образца: --font-inter ставит сама полоса (components/ShowcaseStrip.tsx),
+     а не <html>, поэтому inline — var() разрешается на ней, а не на корне, где его нет */
+  --font-strip: var(--font-inter), system-ui, sans-serif;
 }
 
 @layer base {
@@ -138,6 +165,20 @@
     /* Якоря страницы — плавно: «Sprawdź cenę», меню, подвал. Переходы между страницами
        остаются мгновенными: data-scroll-behavior на <html> в app/[lang]/layout.tsx */
     scroll-behavior: smooth;
+    /* Высота полосы образца (DESIGN.md, «Полоса образца»): 0, пока её нет, — без отметки
+       ни один размер сайта не меняется. Всё, что считало верхом край окна, считает им
+       низ полосы: липкое (top-strip-*), hero, меню, наблюдение за hero (lib/use-in-view.ts) */
+    --strip-h: 0px;
+  }
+
+  /* Отметку ставит встроенный скрипт до первой отрисовки (lib/showcase.ts). Отступ
+     прокрутки окна складывается с scroll-margin блока: якоря, «Sprawdź cenę», фокус с
+     клавиатуры и группы прайса встают под шапку под полосой, а не под самой полосой */
+  html[data-showcase] {
+    /* Высота полосы на телефоне и десктопе. Не токеном темы: тот дал бы классы top-strip,
+       mt-strip по 52 px, которые меняли бы раскладку и без отметки */
+    --strip-h: 52px;
+    scroll-padding-top: var(--strip-h);
   }
 
   body {
@@ -314,6 +355,12 @@
   right: max(32px, calc((100% - var(--container-page)) / 2 + 32px));
 }
 
+/* Верх липкого и закреплённого — от низа полосы образца, а не от края окна: top-strip-16 —
+   64 px под ней. Без полосы — как top-16 */
+@utility top-strip-* {
+  top: calc(var(--spacing) * --value(integer) + var(--strip-h));
+}
+
 /* Заголовки, логотип, классы: Science Gothic шириной 150%, прописные.
    Трекинг — отдельным классом: у заголовка .06em, у логотипа .12em. */
 @utility display {
@@ -414,14 +461,28 @@
   background: radial-gradient(closest-side, var(--color-accent-fill), transparent);
 }
 
-/* Машина hero на десктопе — ещё и по высоте экрана: не выше 70% hero (экран без шапки;
-   копия — min-h hero в Hero.tsx, меняются вместе), чтобы под ней был виден неон пола.
-   На высоком экране не действует. --car-aspect ставит HeroCar из данных */
+/* Машина hero на десктопе — ещё и по высоте экрана: не выше 70% hero (экран без полосы
+   образца и шапки; копия — min-h hero в Hero.tsx, меняются вместе), чтобы под ней был
+   виден неон пола. На высоком экране не действует. --car-aspect ставит HeroCar из данных */
 @utility hero-car-fit {
   max-width: min(
     var(--container-hero-car),
-    calc((100svh - var(--spacing-header) - 1px) * 0.7 * var(--car-aspect))
+    calc((100svh - var(--strip-h) - var(--spacing-header) - 1px) * 0.7 * var(--car-aspect))
   );
+}
+
+/* Машина сжатого hero телефона с полосой образца — ещё и по высоте экрана, как на низком
+   окне десктопа: на iPhone SE (375×548) hero с полосой — 496 px, а сжатый целиком — 527.
+   Всё остальное в hero — 302 px: поля 24 и 16, логотип 47, заголовок с подзаголовком 96,
+   интервалы 20, 32 и 20, «Sprawdź cenę» 48 (замер 21.11.2026); машине остаётся hero
+   минус 302 — на SE 194 px высоты. Где hero выше, правило не действует. Не уже 60%:
+   телефон боком (горизонталь не делаем, DESIGN «Hero и шапка») оставил бы машине
+   десятки пикселей или ноль — там, как без полосы, hero просто выше экрана. Без полосы
+   правила нет: размеры hero без отметки не меняются */
+@utility hero-car-fit-strip {
+  :where(html[data-showcase]) & {
+    max-width: max(60%, calc((var(--hero-h, 100svh) - var(--strip-h) - 302px) * var(--car-aspect)));
+  }
 }
 
 /* Мягкий свет акцента сверху меню */

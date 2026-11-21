@@ -4,11 +4,14 @@ import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { InlineScript } from "@/components/InlineScript";
+import { ShowcaseStrip } from "@/components/ShowcaseStrip";
 import { studio } from "@/content/studio";
 import { getDictionary } from "@/dictionaries";
 import { spectrumStops } from "@/lib/car-volume";
 import { isLang, langs, t } from "@/lib/i18n";
 import { isPublished, siteUrl } from "@/lib/seo";
+import { markScript } from "@/lib/showcase";
 import "../globals.css";
 
 /* subsets — что предзагружать. Кириллица подключена в любом случае и по unicode-range
@@ -66,15 +69,26 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const dict = getDictionary(lang);
+  const { showcase } = studio;
 
+  /* Полоса образца — только у студии с полем showcase (DESIGN.md, «Полоса образца»). Её
+     отметку на <html> встроенный скрипт ставит до гидрации, отсюда suppressHydrationWarning:
+     React оставляет атрибут, которого нет в разметке сервера */
   return (
     <html
       lang={lang}
       data-scroll-behavior="smooth"
       className={`${manrope.variable} ${scienceGothic.variable}`}
       style={themeVars}
+      suppressHydrationWarning={Boolean(showcase)}
     >
+      {showcase && (
+        <head>
+          <InlineScript html={markScript(showcase)} />
+        </head>
+      )}
       <body className="flex min-h-dvh flex-col">
+        {showcase && <ShowcaseStrip showcase={showcase} dict={dict} />}
         <Header lang={lang} dict={dict} />
         {children}
         <Footer lang={lang} dict={dict} />

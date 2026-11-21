@@ -1,31 +1,36 @@
 import { useEffect, useState } from "react";
 import { sectionIds } from "@/lib/nav";
+import { stripHeight } from "@/lib/showcase";
 
 type Options = {
   /** Значение до первого ответа наблюдателя — на сервере и при гидрации. */
   initial: boolean;
-  /** Сужает или расширяет экран, как rootMargin у IntersectionObserver. */
-  rootMargin?: string;
+  /** Сколько пикселей сверху экрана не в счёт: там шапка. */
+  top?: number;
   /** Смена значения перезапускает наблюдение: вместе со страницей сменился и элемент. */
   restartOn?: string;
 };
 
 /**
  * Виден ли на экране элемент с этим id. Нулевой порог ловит и момент касания края, где
- * доля ещё 0. Ответ помнится вместе со страницей, на которой получен: после перехода,
- * пока наблюдатель не ответил, и на странице без элемента или со скрытым — снова
- * initial. Только для клиентских компонентов.
+ * доля ещё 0. Верх экрана — под полосой образца, если она есть: под ней элемент не виден.
+ * Ответ помнится вместе со страницей, на которой получен: после перехода, пока
+ * наблюдатель не ответил, и на странице без элемента или со скрытым — снова initial.
+ * Только для клиентских компонентов.
  */
-export function useInView(id: string, { initial, rootMargin = "0px", restartOn }: Options): boolean {
+export function useInView(id: string, { initial, top = 0, restartOn }: Options): boolean {
   const [seen, setSeen] = useState({ on: restartOn, visible: initial });
 
   useEffect(() => {
     // Скрытый элемент — со страницы, которую Next держит в DOM после ухода с неё
     const element = document.getElementById(id);
     if (!element || !element.getClientRects().length) return;
+    // Отметку образца встроенный скрипт ставит до гидрации, а где он не исполнился (404,
+    // Strict Mode) — useLayoutEffect в ShowcaseMark: он идёт раньше этого эффекта. Перевод
+    // ShowcaseMark на useEffect оставил бы здесь высоту полосы 0
     const observer = new IntersectionObserver(
       ([entry]) => setSeen({ on: restartOn, visible: entry.isIntersecting }),
-      { threshold: [0], rootMargin },
+      { threshold: [0], rootMargin: `-${top + stripHeight()}px 0px 0px 0px` },
     );
     observer.observe(element);
     return () => {
@@ -33,7 +38,7 @@ export function useInView(id: string, { initial, rootMargin = "0px", restartOn }
       // Ушли со страницы — её ответ больше не годится, и при возврате на тот же адрес
       setSeen({ on: undefined, visible: initial });
     };
-  }, [id, initial, rootMargin, restartOn]);
+  }, [id, initial, top, restartOn]);
 
   return seen.on === restartOn ? seen.visible : initial;
 }
@@ -46,5 +51,5 @@ export function useInView(id: string, { initial, rootMargin = "0px", restartOn }
  * По этому значению появляются и шапка, и плавающая «Zadzwoń» — в один момент.
  */
 export function useHeroInView(restartOn?: string): boolean {
-  return useInView(sectionIds.hero, { initial: true, rootMargin: "-65px 0px 0px 0px", restartOn });
+  return useInView(sectionIds.hero, { initial: true, top: 65, restartOn });
 }
