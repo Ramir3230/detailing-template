@@ -1,7 +1,18 @@
 @import "tailwindcss";
 
-/* Телефон ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается */
-@custom-variant short (@media (height < 600px) and (width < 64rem));
+/* Hero телефона ниже 600 px высотой — iPhone SE с панелями браузера: hero сжимается. С
+   полосой образца hero ниже окна на её высоту, и порог окна выше на столько же: 652 —
+   600 + 52 (--spacing-strip), меняются вместе */
+@custom-variant short {
+  @media (height < 600px) and (width < 64rem) {
+    @slot;
+  }
+  @media (height < 652px) and (width < 64rem) {
+    :where(html[data-showcase]) & {
+      @slot;
+    }
+  }
+}
 
 /* Десктоп ниже 800 px высотой — ноутбук с панелями браузера: hero сжимается, чтобы
    строки рейтинга и статуса и неон под машиной остались на первом экране */
@@ -108,10 +119,8 @@
   --color-strip-plate: #f4f5f7;
   --color-strip-on-plate: #0b0c10;
   --shadow-strip-plate: 0 0 44px rgb(255 255 255 / 0.28);
-  /* --font-inter ставит сама полоса (components/ShowcaseStrip.tsx) */
-  --font-strip: var(--font-inter), system-ui, sans-serif;
   --tracking-strip: 0.1em;
-  /* Высота полосы на телефоне и десктопе. Копия — пороги short и low выше: меняются вместе */
+  /* Высота полосы на телефоне и десктопе */
   --spacing-strip: 52px;
 
   /* Десктоп: контейнер с полями 32 (wrap). Копия — 536 у колонок до/после (ComparePairs),
@@ -144,6 +153,10 @@
   --color-accent-badge: color-mix(in srgb, var(--accent) 45%, transparent);
   --color-accent-mark: color-mix(in srgb, var(--accent) 50%, transparent);
   --color-accent-border: color-mix(in srgb, var(--accent) 70%, transparent);
+
+  /* Шрифт полосы образца: --font-inter ставит сама полоса (components/ShowcaseStrip.tsx),
+     а не <html>, поэтому inline — var() разрешается на ней, а не на корне, где его нет */
+  --font-strip: var(--font-inter), system-ui, sans-serif;
 }
 
 @layer base {
@@ -456,6 +469,18 @@
     var(--container-hero-car),
     calc((100svh - var(--strip-h) - var(--spacing-header) - 1px) * 0.7 * var(--car-aspect))
   );
+}
+
+/* Машина сжатого hero телефона с полосой образца — ещё и по высоте экрана, как на низком
+   окне десктопа: на iPhone SE (375×548) hero с полосой — 496 px, а сжатый целиком — 527.
+   Машине остаётся hero без всего остального в нём — 302 px: поля 24 и 16, логотип 47,
+   заголовок с подзаголовком 96, интервалы 20, 32 и 20, «Sprawdź cenę» 48 (замер
+   21.11.2026). Где hero выше, правило не действует. Без полосы его нет: размеры hero
+   без отметки не меняются */
+@utility hero-car-fit-strip {
+  :where(html[data-showcase]) & {
+    max-width: calc((var(--hero-h, 100svh) - var(--strip-h) - 302px) * var(--car-aspect));
+  }
 }
 
 /* Мягкий свет акцента сверху меню */
