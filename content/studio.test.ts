@@ -128,6 +128,22 @@ describe("active studio data", () => {
     expect(url.pathname).toBe("/");
   });
 
+  it("has the showcase strip only in Afterdark, leading back to the portfolio over https", () => {
+    // DESIGN.md, «Полоса образца»: у демо реальной студии и сайта клиента её нет
+    expect(afterdark.showcase, "у Afterdark нет поля образца").toBeDefined();
+    if (studio !== afterdark) expect(studio.showcase, "полоса образца у чужой студии").toBeUndefined();
+    const { showcase } = studio;
+    if (!showcase) return;
+    // Адрес кейса собирается как `<site>/<язык><path>#<anchor>`: у site нет пути и «/» в конце
+    expect(new URL(showcase.site).protocol).toBe("https:");
+    expect(showcase.site).toBe(new URL(showcase.site).origin);
+    expect(showcase.path).toMatch(/^(\/[a-z0-9-]+)+$/);
+    expect(showcase.anchor).toMatch(/^[a-z][a-z0-9-]*$/);
+    // Языки — значения отметки ?from= и префикс адреса портфолио
+    for (const lang of showcase.langs) expect(lang).toMatch(/^[a-z]{2}$/);
+    expect(new Set(showcase.langs).size).toBe(showcase.langs.length);
+  });
+
   it("leaves no demo leftovers once the site is open for search", () => {
     if (!studio.indexed) return;
     if (studio.rating) expect(studio.rating.url).toBeTruthy();

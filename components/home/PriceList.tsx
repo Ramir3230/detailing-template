@@ -50,7 +50,7 @@ export function PriceList({ heading, groups, picker, priced, footer, whatsInclud
 
   return (
     <ClassScope className="wrap lg:flex lg:flex-wrap lg:items-start lg:gap-x-20 lg:gap-y-12">
-      <div className="contents lg:sticky lg:top-6 lg:block lg:max-w-95 lg:flex-[1_1_300px]">
+      <div className="contents lg:sticky lg:top-strip-6 lg:block lg:max-w-95 lg:flex-[1_1_300px]">
         {heading}
         {picker && (
           <ClassPicker
