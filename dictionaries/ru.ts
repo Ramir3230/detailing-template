@@ -115,4 +115,6 @@ export const ru: Dictionary = {
   newTab: "открывается в новой вкладке",
   footer: { services: "Услуги", studio: "Студия" },
   language: { label: "Язык", names: { pl: "PL", ru: "RU" } },
+  /* Черновик, ждёт владельца (ROADMAP, блок 15) */
+  showcase: { label: "Демонстрационный сайт", back: "Хочу такой" },
 };

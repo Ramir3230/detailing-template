@@ -729,4 +729,12 @@ export const afterdark: Studio = {
       },
     ],
   },
+  /* Afterdark — ещё и кейс портфолио (BRIEF.md, «Выдуманная студия шаблона»): полоса
+     образца ведёт назад в конец кейса. Языки — портфолио (его i18n/routing.ts), не демо */
+  showcase: {
+    site: "https://ramirslawecki.com",
+    path: "/projects/detailing-studio",
+    anchor: "contact-finale",
+    langs: ["pl", "uk", "ru"],
+  },
 };

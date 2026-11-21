@@ -150,4 +150,10 @@ export type Dictionary = {
   newTab: string;
   footer: { services: string; studio: string };
   language: { label: string; names: Record<Lang, string> };
+  /**
+   * Полоса образца у выдуманной студии шаблона (DESIGN.md, «Полоса образца»): подпись
+   * слева — она же имя области для диктора — и кнопка назад в портфолио; стрелку после
+   * неё рисует полоса.
+   */
+  showcase: { label: string; back: string };
 };

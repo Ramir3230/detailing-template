@@ -44,7 +44,8 @@ const ms = (seconds: number) => `${Math.round(seconds * 1000)}ms`;
  * свободная высота делится поровну над и под средней группой. Ниже 600 px высотой всё
  * сжимается, чтобы hero влез целиком.
  * Десктоп: логотип несёт шапка; текст слева, машина справа на всё оставшееся место.
- * Hero с шапкой — не ниже экрана: шапка (--spacing-header) и линия под ней. Машина не
+ * Hero с шапкой — не ниже экрана: шапка (--spacing-header) и линия под ней; с полосой
+ * образца — экран под ней (DESIGN.md, «Полоса образца»). Машина не
  * выше 70% hero — под ней виден неон. На низком окне (ниже 800 px) сжимаются поля и
  * интервалы, заголовок мельчает последним: рейтинг, статус и неон — на первом экране.
  */
@@ -57,8 +58,9 @@ export function Hero({ lang, dict }: Props) {
 
   return (
     <HeroStage id={sectionIds.hero} className="relative clip-x">
-      {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh */}
-      <div className="flex min-h-[var(--hero-h,100svh)] flex-col justify-between wrap pt-10 pb-6 short:pt-6 short:pb-4 lg:min-h-[calc(100svh-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12 low:py-6">
+      {/* Высота экрана — замороженная при открытии (--hero-h, HeroStage); до гидрации — svh.
+          Полоса образца, если она есть, забирает свою высоту (--strip-h, 0 без неё) */}
+      <div className="flex min-h-[calc(var(--hero-h,100svh)-var(--strip-h))] flex-col justify-between wrap pt-10 pb-6 short:pt-6 short:pb-4 lg:min-h-[calc(100svh-var(--strip-h)-var(--spacing-header)-1px)] lg:flex-row lg:items-center lg:gap-x-8 lg:py-12 low:py-6">
         {/* Логотип — погашенная неоновая трубка; загорается последним в сцене зажигания.
             Слои — одинаковые элементы одной ячейки сетки: иначе неоновый съезжает. Знак из
             трубок — третьим слоем между ними: по нему пробегает свет, потом знак и надпись

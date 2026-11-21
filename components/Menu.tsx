@@ -14,7 +14,8 @@ type Props = {
  * Меню на весь экран для телефона и планшета. Модальный <dialog> сам закрывается по
  * Esc и делает страницу под собой недоступной для фокуса и диктора; прокрутку фона
  * гасит app/globals.css. Фокус при открытии — на «закрыть», при закрытии — обратно
- * на кнопку меню.
+ * на кнопку меню. С полосой образца меню и его подложка начинаются под ней: полоса
+ * остаётся на экране, но, как и вся страница под модальным окном, не нажимается.
  */
 export function Menu({ openLabel, closeLabel, logo, children }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -62,7 +63,7 @@ export function Menu({ openLabel, closeLabel, logo, children }: Props) {
         aria-label={openLabel}
         onClick={closeOnLink}
         onClose={() => opener.current?.focus()}
-        className="m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 bg-bg p-0 text-fg backdrop:bg-bg"
+        className="top-strip-0 m-0 h-[calc(100dvh-var(--strip-h))] max-h-none w-full max-w-none overflow-y-auto overscroll-contain border-0 bg-bg p-0 text-fg backdrop:top-strip-0 backdrop:bg-bg"
       >
         {/* Свет сверху — на весь экран, содержимое на планшете — колонкой шапки */}
         <div className="glow-top flex min-h-full justify-center">

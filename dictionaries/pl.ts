@@ -115,4 +115,5 @@ export const pl: Dictionary = {
   newTab: "otwiera się w nowej karcie",
   footer: { services: "Usługi", studio: "Studio" },
   language: { label: "Język", names: { pl: "PL", ru: "RU" } },
+  showcase: { label: "Strona pokazowa", back: "Chcę taką" },
 };
