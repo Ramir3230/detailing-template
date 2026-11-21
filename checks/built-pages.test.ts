@@ -823,9 +823,10 @@ describe.each(showcaseRoutes)("built showcase strip on /%s", (route) => {
   });
 });
 
-describe("built showcase mark", () => {
-  const { showcase } = studio;
-  if (!showcase) return;
+/* Только у студии с полем образца: пустой набор vitest в CI считает ошибкой */
+const markedShowcase = studio.showcase;
+if (markedShowcase) describe("built showcase mark", () => {
+  const showcase = markedShowcase;
   const [script = ""] = inlineScripts(page(defaultLang).head, "data-showcase");
 
   it("shows the strip to a visitor from the portfolio and takes the mark out of the address", () => {
